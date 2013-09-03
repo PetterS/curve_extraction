@@ -5,6 +5,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <tuple>
 using std::ignore;
@@ -223,13 +224,13 @@ int main_function()
 	//
 	// Data terms.
 	//
-	vector<PieceWiseConstant> data_terms;
+	vector<std::unique_ptr<PieceWiseConstant>> data_terms;
 	for (int i = 0; i < number_of_images; ++i) {
-		data_terms.emplace_back(&(Ds[i].data()[0]),
-		                        Ds[i].width(),
-		                        Ds[i].height(),
-		                        1,
-		                        voxel_dimensions);
+		data_terms.emplace_back(new PieceWiseConstant(&(Ds[i].data()[0]),
+		                                           Ds[i].width(),
+		                                           Ds[i].height(),
+		                                           1,
+		                                           voxel_dimensions));
 	}
 
 	auto get_neighbors_length =
@@ -258,7 +259,7 @@ int main_function()
 				auto coord2 = mesh_index_to_image_point(*itr, Ps[i], Ds[i]);
 
 				double tmp_cost =
-					data_terms[i].evaluate_line_integral(
+					data_terms[i]->evaluate_line_integral(
 						coord1.first, coord1.second, 0.0,
 				        coord2.first, coord2.second, 0.0);
 				data_cost = max(tmp_cost, data_cost);
@@ -459,7 +460,7 @@ int main_function()
 				auto coord2 = mesh_index_to_image_point(p2, Ps[i], Ds[i]);
 				
 				double tmp_cost =
-					data_terms[i].evaluate_line_integral(
+					data_terms[i]->evaluate_line_integral(
 						coord1.first, coord1.second, 0.0,
 				        coord2.first, coord2.second, 0.0);
 				data_cost = max(tmp_cost, data_cost);
