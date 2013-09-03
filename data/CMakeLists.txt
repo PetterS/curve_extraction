@@ -1,0 +1,13 @@
+# Author: petter.strandmark@gmail.com (Petter Strandmark)
+
+configure_file(wintertree.txt ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/wintertree.txt COPYONLY)
+configure_file(wintertree1.pgm ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/wintertree1.pgm COPYONLY)
+configure_file(wintertree2.pgm ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/wintertree2.pgm COPYONLY)
+configure_file(wintertree3.pgm ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/wintertree3.pgm COPYONLY)
+configure_file(wintertree4.pgm ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/wintertree4.pgm COPYONLY)
+configure_file(wintertree5.pgm ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/wintertree5.pgm COPYONLY)
+configure_file(wintertree_d1.pgm ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/wintertree_d1.pgm COPYONLY)
+configure_file(wintertree_d2.pgm ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/wintertree_d2.pgm COPYONLY)
+configure_file(wintertree_d3.pgm ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/wintertree_d3.pgm COPYONLY)
+configure_file(wintertree_d4.pgm ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/wintertree_d4.pgm COPYONLY)
+configure_file(wintertree_d5.pgm ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/wintertree_d5.pgm COPYONLY)
