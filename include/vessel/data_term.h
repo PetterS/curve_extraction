@@ -1,0 +1,51 @@
+// Petter Strandmark 2013.
+#ifndef VESSEL_DATA_TERM_H
+#define VESSEL_DATA_TERM_H
+
+#include <vector>
+
+namespace vessel {
+
+class PieceWiseConstant
+{
+public:
+	PieceWiseConstant(const double * unary,
+	                  int M, int N, int O,
+	                  const std::vector<double>& voxeldimensions);
+
+	template<typename R>
+	R evaluate(R x, R y, R z = 0.0);
+
+	template<typename R>
+	R evaluate_line_integral(R x1, R y1, R z1,
+	                         R x2, R y2, R z2);
+private:
+	int xyz_to_ind(double x, double y, double z);
+	int M, N, O;
+	const double* unary;
+	const std::vector<double> voxeldimensions;
+};
+
+class TriLinear
+{
+public:
+	TriLinear(const double * unary,
+	          int M, int N, int O,
+	          const std::vector<double>& voxeldimensions);
+
+	template<typename R>
+	R evaluate(R x, R y, R z = 0.0);
+
+	template<typename R>
+	R evaluate_line_integral(R x1, R y1, R z1,
+	                         R x2, R y2, R z2);
+private:
+	int xyz_to_ind(double x, double y, double z);
+	int M, N, O;
+	const double* unary;
+	const std::vector<double> voxeldimensions;
+};
+
+}  // namespace vessel
+
+#endif
