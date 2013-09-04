@@ -11,3 +11,7 @@ before_script:
   - cmake -DOPENMP=OFF -DSPII_INCLUDE=../spii/include .. 
 script: 
   - make && ctest --output-on-failure
+notifications:
+  email:
+    - ulen@maths.lth.se
+    - petter.strandmark@gmail.com
