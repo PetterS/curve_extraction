@@ -1,6 +1,6 @@
 # Author: petter.strandmark@gmail.com (Petter Strandmark)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.0)
-PROJECT(VESSEL C CXX)
+PROJECT(curve_extraction C CXX)
 
 OPTION(BUILD_TESTING "Enable tests" ON)
 OPTION(BUILD_EXAMPLES "Build examples" ON)
@@ -58,16 +58,16 @@ INCLUDE_DIRECTORIES(
   thirdparty/pgm
   )
 
-FILE(GLOB VESSEL_HEADERS ${CMAKE_SOURCE_DIR}/include/vessel/*.h)
-INSTALL(FILES ${VESSEL_HEADERS} DESTINATION include/vessel)
+FILE(GLOB CURVE_EXTRACTION_HEADERS ${CMAKE_SOURCE_DIR}/include/curve_extraction/*.h)
+INSTALL(FILES ${CURVE_EXTRACTION_HEADERS} DESTINATION include/curve_extraction)
 
 # Library dependencies
-SET (VESSEL_LIBRARY_DEPENDENCIES)
+SET (CURVE_EXTRACTION_LIBRARY_DEPENDENCIES)
 
 # OpenMP needs to be included as a library on some platforms.
 IF (${OPENMP_FOUND})
   IF (NOT MSVC)
-    LIST(APPEND VESSEL_LIBRARY_DEPENDENCIES gomp)
+    LIST(APPEND CURVE_EXTRACTION_LIBRARY_DEPENDENCIES gomp)
   ENDIF (NOT MSVC)
 ENDIF (${OPENMP_FOUND})
 

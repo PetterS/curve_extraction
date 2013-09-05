@@ -14,7 +14,7 @@
 // to_double
 #include <spii/auto_diff_term.h>
 
-#include <vessel/curvature.h>
+#include <curve_extraction/curvature.h>
 
 
 // This struct is a tuple of floating point values.
@@ -126,14 +126,14 @@ R compute_curvature_internal(R x1, R y1, R z1,
 	return sum;
 }
 
-int vessel::curvature_cache_hits   = 0;
-int vessel::curvature_cache_misses = 0;
+int curve_extraction::curvature_cache_hits   = 0;
+int curve_extraction::curvature_cache_misses = 0;
 
 template<typename R>
-R vessel::compute_curvature(R x1, R y1, R z1,
-                            R x2, R y2, R z2,
-                            R x3, R y3, R z3,
-                            R p, bool writable_cache, int n)
+R curve_extraction::compute_curvature(R x1, R y1, R z1,
+                                      R x2, R y2, R z2,
+                                      R x3, R y3, R z3,
+                                      R p, bool writable_cache, int n)
 {
 	static std::map<FloatingPointCacheEntry<R, 8>, R> curvature_cache;
 	const std::size_t max_cache_size = 1000000;
@@ -176,15 +176,15 @@ R vessel::compute_curvature(R x1, R y1, R z1,
 	return value;
 }
 
-int vessel::torsion_cache_hits   = 0;
-int vessel::torsion_cache_misses = 0;
+int curve_extraction::torsion_cache_hits   = 0;
+int curve_extraction::torsion_cache_misses = 0;
 
 template<typename R>
-R vessel::compute_torsion(R x1, R y1, R z1,
-                          R x2, R y2, R z2,
-                          R x3, R y3, R z3,
-                          R x4, R y4, R z4,
-                          R p, int n)
+R curve_extraction::compute_torsion(R x1, R y1, R z1,
+                                    R x2, R y2, R z2,
+                                    R x3, R y3, R z3,
+                                    R x4, R y4, R z4,
+                                    R p, int n)
 {
 	// The static cache of curvature values allows 
 	// for much faster computations if the coordinates
@@ -268,7 +268,7 @@ R vessel::compute_torsion(R x1, R y1, R z1,
 
 #define INSTANTIATE_CURVATURE(R) \
 	template           \
-	R vessel::compute_curvature(R, R, R, R, R, R, R, R, R, R, bool, int);
+	R curve_extraction::compute_curvature(R, R, R, R, R, R, R, R, R, R, bool, int);
 INSTANTIATE_CURVATURE(double);
 INSTANTIATE_CURVATURE(float);
 
@@ -287,6 +287,6 @@ INSTANTIATE_FN(9);
 
 #define INSTANTIATE_TORSION(R) \
 	template           \
-	R vessel::compute_torsion(R, R, R, R, R, R, R, R, R, R, R, R, R, int);
+	R curve_extraction::compute_torsion(R, R, R, R, R, R, R, R, R, R, R, R, R, int);
 INSTANTIATE_TORSION(double);
 INSTANTIATE_TORSION(float);

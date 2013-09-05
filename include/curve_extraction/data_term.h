@@ -1,10 +1,10 @@
 // Petter Strandmark 2013.
-#ifndef VESSEL_DATA_TERM_H
-#define VESSEL_DATA_TERM_H
+#ifndef CURVE_EXTRACTION_DATA_TERM_H
+#define CURVE_EXTRACTION_DATA_TERM_H
 
 #include <vector>
 
-namespace vessel {
+namespace curve_extraction {
 
 class PieceWiseConstant
 {
@@ -46,6 +46,6 @@ private:
 	const std::vector<double> voxeldimensions;
 };
 
-}  // namespace vessel
+}  // namespace curve_extraction
 
 #endif

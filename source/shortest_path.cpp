@@ -8,12 +8,9 @@
 #include <set>
 #include <stdexcept>
 
-#if 0
-#include <vessel/indexed_heap.h>
-#endif
-#include <vessel/shortest_path.h>
+#include <curve_extraction/shortest_path.h>
 
-namespace vessel
+namespace curve_extraction
 {
 
 double shortest_path(int n, const std::set<int>& start_set, const std::set<int>& end_set,
@@ -350,4 +347,4 @@ double shortest_path_memory_efficient(
 }
 #endif
 
-}  // namespace vessel
+}  // namespace curve_extraction
