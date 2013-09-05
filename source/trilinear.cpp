@@ -43,8 +43,6 @@ template<typename R>
 R TriLinear::evaluate_line_integral(R sx, R sy, R sz,
                                     R ex, R ey, R ez)
 {
-	// Just copied from Mesh by Petter. Written by Johannes.
-
 	using std::sqrt;
 	using std::floor;
 
