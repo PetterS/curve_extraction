@@ -9,7 +9,7 @@
 #include <vector>
 #include <tuple>
 
-namespace vessel {
+namespace curve_extraction {
 
 class Mesh
 {
@@ -150,6 +150,6 @@ private:
 };
 
 
-}  // namespace vessel
+}  // namespace curve_extraction
 
 #endif

@@ -23,11 +23,11 @@ double get_wtime()
 }
 #endif
 
-#include <vessel/curvature.h>
-#include <vessel/grid_mesh.h>
-#include <vessel/shortest_path.h>
+#include <curve_extraction/curvature.h>
+#include <curve_extraction/grid_mesh.h>
+#include <curve_extraction/shortest_path.h>
 
-using namespace vessel;
+using namespace curve_extraction;
 
 
 int main_function()

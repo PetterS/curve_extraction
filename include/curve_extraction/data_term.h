@@ -4,7 +4,7 @@
 
 #include <vector>
 
-namespace vessel {
+namespace curve_extraction {
 
 class PieceWiseConstant
 {
@@ -46,6 +46,6 @@ private:
 	const std::vector<double> voxeldimensions;
 };
 
-}  // namespace vessel
+}  // namespace curve_extraction
 
 #endif

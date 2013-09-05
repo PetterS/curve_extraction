@@ -17,13 +17,13 @@ using std::tie;
 #include <pgm_image.h>
 using ceres::examples::PGMImage;
 
-#include <vessel/curvature.h>
-#include <vessel/data_term.h>
-#include <vessel/grid_mesh.h>
-#include <vessel/mesh.h>
-#include <vessel/shortest_path.h>
+#include <curve_extraction/curvature.h>
+#include <curve_extraction/data_term.h>
+#include <curve_extraction/grid_mesh.h>
+#include <curve_extraction/mesh.h>
+#include <curve_extraction/shortest_path.h>
 
-using namespace vessel;
+using namespace curve_extraction;
  
 std::istream& operator>>(std::istream& in, Eigen::MatrixXd& M)
 {

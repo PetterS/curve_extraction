@@ -1,25 +1,24 @@
 # Author: petter.strandmark@gmail.com (Petter Strandmark)
 
 # Also depend on the header files so that they appear in IDEs.
-FILE(GLOB VESSEL_HEADERS *.h)
+FILE(GLOB CURVE_EXTRACTION_HEADERS *.h)
 
 
 
 IF (${BUILD_TESTING})
-	MACRO (VESSEL_TEST NAME)
+	MACRO (CURVE_EXTRACTION_TEST NAME)
 	  ADD_EXECUTABLE(test_${NAME} test_${NAME}.cpp)
-	  TARGET_LINK_LIBRARIES(test_${NAME} vessel)
+	  TARGET_LINK_LIBRARIES(test_${NAME} curve_extraction)
 
 	  ADD_TEST(NAME test_${NAME}
 	           COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_${NAME})
-	ENDMACRO (VESSEL_TEST)
+	ENDMACRO (CURVE_EXTRACTION_TEST)
 
-	VESSEL_TEST(curvature)
-	VESSEL_TEST(data_term)
-	VESSEL_TEST(grid_mesh)
-	#VESSEL_TEST(indexed_heap)
-	VESSEL_TEST(mesh)
-	VESSEL_TEST(shortest_path)
+	CURVE_EXTRACTION_TEST(curvature)
+	CURVE_EXTRACTION_TEST(data_term)
+	CURVE_EXTRACTION_TEST(grid_mesh)
+	CURVE_EXTRACTION_TEST(mesh)
+	CURVE_EXTRACTION_TEST(shortest_path)
 
 	#
 	# Valgrind (memcheck) testing.

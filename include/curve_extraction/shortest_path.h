@@ -11,7 +11,7 @@
 #include <set>
 #include <vector>
 
-namespace vessel {
+namespace curve_extraction {
 
 struct Neighbor
 {
@@ -109,6 +109,6 @@ double shortest_path_memory_efficient(
 	std::vector<int>* path,
 	const ShortestPathOptions& options = ShortestPathOptions());
 
-}  // namespace vessel
+}  // namespace curve_extraction
 
 #endif

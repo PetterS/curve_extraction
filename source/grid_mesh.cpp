@@ -6,9 +6,9 @@ using std::max;
 using std::min;
 
 
-#include <vessel/grid_mesh.h>
+#include <curve_extraction/grid_mesh.h>
 
-namespace vessel
+namespace curve_extraction
 {
 
 struct UnitVector
@@ -108,5 +108,5 @@ void GridMesh::initialize(int x_dim, int y_dim ,int z_dim, double dmax,
 	this->finish(create_pairs);
 }
 
-}  // namespace vessel
+}  // namespace curve_extraction
 

@@ -4,15 +4,15 @@
 
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main()
 #include <catch.hpp>
-#include <vessel/google_test_compatibility.h>
+#include <curve_extraction/google_test_compatibility.h>
 
-#include <vessel/mesh.h>
+#include <curve_extraction/mesh.h>
 
 #ifdef USE_OPENMP
 #include <omp.h>
 #endif
 
-using namespace vessel;
+using namespace curve_extraction;
 
 TEST_CASE("Mesh/find_point", "")
 {

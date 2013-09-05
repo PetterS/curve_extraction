@@ -1,6 +1,6 @@
 This is a C++ library for computing shortest paths with higher-order properties like curvature and torsion taken into account. It implements the algorithms of our ICCV 2013 paper [1].
 
-[![Build Status](https://travis-ci.org/PetterS/vessel.png)](https://travis-ci.org/PetterS/vessel)
+[![Build Status](https://travis-ci.org/PetterS/curve_extraction.png)](https://travis-ci.org/PetterS/curve_extraction)
 
 Compilation
 -----------

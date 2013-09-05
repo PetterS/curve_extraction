@@ -4,9 +4,9 @@
 
 #include <algorithm>
 
-#include <vessel/mesh.h>
+#include <curve_extraction/mesh.h>
 
-namespace vessel {
+namespace curve_extraction {
 
 // Creating a regular Mesh is slow using only the functions provided
 // by Mesh. This class speeds up the creation if all points are in a
@@ -42,6 +42,6 @@ public:
 };
 
 
-}  // namespace vessel
+}  // namespace curve_extraction
 
 #endif

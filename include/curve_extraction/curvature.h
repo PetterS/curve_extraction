@@ -1,9 +1,9 @@
 // Petter Strandmark 2013.
 
-#ifndef VESSEL_CURVATURE_H
-#define VESSEL_CURVATURE_H
+#ifndef CURVE_EXTRACTION_CURVATURE_H
+#define CURVE_EXTRACTION_CURVATURE_H
 
-namespace vessel {
+namespace curve_extraction {
 
 extern int curvature_cache_hits;
 extern int curvature_cache_misses;
@@ -18,6 +18,7 @@ R compute_curvature(R x1, R y1, R z1,
 
 extern int torsion_cache_hits;
 extern int torsion_cache_misses;
+
 template<typename R>
 R compute_torsion(R x1, R y1, R z1,
                   R x2, R y2, R z2,
@@ -26,6 +27,6 @@ R compute_torsion(R x1, R y1, R z1,
                   R power = 2.0,
                   int n_approximation_points = 200);
 
-}  // namespace vessel
+}  // namespace curve_extraction
 
 #endif
