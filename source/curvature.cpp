@@ -17,6 +17,33 @@
 #include <curve_extraction/curvature.h>
 
 
+namespace fadbad
+{
+
+template<unsigned n>
+F<double, n> abs(F<double, n> x)
+{
+	if (spii::to_double(x) < 0) {
+		return -x;
+	}
+	else {
+		return x;
+	}
+}
+
+template<unsigned n>
+F<F<double, n>, n> abs(F<F<double, n>, n> x)
+{
+	if (spii::to_double(x) < 0) {
+		return -x;
+	}
+	else {
+		return x;
+	}
+}
+
+}
+
 // This struct is a tuple of floating point values.
 // Two tuples are considered equal if no two elements
 // differ by more than 1e-4.
@@ -186,39 +213,47 @@ R curve_extraction::compute_torsion(R x1, R y1, R z1,
                                     R x4, R y4, R z4,
                                     R p, int n)
 {
-	// The static cache of curvature values allows 
+	using std::pow;
+	using std::sqrt;
+	using std::atan2;
+	using std::abs;
+
+	// The static cache of torsion values allows 
 	// for much faster computations if the coordinates
 	// come from a regular grid.
 	static std::map<FloatingPointCacheEntry<R, 14>, R> torsion_cache;
 	const std::size_t max_cache_size = 10000000;
-	// Create the entry by subtracting the mean from the coordinates.
 	FloatingPointCacheEntry<R, 14> entry;
-	R mx = (x1 + x2 + x3 + x4) / R(4.0);
-	R my = (y1 + y2 + y3 + y4) / R(4.0);
-	R mz = (z1 + z2 + z3 + z4) / R(4.0);
-	entry.data[0]  = x1 - mx;
-	entry.data[1]  = x2 - mx;
-	entry.data[2]  = x3 - mx;
-	entry.data[3]  = x4 - mx;
-	entry.data[4]  = y1 - my;
-	entry.data[5]  = y2 - my;
-	entry.data[6]  = y3 - my;
-	entry.data[7]  = y4 - my;
-	entry.data[8]  = z1 - mz;
-	entry.data[9]  = z2 - mz;
-	entry.data[10] = z3 - mz;
-	entry.data[11] = z4 - mz;
-	// p and n should also be in the cache.
-	entry.data[12] = p;
-	entry.data[13] = R(n);
-	// If the value is in the cache, return it.
-	auto itr = torsion_cache.find(entry);
-	if (itr != torsion_cache.end()) {
-		torsion_cache_hits++;
-		return itr->second;
-	}
-	else {
-		torsion_cache_misses++;
+
+	if (use_cache<R>::value) {
+		// Create the entry by subtracting the mean from the coordinates.
+		R mx = (x1 + x2 + x3 + x4) / R(4.0);
+		R my = (y1 + y2 + y3 + y4) / R(4.0);
+		R mz = (z1 + z2 + z3 + z4) / R(4.0);
+		entry.data[0]  = x1 - mx;
+		entry.data[1]  = x2 - mx;
+		entry.data[2]  = x3 - mx;
+		entry.data[3]  = x4 - mx;
+		entry.data[4]  = y1 - my;
+		entry.data[5]  = y2 - my;
+		entry.data[6]  = y3 - my;
+		entry.data[7]  = y4 - my;
+		entry.data[8]  = z1 - mz;
+		entry.data[9]  = z2 - mz;
+		entry.data[10] = z3 - mz;
+		entry.data[11] = z4 - mz;
+		// p and n should also be in the cache.
+		entry.data[12] = p;
+		entry.data[13] = R(n);
+		// If the value is in the cache, return it.
+		auto itr = torsion_cache.find(entry);
+		if (itr != torsion_cache.end()) {
+			torsion_cache_hits++;
+			return itr->second;
+		}
+		else {
+			torsion_cache_misses++;
+		}
 	}
 
 	R numerator = 
@@ -226,7 +261,7 @@ R curve_extraction::compute_torsion(R x1, R y1, R z1,
 		y2*(x1*(z3 - z4) - x3*(z1 - z4) + x4*(z1 - z3)) + y1*(x2*z3 - x2*z4) + x1*y3*(z2 - z4) + x4*y1*(z2 - z3));
 	 
 	R sum = 0;
-	if (std::abs(numerator) > 1e-9) {
+	if (std::abs(spii::to_double(numerator)) > 1e-9) {
 		auto tp_ds = [=](R t) -> R
 		{
 			R s1 = ((z1 - 3*z2 + 3*z3 - z4) / R(2)) * t*t + (2*z2 - z1 - z3) * t + (z1 - z3) / R(2);
@@ -240,8 +275,8 @@ R curve_extraction::compute_torsion(R x1, R y1, R z1,
 			R sq3 = (s2*s4 - s1*s5);
 			R denominator = sq1*sq1 + sq2*sq2 + sq3*sq3;
 
-			return  sqrt(s3*s3 + s2*s2 + s1*s1)                      // ds
-				  * std::pow( std::abs(numerator / denominator), p); // |tau|^p
+			return  sqrt(s3*s3 + s2*s2 + s1*s1)            // ds
+				  * pow( abs(numerator / denominator), p); // |tau|^p
 		};
 
 		// Trapezoidal rule.
@@ -254,15 +289,18 @@ R curve_extraction::compute_torsion(R x1, R y1, R z1,
 		sum /= R(n);
 
 		// Debug: Check for nan.
-		if (sum != sum) {
+		if (spii::to_double(sum) != spii::to_double(sum)) {
 			throw std::runtime_error("compute_torsion: nan");
 		}
 	}
 
-	// Set the cache and return.
-	if (torsion_cache.size() < max_cache_size) {
-		torsion_cache[entry] = sum;
+	if (use_cache<R>::value) {
+		// Set the cache and return.
+		if (torsion_cache.size() < max_cache_size) {
+			torsion_cache[entry] = sum;
+		}
 	}
+
 	return sum;
 }
 
@@ -272,21 +310,23 @@ R curve_extraction::compute_torsion(R x1, R y1, R z1,
 INSTANTIATE_CURVATURE(double);
 INSTANTIATE_CURVATURE(float);
 
-// Create instantiations for auto-diff.
-#define INSTANTIATE_FN(n) \
-	typedef fadbad::F<double, n> F ## n; \
-	INSTANTIATE_CURVATURE(F ## n); \
-	typedef fadbad::F<fadbad::F<double, n>, n> FF ## n; \
-	INSTANTIATE_CURVATURE(FF ## n);
-INSTANTIATE_FN(1);
-INSTANTIATE_FN(2);
-INSTANTIATE_FN(3);
-INSTANTIATE_FN(6);
-INSTANTIATE_FN(9);
-
-
 #define INSTANTIATE_TORSION(R) \
 	template           \
 	R curve_extraction::compute_torsion(R, R, R, R, R, R, R, R, R, R, R, R, R, int);
 INSTANTIATE_TORSION(double);
 INSTANTIATE_TORSION(float);
+
+// Create instantiations for auto-diff.
+#define INSTANTIATE_FN(n) \
+	typedef fadbad::F<double, n> F ## n; \
+	INSTANTIATE_CURVATURE(F ## n);       \
+	INSTANTIATE_TORSION(F ## n);         \
+	typedef fadbad::F<fadbad::F<double, n>, n> FF ## n; \
+	INSTANTIATE_CURVATURE(FF ## n);  \
+	INSTANTIATE_TORSION(FF ## n);
+INSTANTIATE_FN(1);
+INSTANTIATE_FN(2);
+INSTANTIATE_FN(3);
+INSTANTIATE_FN(6);
+INSTANTIATE_FN(9);
+INSTANTIATE_FN(12);
