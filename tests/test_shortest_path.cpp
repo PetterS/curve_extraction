@@ -5,12 +5,12 @@
 
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main()
 #include <catch.hpp>
-#include <vessel/google_test_compatibility.h>
+#include <curve_extraction/google_test_compatibility.h>
 
 
-#include <vessel/shortest_path.h>
+#include <curve_extraction/shortest_path.h>
 
-using namespace vessel;
+using namespace curve_extraction;
 
 // First, include the tests for the "shortest_path" function.
 #include "test_shortest_path_helper.h"

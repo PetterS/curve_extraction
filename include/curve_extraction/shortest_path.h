@@ -4,14 +4,14 @@
 // nodes in a dynamically generated graph. Uses 
 // Dijkstra's algorithm or A*.
 //
-#ifndef VESSEL_SHORTEST_PATH_H
-#define VESSEL_SHORTEST_PATH_H
+#ifndef CURVE_EXTRACTION_SHORTEST_PATH_H
+#define CURVE_EXTRACTION_SHORTEST_PATH_H
 
 #include <functional>
 #include <set>
 #include <vector>
 
-namespace vessel {
+namespace curve_extraction {
 
 struct Neighbor
 {
@@ -109,6 +109,6 @@ double shortest_path_memory_efficient(
 	std::vector<int>* path,
 	const ShortestPathOptions& options = ShortestPathOptions());
 
-}  // namespace vessel
+}  // namespace curve_extraction
 
 #endif

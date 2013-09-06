@@ -10,9 +10,9 @@
 #include <spii/auto_diff_term.h>
 using spii::to_double;
 
-#include <vessel/data_term.h>
+#include <curve_extraction/data_term.h>
 
-namespace vessel
+namespace curve_extraction
 {
 
 TriLinear::TriLinear(const double * unary_,
@@ -123,11 +123,11 @@ R TriLinear::evaluate_line_integral(R sx, R sy, R sz,
 	return cost;
 }
 
-}  // namespace vessel
+}  // namespace curve_extraction
 
 #define INSTANTIATE(classname, R) \
-	template R vessel::classname::evaluate_line_integral(R,R,R, R,R,R); \
-	template R vessel::classname::evaluate(R,R,R);
+	template R curve_extraction::classname::evaluate_line_integral(R,R,R, R,R,R); \
+	template R curve_extraction::classname::evaluate(R,R,R);
 
 typedef fadbad::F<double, 3> F3;
 typedef fadbad::F<double, 6> F6;
