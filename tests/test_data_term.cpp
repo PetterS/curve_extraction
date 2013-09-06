@@ -9,13 +9,13 @@
 
 #include <spii-thirdparty/fadiff.h>
 
-#include <vessel/data_term.h>
+#include <curve_extraction/data_term.h>
 
 #ifdef USE_OPENMP
 #include <omp.h>
 #endif
 
-using namespace vessel;
+using namespace curve_extraction;
 
 TEST_CASE("Interpolate/Length", "")
 {

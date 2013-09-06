@@ -5,9 +5,9 @@
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main()
 #include <catch.hpp>
 
-#include <vessel/grid_mesh.h>
+#include <curve_extraction/grid_mesh.h>
 
-using namespace vessel;
+using namespace curve_extraction;
 
 void add_edges_test(float distance, int expected_connectivity)
 {

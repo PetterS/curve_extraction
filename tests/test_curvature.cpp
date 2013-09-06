@@ -5,11 +5,11 @@
 
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main()
 #include <catch.hpp>
-#include <vessel/google_test_compatibility.h>
+#include <curve_extraction/google_test_compatibility.h>
 
-#include <vessel/curvature.h>
+#include <curve_extraction/curvature.h>
 
-using namespace vessel;
+using namespace curve_extraction;
 
 TEST_CASE("compute_curvature/helix", "")
 {

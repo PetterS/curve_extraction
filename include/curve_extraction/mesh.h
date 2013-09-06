@@ -1,6 +1,6 @@
 // Petter Strandmark 2013.
-#ifndef VESSEL_MESH_H
-#define VESSEL_MESH_H
+#ifndef CURVE_EXTRACTION_MESH_H
+#define CURVE_EXTRACTION_MESH_H
 
 #include <functional>
 #include <map>
@@ -9,7 +9,7 @@
 #include <vector>
 #include <tuple>
 
-namespace vessel {
+namespace curve_extraction {
 
 class Mesh
 {
@@ -150,6 +150,6 @@ private:
 };
 
 
-}  // namespace vessel
+}  // namespace curve_extraction
 
 #endif

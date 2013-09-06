@@ -1,12 +1,12 @@
 // Petter Strandmark 2013.
-#ifndef VESSEL_GRID_MESH_H
-#define VESSEL_GRID_MESH_H
+#ifndef CURVE_EXTRACTION_GRID_MESH_H
+#define CURVE_EXTRACTION_GRID_MESH_H
 
 #include <algorithm>
 
-#include <vessel/mesh.h>
+#include <curve_extraction/mesh.h>
 
-namespace vessel {
+namespace curve_extraction {
 
 // Creating a regular Mesh is slow using only the functions provided
 // by Mesh. This class speeds up the creation if all points are in a
@@ -42,6 +42,6 @@ public:
 };
 
 
-}  // namespace vessel
+}  // namespace curve_extraction
 
 #endif

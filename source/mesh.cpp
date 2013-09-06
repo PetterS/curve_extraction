@@ -14,9 +14,9 @@ using std::tie;
 #include <omp.h>
 #endif
 
-#include <vessel/mesh.h>
+#include <curve_extraction/mesh.h>
 
-namespace vessel
+namespace curve_extraction
 {
 
 Mesh::Point::Point(float x, float y, float z)
@@ -551,4 +551,4 @@ void Mesh::end_SVG()
 	}
 }
 
-}  // namespace vessel
+}  // namespace curve_extraction
