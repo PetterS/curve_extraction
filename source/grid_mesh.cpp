@@ -1,4 +1,5 @@
 // Petter Strandmark 2013.
+#include <algorithm>
 #include <map>
 #include <stdexcept>
 
