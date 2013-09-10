@@ -10,7 +10,7 @@ The following is required to compile the library:
 * Spii installed; see https://github.com/PetterS/spii 
 
 All tests pass with the following compilers:
-* Visual Studio 2012
+* Visual Studio 2012 and 2013 RC
 * GCC 4.8 (Cygwin)
 * GCC 4.7
 * GCC 4.6 (Ubuntu)

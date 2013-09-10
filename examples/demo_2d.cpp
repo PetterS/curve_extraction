@@ -1,5 +1,6 @@
 // Petter Strandmark 2013.
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
