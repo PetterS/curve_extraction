@@ -21,4 +21,4 @@ You can check travis.yml for the commands used to build the library and run all 
 
 References
 ----------
-1. Petter Strandmark, Johannes Ulén, Fredrik Kahl, Leo Grady. [Shortest Paths wth Curvature and Torsion](http://www2.maths.lth.se/vision/publications/publications/view_paper.php?paper_id=582). International Conference on Computer Vision. 2013.
+1. Petter Strandmark, Johannes Ulén, Fredrik Kahl, Leo Grady. [Shortest Paths with Curvature and Torsion](http://www2.maths.lth.se/vision/publications/publications/view_paper.php?paper_id=582). International Conference on Computer Vision. 2013.
