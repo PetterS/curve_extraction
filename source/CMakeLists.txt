@@ -1,13 +1,6 @@
 # Author: petter.strandmark@gmail.com (Petter Strandmark)
 
-SET(CURVE_EXTRACTION_INTERNAL_SRC
-	curvature.cpp
-	data_term.cpp
-	grid_mesh.cpp
-	mesh.cpp
-	shortest_path.cpp
-	trilinear.cpp
-)
+FILE(GLOB CURVE_EXTRACTION_INTERNAL_SRC *.cpp)
 
 # Also depend on the header files so that they appear in IDEs.
 SET(CURVE_EXTRACTION_LIBRARY_SOURCE
