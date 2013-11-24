@@ -45,14 +45,6 @@ bool Mesh::Point::operator<(const Point& rhs) const
 	return false;
 }
 
-Mesh::Mesh()
-{
-	this->no_more_points = false;
-	this->finished = false;
-	this->fout = 0;
-	this->connectivity = -1;
-}
-
 Mesh::~Mesh()
 {
 	this->end_SVG();
@@ -120,8 +112,7 @@ void Mesh::finalize_points()
 void Mesh::transform_points(float tx, float ty, float tz,
                             float sx, float sy, float sz)
 {
-	for (auto itr = this->points.begin(); itr != this->points.end(); ++itr) {
-		auto& point = *itr;
+	for (auto& point: points) {
 		point.x = tx + sx * point.x;
 		point.y = ty + sy * point.y;
 		point.z = tz + sz * point.z;
@@ -255,8 +246,8 @@ void Mesh::add_edges(float dmax,
 			}
 		}
 
-		for (auto itr = edge_to_add.begin(); itr != edge_to_add.end(); ++itr) {
-			const auto& vec = itr->second;
+		for (const auto& itr: edge_to_add) {
+			const auto& vec = itr.second;
 			this->add_edge(vec[0], vec[1], vec[2],
 			               vec[3], vec[4], vec[5]);
 		}
@@ -319,8 +310,8 @@ void Mesh::finish(bool create_pairs)
 	// Compute the maximum node degree. This is fast compared
 	// to the operations below.
 	this->connectivity = 0;
-	for (auto p = points.begin(); p < points.end(); ++p) {
-		this->connectivity = std::max(this->connectivity, int(p->adjacent_points.size()));
+	for (const auto& p: points) {
+		this->connectivity = std::max(this->connectivity, int(p.adjacent_points.size()));
 	}
 
 	// Sort the array of edges. This defines which index each edge has.
@@ -345,9 +336,9 @@ void Mesh::finish(bool create_pairs)
 			int p2 = edges[e].second;
 
 			this->get_adjacent_edges(e, &adjacency);
-			for (auto itr = adjacency.begin(); itr != adjacency.end(); ++itr) {
-				int p2b = edges[*itr].first;
-				int p3  = edges[*itr].second;
+			for (auto e: adjacency) {
+				int p2b = edges[e].first;
+				int p3  = edges[e].second;
 
 				// Debug check
 				if (p2 != p2b) {
@@ -397,9 +388,9 @@ void Mesh::get_adjacent_pairs(int ep, std::vector<int>* adjacent) const
 	static std::vector<int> adjacent_edges;
 
 	this->get_adjacent_edges(e2, &adjacent_edges);
-	for (auto itr = adjacent_edges.begin(); itr != adjacent_edges.end(); ++itr) {
-		int p3b = edges[*itr].first;
-		int p4  = edges[*itr].second;
+	for (auto e: adjacent_edges) {
+		int p3b = edges[e].first;
+		int p4  = edges[e].second;
 		// Debug check
 		if (p3 != p3b) {
 			throw std::runtime_error("Mesh::get_adjacent_pairs: internal mesh error");
@@ -451,9 +442,9 @@ void Mesh::start_SVG(const std::string& filename,
 	// Compute maximum dimensions.
 	float max_x = 0;
 	float max_y = 0;
-	for (auto itr = points.begin(); itr != points.end(); ++itr) {
-		max_x = std::max(max_x, itr->x);
-		max_y = std::max(max_y, itr->y);
+	for (const auto& point: points) {
+		max_x = std::max(max_x, point.x);
+		max_y = std::max(max_y, point.y);
 	}
 
 	// Output file.
@@ -467,7 +458,7 @@ void Mesh::start_SVG(const std::string& filename,
 	// Draw background mesh.
 	//<line style="stroke-width:0.05;stroke:#4f4f4f;"  x1="0" y1="48.15" x2="12.025" y2="56.175" />
 	for (int e = 0; e < edges.size(); ++e) {
-		const auto& edge = edges[e];
+        const auto& edge = edges[e];
 		// There are zero or two edges for each pair of points.
 		// Only one needs to be drawn.
 		if (edge.first < edge.second) {
@@ -494,8 +485,8 @@ auto Mesh::edgepath_to_points(const std::vector<int>& path) const -> std::vector
 		point_vector.push_back(points[edge.first]);
 	}
 
-	for (auto itr = path.begin(); itr != path.end(); ++itr) {
-		const auto& edge = edges[*itr];
+	for (auto edge_index: path) {
+		const auto& edge = edges[edge_index];
 		point_vector.push_back(points[edge.second]);
 	}
 
@@ -514,9 +505,9 @@ auto Mesh::pairpath_to_points(const std::vector<int>& path) const -> std::vector
 		point_vector.push_back(points[p2]);
 	}
 
-	for (auto itr = path.begin(); itr != path.end(); ++itr) {
+	for (auto pair_index: path) {
 		int p3;
-		tie(ignore, ignore, p3) = this->edge_pairs.at(*itr);
+		tie(ignore, ignore, p3) = this->edge_pairs.at(pair_index);
 		point_vector.push_back(points[p3]);
 	}
 
@@ -530,8 +521,8 @@ void Mesh::draw_path(const std::vector<int>& path, const std::string& color)
 	}
 
 	*fout << "<g>\n";
-	for (auto itr = path.begin(); itr != path.end(); ++itr) {
-		const auto& edge = edges[*itr];
+	for (auto e: path) {
+		const auto& edge = edges.at(e);
 		*fout << "<line style=\"stroke-width:0.2;stroke:#" << color << ";\" ";
 		*fout << "x1=\"" << points[edge.first].x << "\" ";
 		*fout << "y1=\"" << points[edge.first].y << "\" ";
