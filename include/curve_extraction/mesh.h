@@ -30,8 +30,11 @@ public:
 	typedef std::pair<int, int> Edge;
 	typedef std::tuple<int, int, int> EdgePair;
 
-	Mesh();
+	Mesh() { }
 	~Mesh();
+
+	Mesh(const Mesh&)            = delete;
+	Mesh& operator=(const Mesh&) = delete;
 
 	// Adds a point to the mesh. If the same point is
 	// added twice, only one point will be stored.
@@ -138,15 +141,15 @@ private:
 
 	void finalize_points();
 
-	bool finished;
-	bool no_more_points;
+	bool finished = false;
+	bool no_more_points = false;
 	std::vector<Point> points;
 	std::vector<Edge> edges;
 	std::vector<EdgePair> edge_pairs;
 
-	int connectivity;
+	int connectivity = -1;
 
-	std::ofstream* fout;
+	std::ofstream* fout = nullptr;
 };
 
 
