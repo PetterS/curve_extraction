@@ -19,6 +19,10 @@ Earlier compilers might not work.
 
 You can check travis.yml for the commands used to build the library and run all tests on Ubuntu.
 
+Video
+-----
+ * http://www.youtube.com/watch?v=9qjQj3I5pBc
+
 References
 ----------
 1. Petter Strandmark, Johannes Ulén, Fredrik Kahl, Leo Grady. [Shortest Paths with Curvature and Torsion](http://www2.maths.lth.se/vision/publications/publications/view_paper.php?paper_id=582). International Conference on Computer Vision. 2013.
