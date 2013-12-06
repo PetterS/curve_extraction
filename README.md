@@ -23,10 +23,6 @@ Video
 -----
  * http://www.youtube.com/watch?v=9qjQj3I5pBc
 
-MatLab
------
-A MatLab script reproducing results in the paper will be made available soon.
-
 References
 ----------
 1. Petter Strandmark, Johannes Ulén, Fredrik Kahl, Leo Grady. [Shortest Paths with Curvature and Torsion](http://www2.maths.lth.se/vision/publications/publications/view_paper.php?paper_id=582). International Conference on Computer Vision. 2013.
