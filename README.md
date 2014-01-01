@@ -22,6 +22,7 @@ Linux
 ---
 
 * Spii
+```
 git clone https://github.com/PetterS/spii
 cd spii
 mkdir build
@@ -29,8 +30,10 @@ cd build
 cmake ..
 make && make test
 sudo make install
+```
 
 * Curve_extraction
+```
 git clone https://github.com/PetterS/curve_extraction
 cd curve_extraction
 mkdir build
@@ -38,7 +41,7 @@ cd build
 cmake ..
 make && make test
 sudo make install
-
+```
 
 Matlab
 ------
