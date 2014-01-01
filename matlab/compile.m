@@ -31,8 +31,8 @@ if ~ispc
     CXXFLAGS = '-std=c++0x';
     
     if (use_openmp)
-        extra_args{end+1} = '-lgomp';
-        CXXFLAGS = [CXXFLAGS '-fopenmp'];
+        extra_args{end+1} = ' -lgomp';
+        CXXFLAGS = [CXXFLAGS ' -fopenmp'];
     end
 
     extra_args{end+1} = ['CXXFLAGS="\$CXXFLAGS ' CXXFLAGS '"'];

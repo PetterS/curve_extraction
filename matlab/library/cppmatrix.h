@@ -153,7 +153,7 @@ public:
 		shouldDestroy = false;
 	}
 
-	matrix(int M, int N=1, int O=1, int P=1)
+	matrix(mwSize M, mwSize N=1, mwSize O=1, mwSize P=1)
 	{
 		this->M = M;
 		this->N = N;
