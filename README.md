@@ -3,7 +3,7 @@ This is a C++ library for computing shortest paths with higher-order properties 
 [![Build Status](https://travis-ci.org/PetterS/curve_extraction.png)](https://travis-ci.org/PetterS/curve_extraction)
 
 Compilation
------------
+====
 The following is required to compile the library:
 * C++ compiler.
 * CMake
@@ -18,10 +18,39 @@ Earlier compilers might not work.
 
 You can check .travis.yml for the commands used to build the library and run all tests on Ubuntu.
 
+Linux
+---
+
+* Spii
+```
+git clone https://github.com/PetterS/spii
+cd spii
+mkdir build
+cd build
+cmake ..
+make && make test
+sudo make install
+```
+
+* Curve_extraction
+```
+git clone https://github.com/PetterS/curve_extraction
+cd curve_extraction
+mkdir build
+cd build
+cmake ..
+make && make test
+sudo make install
+```
+
+Matlab
+------
+Compile the curve_extraction libary using cmake before compiling with MATLAB.
+
 Video
------
+====
  * http://www.youtube.com/watch?v=9qjQj3I5pBc
 
 References
-----------
+====
 1. Petter Strandmark, Johannes Ulén, Fredrik Kahl, Leo Grady. [Shortest Paths with Curvature and Torsion](http://www2.maths.lth.se/vision/publications/publications/view_paper.php?paper_id=582). International Conference on Computer Vision. 2013.
