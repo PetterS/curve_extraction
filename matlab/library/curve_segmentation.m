@@ -1,10 +1,10 @@
 % Wrapper for mex function.
-function result = curve_segmentation(mesh_map, unary, settings, dirs)
+function [curve, time, evaluations, cost, connectivity, visit_map ] ...
+ = curve_segmentation(mesh_map, unary, settings, dirs)
 
-
+% Parse option struct
 if nargin >= 3
-    % Parse option struct
-    
+   
     % Only support struct input for simplicity
     assert(isa(settings,'struct'))
 
@@ -72,16 +72,17 @@ if nargin < 4
 	
 	if size(dirs,2) == 2
 		dirs = [dirs zeros(size(dirs,1),1)];
-	end
-	
+	end	
 end
 
-result = curve_segmentation_mex(mesh_map, unary, dirs, settings);
+[curve, time, evaluations, cost, connectivity, visit_map ] ...
+ = curve_segmentation_mex(mesh_map, unary, dirs, settings);
 
 %% Post process
 % Remove third dim for 2 images
 if (ndims(unary) == 2)
-    result.path = result.path(:,1:2);
+    curve = curve(:,1:2);
 end
+
 %return to coordinate system starting with 1.
-result.path = result.path + 1;
+curve = curve + 1;

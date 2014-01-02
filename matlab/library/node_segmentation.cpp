@@ -12,7 +12,8 @@ void node_segmentation(std::vector<Mesh::Point>& points,
                       const PointSets& start_sets,
                       const PointSets& end_sets,
                       const std::vector<double>& voxeldimensions,
-                      const ShortestPathOptions& options)
+                      const ShortestPathOptions& options,
+                      matrix<double>& visit_time)
 {
   // Create functor handling regularization costs
   length_cost_functor length_cost(voxeldimensions, settings.length_penalty);
@@ -142,4 +143,12 @@ void node_segmentation(std::vector<Mesh::Point>& points,
     mexPrintf("Path length: %d, ", path_nodes.size() );
     mexPrintf("Cost:    %g. \n", cost);
   }
+
+  if (options.store_visited) 
+  {
+    ASSERT(visit_time.numel() == options.visit_time.size());
+    
+    for (int i = 0; i < visit_time.numel(); i++)
+      visit_time(i) = options.visit_time[i];
+  } 
 }

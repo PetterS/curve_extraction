@@ -71,7 +71,8 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
                         const PointSets& start_sets,
                         const PointSets& end_sets,
                         const std::vector<double>& voxeldimensions,
-                        const ShortestPathOptions& options)
+                        const ShortestPathOptions& options,
+                        matrix<double>& visit_time)
 {
   // Create functor handling regularization costs
   length_cost_functor length_cost(voxeldimensions, settings.length_penalty);
@@ -343,7 +344,8 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
                       start_sets,
                       end_sets,
                       voxeldimensions,
-                      heuristic_options);
+                      heuristic_options,
+                      visit_time);
 
     lower_bound_pointer = &lower_bound;
   }
@@ -367,7 +369,6 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
   double end_time = ::get_wtime();
   run_time = end_time - start_time;
 
-
   path_edges.erase(path_edges.begin());  // Remove super edge
   points = edgepath_to_points(path_edges, connectivity);
 
@@ -378,5 +379,39 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
     mexPrintf("Evaluations: %d, ", evaluations);
     mexPrintf("Path length: %d, ", path_edges.size() );
     mexPrintf("Cost:    %g. \n", cost);
+  }
+
+  // Store visit time
+  if (options.store_visited) 
+  {
+    // Initialize.
+    for (int i = 0; i < visit_time.numel(); ++i) 
+        visit_time(i) = -1; 
+ 
+    // Go through each each edge stored in visit time
+    // if it has been visited then it's != -1
+    std::vector<Mesh::Point> point_vector(2, make_point(0));
+    for (int i = 0; i < options.visit_time.size(); i++)
+    {
+      if (options.visit_time[i] == -1)
+        continue;
+
+      point_vector[0] = tail_of_edge(i, connectivity);
+      point_vector[1] = head_of_edge(i, connectivity);
+
+      for (Mesh::Point p : point_vector)
+      {
+        if (!validind(p))
+          continue;
+
+        double visit_value = visit_time(p.x, p.y, p.z);
+
+        if ( (visit_value == -1) || 
+            ( (visit_value >= 0) && (visit_value > options.visit_time[i]) ) )
+        {
+          visit_time(p.x, p.y, p.z) = options.visit_time[i];
+        }
+      }
+    }
   }
  }
