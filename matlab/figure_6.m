@@ -30,7 +30,7 @@ I = imresize(I,0.25);
 % 2: Start set
 % 3: End set.
 [w,h,c] = size(I);
-mesh_map = int32(ones(size(I,1), size(I,2)));
+mesh_map = ones([size(I,1) size(I,2)], 'int32');
 
 % Start set
 mesh_map(1:3, 1:round(end/2)) = 2;
@@ -90,12 +90,13 @@ m = [0.0384 0.1112 0.2790;
     0.6650 0.1675 0.1675;
     0.3726 0.9210 0.1350];
 
-% Trying different lengths
+% % Trying different lengths
 assert(length(curvature_regs) == 3);
 
 C.length_penalty = 0;
 C.curvature_penalty = curvature_regs(1);
 curvature_1 = C.solve();
+
 
 C.curvature_penalty = curvature_regs(2);
 curvature_2 = C.solve();
@@ -110,9 +111,9 @@ imagesc(rgb2gray(I))
 colormap gray(256); hold on; axis equal;
 hold on;
 
-plot(curvature_1.path(:,2),curvature_1.path(:,1),'color', m(1,:) , 'linewidth',5)
-plot(curvature_2.path(:,2),curvature_2.path(:,1),'color', m(2,:) , 'linewidth',5)
-plot(curvature_3.path(:,2),curvature_3.path(:,1),'color', m(3,:) , 'linewidth',5)
+plot(curvature_1(:,2),curvature_1(:,1),'color', m(1,:) , 'linewidth',5)
+plot(curvature_2(:,2),curvature_2(:,1),'color', m(2,:) , 'linewidth',5)
+plot(curvature_3(:,2),curvature_3(:,1),'color', m(3,:) , 'linewidth',5)
 title('Curvature regularization');
 
 %%
@@ -133,7 +134,7 @@ figure(2);
 clf;
 imagesc(rgb2gray(I))
 colormap gray(256); hold on; axis equal; hold on;
-plot(length_1.path(:,2), length_1.path(:,1),'color', m(1,:) , 'linewidth',5)
-plot(length_2.path(:,2), length_2.path(:,1),'color', m(2,:) , 'linewidth',5)
-plot(length_3.path(:,2), length_3.path(:,1),'color', m(3,:) , 'linewidth',5)
+plot(length_1(:,2), length_1(:,1),'color', m(1,:) , 'linewidth',5)
+plot(length_2(:,2), length_2(:,1),'color', m(2,:) , 'linewidth',5)
+plot(length_3(:,2), length_3(:,1),'color', m(3,:) , 'linewidth',5)
 title('Length regularization');

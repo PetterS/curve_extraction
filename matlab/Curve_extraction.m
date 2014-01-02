@@ -1,10 +1,9 @@
 % Class handling curve extraction
 % Johannes
 classdef Curve_extraction < handle
+	
+	% Settings
 	properties
-		info = [];
-		curve = [];
-		cost = 0;
 		length_penalty = 0;
 		curvature_penalty = 0,
 		torsion_penalty = 0,
@@ -20,6 +19,19 @@ classdef Curve_extraction < handle
 		mesh_map = [];
 	end
 	
+	% Stored by the solver
+	properties (SetAccess = protected)
+		curve = [];
+		time = nan;
+		cost = nan;
+		evaluations = nan,
+		connectivity = nan;
+
+		% Note: For length regularization the visit map runs from end set to start set
+		% this is because the same code get lower bound for A*.
+		visit_map = [];
+	end
+
 	methods (Access = protected)
 		% Convert settings to format supported by the mex file.
 		function settings = gather_settings(self)
@@ -36,7 +48,7 @@ classdef Curve_extraction < handle
 		end
 	end
 	methods
-		% Find global solution in the mesh impicitly defined by the connectivity.
+		% Find global solution in the mesh implicitly defined by the connectivity.
 		function self = Curve_extraction(mesh_map, unary)
 			addpath([fileparts(mfilename('fullpath')) filesep 'library']);
             
@@ -44,21 +56,26 @@ classdef Curve_extraction < handle
 			self.unary = unary;
 		end
 		
-		% Solution cost decomposed in the diffrent terms.
+		% Solution cost decomposed in the different terms.
 		function cost = curve_info(self)
 			settings = gather_settings(self);
 			cost = curve_info(self.unary, self.curve, settings);
 		end
 		
-		function solution = solve(self)
+		function [curve, time, evaluations, cost, connectivity, visit_map] = solve(self)
+
 			settings = gather_settings(self);
 
-			solution = curve_segmentation(self.mesh_map, self.unary, settings);
+			[curve, time, evaluations, cost, connectivity, visit_map] = ...
+			 		 curve_segmentation(self.mesh_map, self.unary, settings);
 			
 			% Saving solution
-			self.curve = solution.path;
-			self.info = rmfield(solution,'path');
-			self.cost = self.info.cost;
+			self.curve = curve;
+			self.time = time;
+			self.cost =  cost;
+			self.evaluations = evaluations;
+			self.connectivity = connectivity;
+			self.visit_map = visit_map;
 		end
 		
 		% Move away from discretized solution and find a local optimum.
@@ -79,8 +96,14 @@ classdef Curve_extraction < handle
 		
 		% Draw current solution (only supports 2D curves)
 		function display(self)
+			details(self);
+
 			if (~ismatrix(self.unary))
-				fprintf('This function can only draw solution to 2D problems');
+				if (~isempty(self.curve))
+					plot3(self.curve(:,1), self.curve(:,2), self.curve(:,3),'-r');
+					title(sprintf('Solution cost: %g \n', self.cost));
+					fprintf('Solution cost: %g \n', self.cost);
+				end
 			else
 				
 				figure();
@@ -92,9 +115,10 @@ classdef Curve_extraction < handle
 				if (~isempty(self.curve))
 					plot(self.curve(:,2),self.curve(:,1),'-r' , 'linewidth',5)
 					title(sprintf('Solution cost: %g \n', self.cost));
+					fprintf('Solution cost: %g \n', self.cost);
 				else
 					fprintf('No solution stored, please run obj.solve() \n');
-				end
+				end								
 			end
 		end
 		
@@ -111,7 +135,7 @@ classdef Curve_extraction < handle
 		
 		function set.length_penalty(self, length_penalty)
 			if (length_penalty < 0)
-				error('Regularization coefficents must non-negative');
+				error('Regularization coefficients must non-negative');
 			end
 			
 			self.length_penalty = length_penalty;
@@ -128,7 +152,7 @@ classdef Curve_extraction < handle
 		
 		function set.curvature_penalty(self, curvature_penalty)
 			if (curvature_penalty < 0)
-				error('Regularization coefficents must non-negative');
+				error('Regularization coefficients must non-negative');
 			end
 			
 			self.curvature_penalty = curvature_penalty;
@@ -153,11 +177,13 @@ classdef Curve_extraction < handle
 			if ~isa(use_a_star,'logical')
 				error('use_a_star must either be true or false');
 			end
+			
+			self.use_a_star = use_a_star;
 		end
 		
 		function set.torsion_penalty(self, torsion_penalty)
 			if (torsion_penalty < 0)
-				error('Regularization coefficents must non-negative');
+				error('Regularization coefficients must non-negative');
 			end
 			
 			self.torsion_penalty = torsion_penalty;
@@ -165,13 +191,12 @@ classdef Curve_extraction < handle
 		end
 		
 		function erase_solution(self)
-			self.info = [];
 			self.curve = [];
 		end
 		
 		function set.unary_type(self, unary_type)
 			if ~strcmp(unary_type,'linear')
-				error('Currently only linear dataterm supported.');
+				error('Currently only linear data term supported.');
 			end
 			
 			self.unary_type = unary_type;
