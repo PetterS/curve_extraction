@@ -97,7 +97,6 @@ C.length_penalty = 0;
 C.curvature_penalty = curvature_regs(1);
 curvature_1 = C.solve();
 
-
 C.curvature_penalty = curvature_regs(2);
 curvature_2 = C.solve();
 
@@ -105,16 +104,7 @@ C.curvature_penalty = curvature_regs(3);
 curvature_3 = C.solve();
 
 % Display
-figure(1);
-clf;
-imagesc(rgb2gray(I))
-colormap gray(256); hold on; axis equal;
-hold on;
 
-plot(curvature_1(:,2),curvature_1(:,1),'color', m(1,:) , 'linewidth',5)
-plot(curvature_2(:,2),curvature_2(:,1),'color', m(2,:) , 'linewidth',5)
-plot(curvature_3(:,2),curvature_3(:,1),'color', m(3,:) , 'linewidth',5)
-title('Curvature regularization');
 
 %%
 assert(length(length_regs) == 3);
@@ -129,12 +119,63 @@ length_2 = C.solve();
 C.length_penalty = length_regs(3);
 length_3 = C.solve();
 
+%% Generate Figure 6 (c) and (d) visit order of the algorithm
+% with and without A*.
+C.curvature_penalty = curvature_regs(2);
+C.length_penalty = 0;
+C.store_visit_time = true;
+
+C.use_a_star = false;
+C.solve();
+without_astar = C.visit_map;
+
+C.use_a_star = true;
+C.solve();
+with_astar = C.visit_map;
+
 %% Display
-figure(2);
-clf;
-imagesc(rgb2gray(I))
-colormap gray(256); hold on; axis equal; hold on;
+figure(1);
+clf;imagesc(rgb2gray(I)); 
+colormap gray(256); hold on; axis equal; hold on; axis off;
 plot(length_1(:,2), length_1(:,1),'color', m(1,:) , 'linewidth',5)
 plot(length_2(:,2), length_2(:,1),'color', m(2,:) , 'linewidth',5)
 plot(length_3(:,2), length_3(:,1),'color', m(3,:) , 'linewidth',5)
-title('Length regularization');
+title('Figure 6 (a): Length regularization.');
+
+%%
+figure(2);
+clf;
+imagesc(rgb2gray(I))
+colormap gray(256); hold on; axis equal; axis off;
+plot(curvature_1(:,2),curvature_1(:,1),'color', m(1,:) , 'linewidth',5)
+plot(curvature_2(:,2),curvature_2(:,1),'color', m(2,:) , 'linewidth',5)
+plot(curvature_3(:,2),curvature_3(:,1),'color', m(3,:) , 'linewidth',5)
+title('Figure 6 (b): Curvature regularization.');
+
+%%
+figure(3); clf; 
+Ibw = double(rgb2gray(I));
+
+unvisited = (without_astar == -1);
+
+without_astar = without_astar+max(Ibw(:));
+without_astar(unvisited) = Ibw(unvisited);
+imagesc(without_astar);
+colormap([gray(max(Ibw(:))); jet(max(without_astar(:)))]);
+title('Figure 6 (c): Visit order for medium curvature regularization \bf{without A*}. ')
+colorbar;
+axis equal; axis off;
+
+%%
+figure(4); clf;
+unvisited = (with_astar == -1);
+
+with_astar = with_astar+max(Ibw(:));
+with_astar(unvisited) = Ibw(unvisited);
+imagesc(with_astar);
+colormap([gray(max(Ibw(:))); jet(max(with_astar(:)))]);
+title('Figure 6 (d):  Visit order for medium curvature regularization \bf{with A*}.')
+colorbar
+axis equal; axis off;
+
+
