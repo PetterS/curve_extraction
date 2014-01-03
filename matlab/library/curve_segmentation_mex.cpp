@@ -92,7 +92,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   startTime();
 
   // Check input and outputs
-  ASSERT(nlhs == 1);
+  ASSERT(nlhs == 6);
   ASSERT(nrhs >= 3); // optional arguments exist
 
   // Mesh defining allowed pixels
@@ -116,9 +116,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // Only 2 or 3d grid
   if ((mesh_map.ndim() != 2) && (mesh_map.ndim() != 3))
-  {
-      mexErrMsgTxt("only 2d and 3d grid supported \n");
-  }
+      mexErrMsgTxt("Only 2d and 3d grid supported. \n");
 
   // Optional options
   MexParams params(nrhs-curarg, prhs+curarg); //Structure to hold and parse additional parameters
@@ -257,7 +255,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   options.print_progress = false;
   options.maximum_queue_size = 1000 * 1000 * 1000;
 
-  matrix<double>  o_visit_map(unary.M, unary.N, unary.O);
+
+  matrix<double>  o_visit_map( unary.M, 
+                               unary.N, 
+                               unary.O);
+
 
   PieceWiseConstant data_term(unary.data,
                               unary.M,
@@ -265,11 +267,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                               unary.O,
                               voxeldimensions);
 
-  if (settings.store_visit_time) {
-  	// TODO(Johannes): Fixit.
-  	mexErrMsgTxt("store_visit_time is not supported yet.");
-    options.store_visited = true;
-  }
+  options.store_visited = settings.store_visit_time;
 
   double run_time;
   double cost;
@@ -295,20 +293,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   {
     edgepair_segmentation(points, run_time, evaluations, cost,
                           mesh_map, data_term, connectivity, settings,
-                          voxeldimensions, options);
+                          voxeldimensions, options, o_visit_map);
   }
   else if (use_edges)
   {
     edge_segmentation(  points, run_time, evaluations, cost,
                         mesh_map, data_term, connectivity,
                         settings,
-                        start_sets, end_sets, voxeldimensions, options);
+                        start_sets, end_sets, 
+                        voxeldimensions, options, o_visit_map);
   } else 
   {
     node_segmentation( points, run_time, evaluations, cost,
                        mesh_map, data_term,  connectivity,
                        settings, start_sets, end_sets,
-                       voxeldimensions, options);
+                       voxeldimensions, options, o_visit_map);
   } 
 
   matrix<double>  o_path(points.size(),3);
@@ -332,14 +331,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   o_connectivity(0) = connectivity.M;
 
   // Write to MatLab
-  const int num_fields = 6;
-  const char *fieldnames[num_fields] = {"path", "time" , "evaluations", "cost",
-                                        "connectivity", "visit_map"};
-  plhs[0]  =  mxCreateStructMatrix(1 , 1 , num_fields , fieldnames);
-  mxSetFieldByNumber(plhs[0] , 0 , 0 , o_path);
-  mxSetFieldByNumber(plhs[0] , 0 , 1 , o_time);
-  mxSetFieldByNumber(plhs[0] , 0 , 2 , o_eval);
-  mxSetFieldByNumber(plhs[0] , 0 , 3 , o_cost);
-  mxSetFieldByNumber(plhs[0] , 0 , 4 , o_connectivity);
-  mxSetFieldByNumber(plhs[0] , 0 , 5 , o_visit_map);
+  plhs[0] = o_path;
+  plhs[1] = o_time;
+  plhs[2] = o_eval;
+  plhs[3] = o_cost;
+  plhs[4] = o_connectivity;
+  plhs[5] = o_visit_map;
 }

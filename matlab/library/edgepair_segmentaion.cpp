@@ -87,9 +87,10 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
                               const matrix<int>& connectivity,
                               InstanceSettings& settings,
                               const std::vector<double>& voxeldimensions,
-                              const ShortestPathOptions& options
+                              const ShortestPathOptions& options,
+                              matrix<double>& visit_time
                              )
-{
+{  
    // Create functor handling regularization costs
   length_cost_functor length_cost(voxeldimensions, settings.length_penalty);
   curvature_cost_functor curvature_cost(voxeldimensions, settings.curvature_penalty, settings.curvature_power);
@@ -274,9 +275,6 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
                         0,
                         options);
 
-  if (path_pairs.size() == 0)
-      mexErrMsgTxt("No solution! (Remove this warning)");
-
   double end_time = ::get_wtime();
   run_time = end_time - start_time;
   path_pairs.erase(path_pairs.begin()); // Remove super edge
@@ -290,4 +288,45 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
     mexPrintf("Path length: %d,", path_pairs.size() );
     mexPrintf("Cost:    %g. \n", cost);
   }
+
+  // Store visit time
+  if (options.store_visited) 
+  {
+    // Initialize.
+    for (int i = 0; i < visit_time.numel(); ++i) 
+        visit_time(i) = -1; 
+ 
+    // Go through each each edge stored in visit time
+    // if it has been visited then it's != -1
+    int p0,p1,p2;
+
+    // No empty constructor.
+    std::vector<Mesh::Point> point_vector(3, make_point(0));
+
+    for (int i = 0; i < options.visit_time.size(); i++)
+    {
+      if (options.visit_time[i] == -1)
+        continue;
+
+      tie(p0,p1,p2) = points_in_a_edgepair(i, connectivity);
+      
+      point_vector[0] = make_point(p0);
+      point_vector[1] = make_point(p1);
+      point_vector[2] = make_point(p2);
+
+      for (Mesh::Point p : point_vector)
+      {
+        if (!validind(p))
+          continue;
+
+        double visit_value = visit_time(p.x, p.y, p.z);
+
+        if ( (visit_value == -1) || 
+            ( (visit_value >= 0) && (visit_value > options.visit_time[i]) ) )
+        {
+          visit_time(p.x, p.y, p.z) = options.visit_time[i];
+        }
+      }
+    }
+  }  
 }

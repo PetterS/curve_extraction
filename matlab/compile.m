@@ -54,7 +54,7 @@ if ispc
     %%%%%%%%%
     % ACTION REQUIRED:
     % Point this to your Eigen include directory.
-    extra_args{end+1} = ['-I' cd '/../../../../../Programming/spii/thirdparty/Eigen/'];
+    extra_args{end+1} = '-I"C:\Program Files\Eigen"';
     %%%%%%%%
 
     % Default installation directories for Spii and curve_extraction libraries.
