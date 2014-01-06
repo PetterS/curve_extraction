@@ -158,24 +158,34 @@ Ibw = double(rgb2gray(I));
 
 unvisited = (without_astar == -1);
 
-without_astar = without_astar+max(Ibw(:));
-without_astar(unvisited) = Ibw(unvisited);
-imagesc(without_astar);
-colormap([gray(max(Ibw(:))); jet(max(without_astar(:)))]);
+without_astar_m = without_astar+max(Ibw(:));
+without_astar_m(unvisited) = Ibw(unvisited);
+imagesc(without_astar_m);
+
+colormap([gray(max(Ibw(:))); jet(max(without_astar_m(:)))]);
+
+% Windows cannot render colormaps with more than 256 colors without OpenGL.
+if (ispc)
+	set(gcf,'renderer','OpenGL')
+end
+
 title('Figure 6 (c): Visit order for medium curvature regularization \bf{without A*}. ')
-colorbar;
 axis equal; axis off;
 
 %%
 figure(4); clf;
 unvisited = (with_astar == -1);
 
-with_astar = with_astar+max(Ibw(:));
-with_astar(unvisited) = Ibw(unvisited);
-imagesc(with_astar);
-colormap([gray(max(Ibw(:))); jet(max(with_astar(:)))]);
+with_astar_m = with_astar+max(Ibw(:));
+with_astar_m(unvisited) = Ibw(unvisited);
+imagesc(with_astar_m);
+
+colormap([gray(max(Ibw(:))); jet(max(with_astar_m(:)))]);
+if (ispc)
+	set(gcf,'renderer','OpenGL')
+end
+
 title('Figure 6 (d):  Visit order for medium curvature regularization \bf{with A*}.')
-colorbar
 axis equal; axis off;
 
 
