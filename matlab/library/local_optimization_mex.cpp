@@ -180,30 +180,16 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 	else
 		throw runtime_error("Unknown unary type");
 
-	string str_solver_method = params.get<string>("local_solver","lbfgs");
-	enum Solver_method {newton, lbfgs, nelder_mead};
-	Solver_method solver_method;
+	string str_descent_method = params.get<string>("descent_method","lbfgs");
+	enum Descent_method {lbfgs, nelder_mead};
+	Descent_method descent_method;
 
-	if (str_solver_method == "newton")
-		solver_method = newton;
-	else if (str_solver_method == "lbfgs")
-		solver_method = lbfgs;
-	else if (str_solver_method == "nelder_mead")
-		solver_method = nelder_mead;
+	if (str_descent_method == "lbfgs")
+		descent_method = lbfgs;
+	else if (str_descent_method == "nelder-mead")
+		descent_method = nelder_mead;
 	else
 		throw runtime_error("Unknown Solver");
-
-
-	string str_factorization_method = params.get<string>("factorization_method", "iterative");
-	enum Factorization_method {bkp, iterative};
-	Factorization_method factorization_method;
-
-	if (str_factorization_method == "iterative")
-		factorization_method = iterative;
-	else if (str_factorization_method == "bkp")
-		factorization_method = bkp;
-	else
-		throw runtime_error("Unknown factorization method");
 
 
 	const int n = path.M;
@@ -213,11 +199,10 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 
 	if (settings.VERBOSE)
 	{
-		mexPrintf("Solving using : %s \n", str_solver_method.c_str());
+		mexPrintf("Solving using : %s \n", str_descent_method.c_str());
 		mexPrintf("Maximum iterations: %d \n", maxiter);
 		mexPrintf("function_improvement_tolerance: %g \n", function_improvement_tolerance);
 		mexPrintf("argument_improvement_tolerance: %g \n", argument_improvement_tolerance);
-		mexPrintf("Factorization_method : %s \n", str_factorization_method.c_str());
 	}
 
 	// Function to be optimized
@@ -330,31 +315,20 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 
 	std::unique_ptr<Solver> solver;
 
-	if (solver_method == newton) {
-		solver.reset(new NewtonSolver);
-		NewtonSolver* newton_solver = dynamic_cast<NewtonSolver*>(solver.get());
-
-		if (factorization_method == iterative)
-			newton_solver->factorization_method = NewtonSolver::ITERATIVE;
-		else if (factorization_method == bkp)
-			newton_solver->factorization_method = NewtonSolver::BKP;
-		else
-			mexErrMsgTxt("Unknown factorization method.");
-	}
-	else if (solver_method == lbfgs) {
+  if (descent_method == lbfgs) 
 		solver.reset(new LBFGSSolver);
-	}
-	else if (solver_method == nelder_mead){
-		//solver.solve_nelder_mead(f, &results);
-		mexErrMsgTxt("NM not upported.");
-	}
-	else {
+	else if (descent_method == nelder_mead)
+		solver.reset(new NelderMeadSolver);
+	else 
 		mexErrMsgTxt("Unknown method.");
-	}
 
 	SolverResults results;
 
-	solver->log_function = mex_log_function;
+	if (settings.VERBOSE)
+		solver->log_function = mex_log_function;
+	else
+		solver->log_function = false;
+	
 
 	solver->maximum_iterations = maxiter;
 	solver->function_improvement_tolerance = function_improvement_tolerance;
@@ -393,11 +367,8 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 	o_time(0) = end_time - start_time;
 
 	// Solution info
-	const int num_fields = 2;
-	const char *fieldnames[num_fields] = {"cost", "time"};
-	plhs[1]  =  mxCreateStructMatrix(1 , 1 , num_fields , fieldnames);
-	mxSetFieldByNumber(plhs[1] , 0 , 0 , o_cost);
-	mxSetFieldByNumber(plhs[1] , 0 , 1 , o_time);
+	plhs[1] = o_cost;
+	plhs[2] = o_time;
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])

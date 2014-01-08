@@ -14,9 +14,13 @@ classdef Curve_extraction < handle
 		VERBOSE = false;
 		store_visit_time = false;
 		unary_type = 'linear';
+
 		unary =  [];
-		maxiter = 100;
 		mesh_map = [];
+		
+		% Local optimization
+		maxiter = 1000;
+		descent_method = 'lbfgs';
 	end
 	
 	% Stored by the solver
@@ -45,6 +49,7 @@ classdef Curve_extraction < handle
 			settings.unary_type = self.unary_type;
 			settings.maxiter = self.maxiter;
 			settings.store_visit_time =  self.store_visit_time;
+			settings.descent_method = self.descent_method;	
 		end
 	end
 	methods
@@ -62,7 +67,7 @@ classdef Curve_extraction < handle
 			cost = curve_info(self.unary, self.curve, settings);
 		end
 		
-		function [curve, time, evaluations, cost, connectivity, visit_map] = solve(self)
+		function [curve, cost, time,  evaluations, connectivity, visit_map] = solve(self)
 
 			settings = gather_settings(self);
 
@@ -79,7 +84,7 @@ classdef Curve_extraction < handle
 		end
 		
 		% Move away from discretized solution and find a local optimum.
-		function curve = local_optimization(self)
+		function [curve,cost,time] = local_optimization(self)
 			
 			if isempty(self.curve)
 				fprintf('No curve stored, running the solver \n');
@@ -87,11 +92,11 @@ classdef Curve_extraction < handle
 			end
 			
 			settings = gather_settings(self);
-			[curve, info] = local_optimization(self.mesh_map, self.unary, self.curve, settings);
-
+			[curve, cost, time] = local_optimization(self.mesh_map, self.unary, self.curve, settings);
+				
 			% Saving solution
 			self.curve = curve;
-			self.cost = info.cost;
+			self.cost = cost;
 		end
 		
 		% Draw current solution (only supports 2D curves)
@@ -123,6 +128,19 @@ classdef Curve_extraction < handle
 		end
 		
 		%% Set functions
+		function set.descent_method(self, method)
+				switch method
+					case 'lbfgs'
+						%ok
+					case 'nelder-mead'
+						%ok
+					otherwise
+						error(sprintf('Possible descent methods = {lbfgs, nelder-mead}'));
+				end
+				
+				self.descent_method = method;
+		end
+
 		function set.mesh_map(self, mesh_map)
 			self.mesh_map = int32(mesh_map);
 			self.erase_solution();
@@ -163,6 +181,8 @@ classdef Curve_extraction < handle
 			if ~isa(VERBOSE,'logical')
 				error('VERBOSE must either be true or false');
 			end
+			
+			self.VERBOSE = VERBOSE;
 		end
 		
 		function set.store_visit_time(self, store_visit_time)
