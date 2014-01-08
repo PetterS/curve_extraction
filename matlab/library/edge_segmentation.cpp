@@ -112,7 +112,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
   }
   }
 
-  if (VERBOSE)
+  if (verbose)
     mexPrintf("Creating start/end sets...");
 
   // start and end set
@@ -218,7 +218,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
   std::set<int> super_edge;
   super_edge.insert(e_super);
 
-  if (VERBOSE)
+  if (verbose)
     mexPrintf("done.\n");
 
   auto get_neighbors =
@@ -350,7 +350,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
     lower_bound_pointer = &lower_bound;
   }
 
-  if (VERBOSE)
+  if (verbose)
     mexPrintf("Computing shortest curvature ...");
 
   std::vector<int> path_edges;
@@ -372,7 +372,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
   path_edges.erase(path_edges.begin());  // Remove super edge
   points = edgepath_to_points(path_edges, connectivity);
 
-  if (VERBOSE)
+  if (verbose)
   {
     mexPrintf("done.\n");
     mexPrintf("Running time:  %g (s), ", run_time);

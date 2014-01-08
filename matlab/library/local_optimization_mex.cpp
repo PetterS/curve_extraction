@@ -197,7 +197,7 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 
 	ASSERT( (dim == 2) || (dim == 3) );
 
-	if (settings.VERBOSE)
+	if (settings.verbose)
 	{
 		mexPrintf("Solving using : %s \n", str_descent_method.c_str());
 		mexPrintf("Maximum iterations: %d \n", maxiter);
@@ -309,7 +309,7 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 			f.add_term(torsion, args);
 		}
 	}
-	if (settings.VERBOSE)
+	if (settings.verbose)
 		mexPrintf("Initial function value: %.3e\n", f.evaluate());
 
 
@@ -324,7 +324,7 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 
 	SolverResults results;
 
-	if (settings.VERBOSE)
+	if (settings.verbose)
 		solver->log_function = mex_log_function;
 	else
 		solver->log_function = false;
@@ -338,7 +338,7 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 
 	solver->solve(f, &results);
 
-	if (settings.VERBOSE)
+	if (settings.verbose)
 	{
 		std::stringstream sout;
 		sout << results << endl;

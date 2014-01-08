@@ -1,6 +1,6 @@
 // Johannes Ulén and Petter Strandmark 2013
 #include "curve_segmentation.h"
-bool VERBOSE;
+bool verbose;
 double timer;
 
 #ifdef USE_OPENMP
@@ -162,7 +162,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     use_edges = true;
   }
 
-  if (VERBOSE)
+  if (verbose)
     mexPrintf("Connectivity size is %d. \n", connectivity.M);
 
   // Extra start and end sets. Cell arrays of points.
@@ -230,7 +230,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
   }
 
-  if (VERBOSE)
+  if (verbose)
     endTime("Reading data");
 
   #ifdef USE_OPENMP
@@ -240,7 +240,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
     omp_set_num_threads(max_threads);
     int current_num_threads = -1;
-    if (VERBOSE) {
+    if (verbose) {
       #pragma omp parallel for
       for (int i = 0; i < 1000; ++i)
       {
@@ -274,7 +274,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int evaluations;
   std::vector<Mesh::Point> points;
 
-  if (VERBOSE)
+  if (verbose)
   {
     mexPrintf("Regularization coefficients. Length: %g Curvature: %g Torsion: %g \n",
               settings.length_penalty, settings.curvature_penalty, settings.torsion_penalty);

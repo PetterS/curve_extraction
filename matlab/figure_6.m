@@ -73,7 +73,6 @@ C = Curve_extraction(mesh_map, unary);
 %% Define settings
 % Use all edges with size <= regularization radius
 C.regularization_radius = 2.5;
-C.VERBOSE = true;
 
 % rho in paper
 C.length_penalty = 0;

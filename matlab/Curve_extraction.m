@@ -11,7 +11,7 @@ classdef Curve_extraction < handle
 		power_torsion = 2.0;
 		regularization_radius = 4.0
 		use_a_star = true;
-		VERBOSE = false;
+		verbose = false;
 		store_visit_time = false;
 		unary_type = 'linear';
 
@@ -45,7 +45,7 @@ classdef Curve_extraction < handle
 			settings.power_curvature = self.power_curvature;
 			settings.regularization_radius = self.regularization_radius;
 			settings.use_a_star = self.use_a_star;
-			settings.VERBOSE = self.VERBOSE;
+			settings.verbose = self.verbose;
 			settings.unary_type = self.unary_type;
 			settings.maxiter = self.maxiter;
 			settings.store_visit_time =  self.store_visit_time;
@@ -177,12 +177,12 @@ classdef Curve_extraction < handle
 			self.erase_solution();
 		end
 		
-		function set.VERBOSE(self, VERBOSE)
-			if ~isa(VERBOSE,'logical')
-				error('VERBOSE must either be true or false');
+		function set.verbose(self, verbose)
+			if ~isa(verbose,'logical')
+				error('verbose must either be true or false');
 			end
 			
-			self.VERBOSE = VERBOSE;
+			self.verbose = verbose;
 		end
 		
 		function set.store_visit_time(self, store_visit_time)
