@@ -12,12 +12,22 @@ close all; clear all;
 rng(1)
 n = 10;
 unary = rand(n,n,n);
-mesh_map = ones(size(unary),'int32');
-mesh_map(:,:,1) = 2;
-mesh_map(:,:,end) = 3;
+
+% True at voxels where it allowed to start/end
+start_set = false(size(unary));
+end_set = false(size(unary));
+
+% Possible to forbid certain voxels.
+disallowed = false(size(unary));
+
+% Define start/end set.
+start_set(:,:,1) = true;
+end_set(:,:,end) = true;
+
 
 %% Create Curve object
-C = Curve_extraction(mesh_map, unary);
+C = Curve_extraction(unary, start_set, end_set, disallowed);
+
 C.store_visit_time = true;
 strength = 1e2;
 %%

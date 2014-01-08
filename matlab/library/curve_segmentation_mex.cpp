@@ -102,7 +102,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // 2: Start set
   // 3: End set.
   int curarg =0;
-  const matrix<int> mesh_map(prhs[curarg++]);
+  const matrix<unsigned char> mesh_map(prhs[curarg++]);
   const matrix<double> unary(prhs[curarg++]);
   const matrix<int> connectivity(prhs[curarg++]);
 

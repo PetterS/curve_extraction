@@ -16,7 +16,6 @@ classdef Curve_extraction < handle
 		unary_type = 'linear';
 
 		unary =  [];
-		mesh_map = [];
 		
 		% Local optimization
 		maxiter = 1000;
@@ -30,7 +29,8 @@ classdef Curve_extraction < handle
 		cost = nan;
 		evaluations = nan,
 		connectivity = nan;
-
+		mesh_map = [];
+		
 		% Note: For length regularization the visit map runs from end set to start set
 		% this is because the same code get lower bound for A*.
 		visit_map = [];
@@ -54,9 +54,30 @@ classdef Curve_extraction < handle
 	end
 	methods
 		% Find global solution in the mesh implicitly defined by the connectivity.
-		function self = Curve_extraction(mesh_map, unary)
+		function self = Curve_extraction(unary, start_set, end_set, disallowed)
 			addpath([fileparts(mfilename('fullpath')) filesep 'library']);
-            
+			
+			% Create a structure holding the start/end and allowed pixels
+			% for the algorithm to visit.
+			mesh_map = ones(size(unary),'uint8');
+			
+			if nargin > 3
+				assert(all(size(unary) == size(disallowed)));
+				mesh_map(disallowed) = 0;
+			end
+			
+			% Check input
+			assert(all(size(unary) == size(start_set)));
+			assert(all(size(start_set) == size(end_set)));
+			
+			if (any(start_set(:) & end_set(:)))
+				error('Some voxels are both in the start and end set');
+			end
+
+			mesh_map(start_set) = 2;
+			mesh_map(end_set) = 3;
+			
+			% Save
 			self.mesh_map = mesh_map;
 			self.unary = unary;
 		end
@@ -68,7 +89,6 @@ classdef Curve_extraction < handle
 		end
 		
 		function [curve, cost, time,  evaluations, connectivity, visit_map] = solve(self)
-
 			settings = gather_settings(self);
 
 			[curve, time, evaluations, cost, connectivity, visit_map] = ...
@@ -139,11 +159,6 @@ classdef Curve_extraction < handle
 				end
 				
 				self.descent_method = method;
-		end
-
-		function set.mesh_map(self, mesh_map)
-			self.mesh_map = int32(mesh_map);
-			self.erase_solution();
 		end
 		
 		function set.unary(self, unary)
