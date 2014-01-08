@@ -10,7 +10,7 @@
 #include <limits>
 
 #include <spii/auto_diff_term.h>
-#include <spii/constraints.h>
+#include <spii/transformations.h>
 #include <spii/solver.h>
 
 // Mex
