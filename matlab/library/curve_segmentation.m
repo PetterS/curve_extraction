@@ -10,7 +10,12 @@ if (~isa(mesh_map, 'uint8'))
 end
 
 unary(mesh_map == 0) = max( max(unary(:))*1e2, 1e10);
-assert(isa(mesh_map,'int32'));
+
+if (~isa(mesh_map, 'uint8'))
+    warning('mesh_map is not unsigned char (uint8) convering.')
+    mesh_map = uint8(mesh_map);
+end
+
 assert(isa(unary,'double'));
 
 if (~any(mesh_map(:) == 1))

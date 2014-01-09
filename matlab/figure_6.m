@@ -84,7 +84,7 @@ C.set_connectivity_by_radius(2.5);
 %% Define settings
 % Use all edges with size <= regularization radius
 C.regularization_radius = 2.5;
-C.VERBOSE = true;
+C.verbose = true;
 
 % rho in paper
 C.length_penalty = 0;

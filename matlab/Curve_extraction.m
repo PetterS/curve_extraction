@@ -68,18 +68,21 @@ classdef Curve_extraction < handle
 		function self = Curve_extraction(unary, start_set, end_set, disallowed)
 			addpath([fileparts(mfilename('fullpath')) filesep 'library']);
 			
+			self.problem_size = size(unary);
+			
+			
 			% Create a structure holding the start/end and allowed pixels
 			% for the algorithm to visit.
-			mesh_map = ones(size(unary),'uint8');
+			mesh_map = ones(self.problem_size,'uint8');
 			
 			if nargin > 3
-				assert(all(size(unary) == size(disallowed)));
+				assert(all(self.problem_size == size(disallowed)));
 				mesh_map(disallowed) = 0;
 			end
 			
 			% Check input
-			assert(all(size(unary) == size(start_set)));
-			assert(all(size(start_set) == size(end_set)));
+			assert(all(self.problem_size == size(start_set)));
+			assert(all(self.problem_size == size(end_set)));
 			
 			if (any(start_set(:) & end_set(:)))
 				error('Some voxels are both in the start and end set');
@@ -87,6 +90,10 @@ classdef Curve_extraction < handle
 
 			mesh_map(start_set) = 2;
 			mesh_map(end_set) = 3;
+			
+			
+			default_radius = 4;
+			self.set_connectivity_by_radius(default_radius);
 			
 			% Save
 			self.mesh_map = mesh_map;
@@ -102,7 +109,8 @@ classdef Curve_extraction < handle
 				
 		function  [curve, cost, time, evaluations, visit_map ] = solve(self)
 			settings = gather_settings(self);
-
+			
+			
 			[curve, cost, time, evaluations, visit_map] = ...
 			 		 curve_segmentation(self.mesh_map, self.unary, self.connectivity, settings);
 			
@@ -111,7 +119,6 @@ classdef Curve_extraction < handle
 			self.time = time;
 			self.cost =  cost;
 			self.evaluations = evaluations;
-			self.connectivity = connectivity;
 			self.visit_map = visit_map;
 		end
 		
@@ -318,11 +325,11 @@ classdef Curve_extraction < handle
 		function set.mesh_map(self, mesh_map)
 			
 			if (~any(mesh_map(:) == 2))
-				error('The problem has no start set: refusing update.');
+				error('The problem has no start set.');
 			end
 
 			if (~any(mesh_map(:) == 3))
-				error('The problem has no end set: refusing update.');
+				error('The problem has no end set.');
 			end
 			
 			self.mesh_map = mesh_map;
