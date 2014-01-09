@@ -64,6 +64,7 @@ if ispc
     extra_args{end+1} = '-L"C:\Program Files\SPII\lib"';
 else
     % Linux settings.
+    extra_args{end+1} = '-L/usr/local/lib'
     extra_args{end+1} = '-I/usr/local/include/spii-thirdparty';
     extra_args{end+1} = '-I/usr/local/include/eigen3';
     extra_args{end+1} = '-I/usr/local/include/spii';
