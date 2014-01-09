@@ -23,7 +23,14 @@ I = imread('../data/irrawaday-delta-sevcik.jpg');
 I = I(40:end,:,:);
 I = imresize(I,0.25);
 
+% mesh_map defining allowed pixels
+% Encoded as
+% 0: Disallowed
+% 1: Allowed
+% 2: Start set
+% 3: End set.
 [w,h,c] = size(I);
+mesh_map = ones([size(I,1) size(I,2)], 'int32');
 
 % Define start/end set.
 start_set = false([size(I,1) size(I,2)]);
@@ -77,6 +84,7 @@ C.set_connectivity_by_radius(2.5);
 %% Define settings
 % Use all edges with size <= regularization radius
 C.regularization_radius = 2.5;
+C.VERBOSE = true;
 
 % rho in paper
 C.length_penalty = 0;

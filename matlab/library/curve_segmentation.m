@@ -9,6 +9,8 @@ if (~isa(mesh_map, 'uint8'))
     mesh_map = uint8(mesh_map);
 end
 
+unary(mesh_map == 0) = max( max(unary(:))*1e2, 1e10);
+assert(isa(mesh_map,'int32'));
 assert(isa(unary,'double'));
 
 if (~any(mesh_map(:) == 1))

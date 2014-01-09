@@ -4,6 +4,8 @@ function cost = curve_info(unary, path, settings)
 % Check file modification dates and recompile mex file
 my_name = mfilename('fullpath');
 [base_path, base_name, ~] = fileparts(my_name);
+addpath([base_path filesep '..']);
+
 compile(base_path, base_name)
 
 if (size(path,2) == 2)
