@@ -45,7 +45,7 @@ sudo make install
 
 Matlab
 ------
-Compile the curve_extraction libary using cmake before compiling with MATLAB.
+Compile the curve_extraction library using CMake before compiling with MATLAB.
 
 Video
 ====
