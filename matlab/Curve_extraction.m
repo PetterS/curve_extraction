@@ -287,5 +287,49 @@ classdef Curve_extraction < handle
 			
 			self.unary_type = unary_type;
 		end
+		
+		% Interface the start,end and disallowed set
+		function allowed = get_disallowed_set(self)
+			allowed = self.mesh_map == 0;
+		end
+		
+		function set_disallowed_set(self, disallowed)
+			assert(all(self.problem_size == size(disallowed)));
+			
+			self.mesh_map(~disallowed & self.mesh_map==0) = 1;
+			self.mesh_map(disallowed) = 0;
+		end
+		
+		function start_set = get_start_set(self)
+			start_set = self.mesh_map == 2;
+		end
+	
+		function set_start_set(self, start_set)
+			assert(all(self.problem_size == size(start_set)));
+			self.mesh_map(start_set) = 2;
+		end
+		
+		function end_set = get_end_set(self)
+			end_set = self.mesh_map == 3;
+		end
+		
+		function set_end_set(self, end_set)
+			assert(all(self.problem_size == size(end_set)));
+			self.mesh_map(end_set) = 3;
+		end
+		
+		function set.mesh_map(self, mesh_map)
+			
+			if (~any(mesh_map(:) == 2))
+				error('The problem has no start set: refusing update.');
+			end
+
+			if (~any(mesh_map(:) == 3))
+				error('The problem has no end set: refusing update.');
+			end
+			
+			self.mesh_map = mesh_map;
+			
+		end
 	end
 end
