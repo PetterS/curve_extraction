@@ -82,7 +82,7 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
                               double& run_time,
                               int& evaluations,
                               double& cost,
-                              const matrix<int>& mesh_map,
+                              const matrix<unsigned char>& mesh_map,
                               PieceWiseConstant& data_term,
                               const matrix<int>& connectivity,
                               InstanceSettings& settings,
@@ -263,7 +263,7 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
   evaluations = 0;
   std::vector<int> path_pairs;
 
-  if (VERBOSE)
+  if (verbose)
     mexPrintf("Computing shortest distance ...");
 
   double start_time = ::get_wtime();
@@ -280,7 +280,7 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
   path_pairs.erase(path_pairs.begin()); // Remove super edge
   points = pairpath_to_points(path_pairs, connectivity);
 
-  if (VERBOSE)
+  if (verbose)
   {
     mexPrintf("done. \n");
     mexPrintf("Running time:  %g seconds,", run_time);

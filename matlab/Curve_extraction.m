@@ -11,25 +11,37 @@ classdef Curve_extraction < handle
 		power_torsion = 2.0;
 		regularization_radius = 4.0
 		use_a_star = true;
-		VERBOSE = false;
+		verbose = false;
 		store_visit_time = false;
 		unary_type = 'linear';
+		num_threads = int32(1);
+
 		unary =  [];
-		maxiter = 100;
-		mesh_map = [];
+
+		% Created in the constructor.
+		connectivity = []; 
+
+		% Local optimization
+		maxiter = 1000;
+		descent_method = 'lbfgs';
+		
+		voxeldimensions = [1 1 1];
 	end
 	
 	% Stored by the solver
 	properties (SetAccess = protected)
 		curve = [];
-		time = nan;
 		cost = nan;
 		evaluations = nan,
-		connectivity = nan;
-
+		mesh_map = [];
+		
 		% Note: For length regularization the visit map runs from end set to start set
 		% this is because the same code get lower bound for A*.
 		visit_map = [];
+	end
+	
+	properties (Hidden)
+		problem_size;
 	end
 
 	methods (Access = protected)
@@ -41,17 +53,47 @@ classdef Curve_extraction < handle
 			settings.power_curvature = self.power_curvature;
 			settings.regularization_radius = self.regularization_radius;
 			settings.use_a_star = self.use_a_star;
-			settings.VERBOSE = self.VERBOSE;
+			settings.verbose = self.verbose;
 			settings.unary_type = self.unary_type;
 			settings.maxiter = self.maxiter;
 			settings.store_visit_time =  self.store_visit_time;
+			settings.descent_method = self.descent_method;	
+			settings.voxeldimensions = self.voxeldimensions;
+			settings.num_threads = self.num_threads;
 		end
 	end
 	methods
 		% Find global solution in the mesh implicitly defined by the connectivity.
-		function self = Curve_extraction(mesh_map, unary)
+		function self = Curve_extraction(unary, start_set, end_set, disallowed)
 			addpath([fileparts(mfilename('fullpath')) filesep 'library']);
-            
+			
+			self.problem_size = size(unary);
+	
+			% Create a structure holding the start/end and allowed pixels
+			% for the algorithm to visit.
+			mesh_map = ones(self.problem_size,'uint8');
+			
+			if nargin > 3
+				assert(all(self.problem_size == size(disallowed)));
+				mesh_map(disallowed) = 0;
+			end
+			
+			% Check input
+			assert(all(self.problem_size == size(start_set)));
+			assert(all(self.problem_size == size(end_set)));
+			
+			if (any(start_set(:) & end_set(:)))
+				error('Some voxels are both in the start and end set');
+			end
+
+			mesh_map(start_set) = 2;
+			mesh_map(end_set) = 3;
+					
+			
+			default_radius = 4;
+			self.set_connectivity_by_radius(default_radius);
+
+			% Save
 			self.mesh_map = mesh_map;
 			self.unary = unary;
 		end
@@ -62,24 +104,22 @@ classdef Curve_extraction < handle
 			cost = curve_info(self.unary, self.curve, settings);
 		end
 		
-		function [curve, time, evaluations, cost, connectivity, visit_map] = solve(self)
-
+				
+		function  [curve, cost, time, evaluations, visit_map ] = solve(self)
 			settings = gather_settings(self);
 
-			[curve, time, evaluations, cost, connectivity, visit_map] = ...
-			 		 curve_segmentation(self.mesh_map, self.unary, settings);
+			[curve, cost, time, evaluations, visit_map] = ...
+			 		 curve_segmentation(self.mesh_map, self.unary, self.connectivity, settings);
 			
 			% Saving solution
 			self.curve = curve;
-			self.time = time;
 			self.cost =  cost;
 			self.evaluations = evaluations;
-			self.connectivity = connectivity;
 			self.visit_map = visit_map;
 		end
 		
 		% Move away from discretized solution and find a local optimum.
-		function curve = local_optimization(self)
+		function [curve,cost,time] = local_optimization(self)
 			
 			if isempty(self.curve)
 				fprintf('No curve stored, running the solver \n');
@@ -87,11 +127,11 @@ classdef Curve_extraction < handle
 			end
 			
 			settings = gather_settings(self);
-			[curve, info] = local_optimization(self.mesh_map, self.unary, self.curve, settings);
-
+			[curve, cost, time] = local_optimization(self.mesh_map, self.unary, self.curve, settings);
+				
 			% Saving solution
 			self.curve = curve;
-			self.cost = info.cost;
+			self.cost = cost;
 		end
 		
 		% Draw current solution (only supports 2D curves)
@@ -123,14 +163,57 @@ classdef Curve_extraction < handle
 		end
 		
 		%% Set functions
-		function set.mesh_map(self, mesh_map)
-			self.mesh_map = int32(mesh_map);
-			self.erase_solution();
+		function set_connectivity_by_radius(self, radius)
+
+			% Generate connectivity
+			[~, connectivity] = get_all_directions(radius, length(self.problem_size));
+			connectivity = int32(connectivity);
+			
+			if size(connectivity,2) == 2
+				connectivity = [connectivity zeros(size(connectivity,1),1)];
+			end	
+
+			self.connectivity = connectivity;
+		end
+
+		function set.num_threads(self, num_threads)
+			assert(num_threads > 0);
+			self.num_threads = int32(self.num_threads);
+		end
+
+		function set.voxeldimensions(self, voxeldimensions)
+			assert(length(voxeldimensions) == 2 || length(voxeldimensions == 3));
+			assert(all(voxeldimensions) > 0);
+			
+			if (length(voxeldimensions) == 2)
+				voxeldimensions =[voxeldimensions 1];
+			end
+			
+			self.voxeldimensions = voxeldimensions;
 		end
 		
+		function set.descent_method(self, method)
+				switch method
+					case 'lbfgs'
+						%ok
+					case 'nelder-mead'
+						%ok
+					otherwise
+						error(sprintf('Possible descent methods = {lbfgs, nelder-mead}'));
+				end
+				
+				self.descent_method = method;
+		end
+		
+		function set.connectivity(self, connectivity)
+			assert(size(connectivity,2) == 3);
+
+			self.connectivity = connectivity;
+		end
+
 		function set.unary(self, unary)
 			self.unary = unary;
-			self.erase_solution();
+			self.reset_solution();
 		end
 		
 		function set.length_penalty(self, length_penalty)
@@ -139,7 +222,7 @@ classdef Curve_extraction < handle
 			end
 			
 			self.length_penalty = length_penalty;
-			self.erase_solution();
+			self.reset_solution();
 		end
 		
 		function set.maxiter(self, maxiter)
@@ -156,13 +239,15 @@ classdef Curve_extraction < handle
 			end
 			
 			self.curvature_penalty = curvature_penalty;
-			self.erase_solution();
+			self.reset_solution();
 		end
 		
-		function set.VERBOSE(self, VERBOSE)
-			if ~isa(VERBOSE,'logical')
-				error('VERBOSE must either be true or false');
+		function set.verbose(self, verbose)
+			if ~isa(verbose,'logical')
+				error('verbose must either be true or false');
 			end
+			
+			self.verbose = verbose;
 		end
 		
 		function set.store_visit_time(self, store_visit_time)
@@ -187,11 +272,12 @@ classdef Curve_extraction < handle
 			end
 			
 			self.torsion_penalty = torsion_penalty;
-			self.erase_solution();
+			self.reset_solution();
 		end
 		
-		function erase_solution(self)
-			self.curve = [];
+		% Keeping the cuvre
+		function reset_solution(self)
+			self.cost = nan;
 		end
 		
 		function set.unary_type(self, unary_type)

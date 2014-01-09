@@ -23,21 +23,18 @@ I = imread('../data/irrawaday-delta-sevcik.jpg');
 I = I(40:end,:,:);
 I = imresize(I,0.25);
 
-% mesh_map defining allowed pixels
-% Encoded as
-% 0: Disallowed
-% 1: Allowed
-% 2: Start set
-% 3: End set.
 [w,h,c] = size(I);
-mesh_map = ones([size(I,1) size(I,2)], 'int32');
 
-% Start set
-mesh_map(1:3, 1:round(end/2)) = 2;
-mesh_map(end,1:round((1/20*h))) = 2;
+% Define start/end set.
+start_set = false([size(I,1) size(I,2)]);
+end_set = false([size(I,1) size(I,2)]);
 
-% End set
-mesh_map(end-3:end, :) = 3;
+start_set(1:3, 1:round(end/2)) = 2;
+start_set(end,1:round((1/20*h))) = 2;
+end_set(end-3:end, :) = 3;
+
+% Remove overlap
+start_set(end_set) = 0;
 
 %% Unary, hand crafted
 River_colors = {};
@@ -68,12 +65,18 @@ end
 unary = unary/1e3;
 
 % Setup the problem instance
-C = Curve_extraction(mesh_map, unary);
+C = Curve_extraction(unary, start_set, end_set);
+
+C.num_threads = min(feature('numThreads'),2);
+C.descent_method = 'lbfgs';
+
+% Use all edges with size <= regularization radius
+C.set_connectivity_by_radius(2.5);
+
 
 %% Define settings
 % Use all edges with size <= regularization radius
 C.regularization_radius = 2.5;
-C.VERBOSE = true;
 
 % rho in paper
 C.length_penalty = 0;

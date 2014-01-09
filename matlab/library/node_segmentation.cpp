@@ -5,7 +5,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
                       double& run_time,
                       int& evaluations,
                       double& cost,
-                      const matrix<int>& mesh_map,
+                      const matrix<unsigned char>& mesh_map,
                       PieceWiseConstant& data_term,
                       const matrix<int>& connectivity,
                       const InstanceSettings& settings,
@@ -67,7 +67,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
     }
   };
 
-  if (VERBOSE)
+  if (verbose)
     mexPrintf("Creating start/end sets without mesh...");
 
   // start and end set
@@ -101,7 +101,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
     }
   }
 
-  if (VERBOSE)
+  if (verbose)
     mexPrintf("Computing shortest distance ...");
 
   std::vector<int> path_nodes;
@@ -135,7 +135,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
     points.push_back( make_point(*itr) );
   }
 
-  if (VERBOSE)
+  if (verbose)
   {
     mexPrintf("done. \n");
     mexPrintf("Running time:  %g (s), ", run_time);

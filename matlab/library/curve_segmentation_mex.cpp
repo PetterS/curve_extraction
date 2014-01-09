@@ -1,6 +1,6 @@
 // Johannes Ulén and Petter Strandmark 2013
 #include "curve_segmentation.h"
-bool VERBOSE;
+bool verbose;
 double timer;
 
 #ifdef USE_OPENMP
@@ -92,9 +92,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   startTime();
 
   // Check input and outputs
-  ASSERT(nlhs == 6);
-  ASSERT(nrhs >= 3); // optional arguments exist
-
+  ASSERT(nlhs == 5);
+  ASSERT(nrhs == 3 || nrhs == 4); 
+	
   // Mesh defining allowed pixels
   // Encoded as
   // 0: Disallowed
@@ -102,7 +102,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // 2: Start set
   // 3: End set.
   int curarg =0;
-  const matrix<int> mesh_map(prhs[curarg++]);
+  const matrix<unsigned char> mesh_map(prhs[curarg++]);
   const matrix<double> unary(prhs[curarg++]);
   const matrix<int> connectivity(prhs[curarg++]);
 
@@ -162,7 +162,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     use_edges = true;
   }
 
-  if (VERBOSE)
+  if (verbose)
     mexPrintf("Connectivity size is %d. \n", connectivity.M);
 
   // Extra start and end sets. Cell arrays of points.
@@ -230,7 +230,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
   }
 
-  if (VERBOSE)
+  if (verbose)
     endTime("Reading data");
 
   #ifdef USE_OPENMP
@@ -240,7 +240,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
     omp_set_num_threads(max_threads);
     int current_num_threads = -1;
-    if (VERBOSE) {
+    if (verbose) {
       #pragma omp parallel for
       for (int i = 0; i < 1000; ++i)
       {
@@ -274,7 +274,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int evaluations;
   std::vector<Mesh::Point> points;
 
-  if (VERBOSE)
+  if (verbose)
   {
     mexPrintf("Regularization coefficients. Length: %g Curvature: %g Torsion: %g \n",
               settings.length_penalty, settings.curvature_penalty, settings.torsion_penalty);
@@ -332,9 +332,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // Write to MatLab
   plhs[0] = o_path;
-  plhs[1] = o_time;
-  plhs[2] = o_eval;
-  plhs[3] = o_cost;
-  plhs[4] = o_connectivity;
-  plhs[5] = o_visit_map;
+  plhs[1] = o_cost;
+  plhs[2] = o_time;
+  plhs[3] = o_eval;
+  plhs[4] = o_visit_map;
 }

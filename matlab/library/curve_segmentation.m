@@ -1,38 +1,14 @@
 % Wrapper for mex function.
-function [curve, time, evaluations, cost, connectivity, visit_map ] ...
- = curve_segmentation(mesh_map, unary, settings, dirs)
-
-% Parse option struct
-if nargin >= 3
-   
-    % Only support struct input for simplicity
-    assert(isa(settings,'struct'))
-
-    % Converting to 0-based coordinate system used in C++ code
-    % from 1-based coordinate system in matlab.
-    if isfield(settings,'start_sets')
-        for i = 1:length(settings.start_sets)
-            settings.start_sets{i} = settings.start_sets{i} - 1;
-        end
-    end
-    if isfield(settings,'end_sets')
-        for i = 1:length(settings.end_sets)
-            settings.end_sets{i} = settings.end_sets{i} - 1;
-        end
-    end
-    
-    % Default
-    if ~isfield(settings,'voxeldimensions')
-        settings.voxeldimensions = [1 1 1];
-    end
-    
-    if ~ isfield(settings,'regularization_radius')
-        settings.regularization_radius = 4.0;
-    end
-end
+function [curve, cost, time, evaluations, visit_map ] ...
+ = curve_segmentation(mesh_map, unary, dirs, settings)
 
 unary(mesh_map == 0) = max( max(unary(:))*1e2, 1e10);
-assert(isa(mesh_map,'int32'));
+
+if (~isa(mesh_map, 'uint8'))
+    warning('mesh_map is not unsigned char (uint8) convering.')
+    mesh_map = uint8(mesh_map);
+end
+
 assert(isa(unary,'double'));
 
 if (~any(mesh_map(:) == 1))
@@ -63,19 +39,7 @@ sources{3} = 'edgepair_segmentaion.cpp'; % Torsion
 compile(base_path, base_name, sources, extra_args)
 
 
-% If no connectivity is given one is generated 
-% using regularization radius
-if nargin < 4
-	% Generate connectivity
-	[~, dirs] = get_all_directions(settings.regularization_radius, ndims(unary));
-	dirs = int32(dirs);
-	
-	if size(dirs,2) == 2
-		dirs = [dirs zeros(size(dirs,1),1)];
-	end	
-end
-
-[curve, time, evaluations, cost, connectivity, visit_map ] ...
+[curve, cost, time, evaluations, visit_map] ...
  = curve_segmentation_mex(mesh_map, unary, dirs, settings);
 
 %% Post process

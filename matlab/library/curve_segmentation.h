@@ -21,7 +21,7 @@ using namespace curve_extraction;
 typedef std::vector<std::vector<Mesh::Point>> PointSets;
 extern double timer;
 extern int M,N,O;
-extern bool VERBOSE;
+extern bool verbose;
 
 
 class length_cost_functor
@@ -117,7 +117,7 @@ struct InstanceSettings
          torsion_power(2.0),
          regularization_radius(4.0),
          use_a_star(false),
-         VERBOSE(false),
+         verbose(false),
          unary_type("linear"),
          store_visit_time(false)
   { }
@@ -132,7 +132,7 @@ struct InstanceSettings
   double regularization_radius;
 
   bool use_a_star;
-  bool VERBOSE;
+  bool verbose;
   string unary_type;
   bool store_visit_time;
 };
@@ -141,7 +141,7 @@ InstanceSettings parse_settings(MexParams params)
 {
   InstanceSettings settings;
 
-  settings.VERBOSE = params.get<bool>("VERBOSE",false); // Debug messages
+  settings.verbose = params.get<bool>("verbose",false); // Debug messages
   settings.regularization_radius = params.get<double>("regularization_radius", 4.0);
 
   // Regularization coefficients
@@ -189,7 +189,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
                         double& run_time,
                         int& evaluations,
                         double& cost,
-                        const matrix<int>& mesh_map,
+                        const matrix<unsigned char>& mesh_map,
                         PieceWiseConstant& data_term,
                         const matrix<int>& connectivity,
                         const InstanceSettings& settings,
@@ -203,7 +203,7 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
                               double& run_time,
                               int& evaluations,
                               double& cost,
-                              const matrix<int>& mesh_map,
+                              const matrix<unsigned char>& mesh_map,
                               PieceWiseConstant& data_term,
                               const matrix<int>& connectivity,
                               InstanceSettings& settings,
@@ -216,7 +216,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
                       double& run_time,
                       int& evaluations,
                       double& cost,
-                      const matrix<int>& mesh_map,
+                      const matrix<unsigned char>& mesh_map,
                       PieceWiseConstant& data_term,
                       const matrix<int>& connectivity,
                       const InstanceSettings& settings,
