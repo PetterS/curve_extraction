@@ -314,7 +314,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   matrix<double>  o_time(1);
   matrix<int>     o_eval(1);
   matrix<double>  o_cost(1);
-  matrix<double>  o_connectivity(1);
 
   int n_line = 0;
   for (   auto it = points.begin(); it != points.end(); it++)
@@ -328,7 +327,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   o_time(0) = run_time;
   o_eval(0) = evaluations;
   o_cost(0) = cost;
-  o_connectivity(0) = connectivity.M;
 
   // Write to MatLab
   plhs[0] = o_path;
