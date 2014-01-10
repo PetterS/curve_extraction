@@ -144,9 +144,9 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
     {
         for (int k = 0; k < connectivity.M; k++)
         {
-          x2 = x - connectivity(k,0);
-          y2 = y - connectivity(k,1);
-          z2 = z - connectivity(k,2);
+          x2 = x + connectivity(k,0);
+          y2 = y + connectivity(k,1);
+          z2 = z + connectivity(k,2);
 
           // The edge with head at n has root at n2
           // it's edge number k.
