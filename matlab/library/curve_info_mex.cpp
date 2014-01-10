@@ -63,9 +63,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                                unary_matrix.O,
                                voxeldimensions);
 
-  length_cost_functor length_cost_fun(voxeldimensions, settings.length_penalty);
-  curvature_cost_functor curvature_cost_fun(voxeldimensions, settings.curvature_penalty, settings.curvature_power);
-  torsion_cost_functor torsion_cost_fun(voxeldimensions, settings.torsion_penalty, settings.torsion_power);
+  
+  
+ 
 
   // Unary and length
   for (int k = 0; k < path.M-1; k++)
@@ -73,44 +73,61 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     unary_cost(0) += data_term.evaluate_line_integral
                           (path(k+0,0) -1, path(k+0,1) -1, path(k+0,2) -1,
                            path(k+1,0) -1, path(k+1,1) -1, path(k+1,2) -1);
+  }
 
-    length_cost(0) += length_cost_fun(path(k+0,0) -1, path(k+0,1) -1, path(k+0,2) -1,
-                                      path(k+1,0) -1, path(k+1,1) -1, path(k+1,2) -1);
+  if (settings.length_penalty > 0)
+  {
+    length_cost_functor length_cost_fun(voxeldimensions, settings.length_penalty);
+
+    for (int k = 0; k < path.M-1; k++)
+    {
+      length_cost(0) += length_cost_fun(path(k+0,0) -1, path(k+0,1) -1, path(k+0,2) -1,
+                                        path(k+1,0) -1, path(k+1,1) -1, path(k+1,2) -1);
+    }
   }
 
  	// Curvature
- 	for (int k = 0; k < path.M-2; k++)
- 	{
-     curvature_cost(0) += 
-     curvature_cost_fun((path(k+0,0)-1),
-           				      (path(k+0,1)-1),
-           				      (path(k+0,2)-1),
-           				      (path(k+1,0)-1),
-           				      (path(k+1,1)-1),
-           				      (path(k+1,2)-1),
-            			      (path(k+2,0)-1),
-            			      (path(k+2,1)-1),
-            			      (path(k+2,2)-1));
- 	}
-
-  // Torsion
-  for (int k = 0; k < path.M-3; k++)
+  if (settings.curvature_penalty > 0)
   {
-    torsion_cost(0) += 
-    torsion_cost_fun((path(k+0,0)-1),
-                     (path(k+0,1)-1),
-                     (path(k+0,2)-1),
-                     (path(k+1,0)-1),
-                     (path(k+1,1)-1),
-                     (path(k+1,2)-1),
-                     (path(k+2,0)-1),
-                     (path(k+2,1)-1),
-                     (path(k+2,2)-1),
-                     (path(k+3,0)-1),
-                     (path(k+3,1)-1),
-                     (path(k+3,2)-1));
+    curvature_cost_functor curvature_cost_fun(voxeldimensions, settings.curvature_penalty, settings.curvature_power);
+
+   	for (int k = 0; k < path.M-2; k++)
+   	{
+       curvature_cost(0) += 
+       curvature_cost_fun((path(k+0,0)-1),
+             				      (path(k+0,1)-1),
+             				      (path(k+0,2)-1),
+             				      (path(k+1,0)-1),
+             				      (path(k+1,1)-1),
+             				      (path(k+1,2)-1),
+              			      (path(k+2,0)-1),
+              			      (path(k+2,1)-1),
+              			      (path(k+2,2)-1));
+   	}
   }
 
+  if (settings.torsion_penalty > 0)
+  {
+    torsion_cost_functor torsion_cost_fun(voxeldimensions, settings.torsion_penalty, settings.torsion_power);
+
+    // Torsion
+    for (int k = 0; k < path.M-3; k++)
+    {
+      torsion_cost(0) += 
+      torsion_cost_fun((path(k+0,0)-1),
+                       (path(k+0,1)-1),
+                       (path(k+0,2)-1),
+                       (path(k+1,0)-1),
+                       (path(k+1,1)-1),
+                       (path(k+1,2)-1),
+                       (path(k+2,0)-1),
+                       (path(k+2,1)-1),
+                       (path(k+2,2)-1),
+                       (path(k+3,0)-1),
+                       (path(k+3,1)-1),
+                       (path(k+3,2)-1));
+    }
+  }
 
   total_cost(0) = unary_cost(0) + length_cost(0) + curvature_cost(0);
 }
