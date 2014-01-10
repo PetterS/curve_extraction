@@ -26,11 +26,13 @@ classdef Curve_extraction < handle
 		descent_method = 'lbfgs';
 		
 		voxeldimensions = [1 1 1];
+		
+		curve = [];
 	end
 	
 	% Stored by the solver
 	properties (SetAccess = protected)
-		curve = [];
+		
 		time = nan;
 		cost = nan;
 		evaluations = nan,
@@ -340,7 +342,13 @@ classdef Curve_extraction < handle
 			end
 			
 			self.mesh_map = mesh_map;
-			
 		end
+		
+		function set.curve(self, curve)
+			
+			assert(size(curve,2) == length(self.problem_size));
+			self.curve = curve;
+		end
+			
 	end
 end
