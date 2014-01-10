@@ -1,5 +1,4 @@
 // Petter Strandmark 2013.
-
 #include <algorithm>
 
 #ifdef USE_OPENMP
@@ -158,7 +157,12 @@ R PieceWiseConstant::evaluate_line_integral(R sx, R sy, R sz,
 	     prev++,next++)
 	{
 		R distance = (next->first - prev->first);
-		cost += distance * unary[source_id];
+
+		// Removes small distances without this small numerical
+		// error might lead the data cost to sample in the wrong region.
+		// If the cost is \inf this is a problem no matter how tiny the distance.
+		if (distance > 1e-6)
+			cost += distance * unary[source_id];
 
 		// Which dimension did we cross?
 		source_id += next->second;
