@@ -9,7 +9,7 @@ addpath(base_path);
 compile(base_path, base_name)
 
 % Checks for disallowed pixels
-unary(mesh_map == 0) = max( max(unary(:))*1e2, 1e10);
+unary(mesh_map == 0) = inf;
 
 if size(input_path, 2) == 2
    input_path = [input_path ones(size(input_path,1),1)]; 
