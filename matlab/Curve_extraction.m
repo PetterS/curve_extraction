@@ -130,12 +130,19 @@ classdef Curve_extraction < handle
 				self.solve()
 			end
 			
+			
 			settings = gather_settings(self);
 			[curve, cost, time] = local_optimization(self.mesh_map, self.unary, self.curve, settings);
-				
-			% Saving solution
-			self.curve = curve;
-			self.cost = cost;
+			
+			if (cost > self.cost)
+				warning('Unable to find a better local optima');
+				curve = self.curve;
+				cost = self.cost;
+			else
+				% Saving solution
+				self.curve = curve;
+				self.cost = cost;
+			end
 		end
 		
 		% Draw current solution (only supports 2D curves)
