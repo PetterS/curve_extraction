@@ -327,7 +327,7 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 	if (settings.verbose)
 		solver->log_function = mex_log_function;
 	else
-		solver->log_function = false;
+		solver->log_function = nullptr;
 	
 
 	solver->maximum_iterations = maxiter;
