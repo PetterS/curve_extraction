@@ -333,8 +333,6 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 	solver->function_improvement_tolerance = function_improvement_tolerance;
 	solver->argument_improvement_tolerance = argument_improvement_tolerance;
 
-	mexPrintf("num_threads %d \n", num_threads);
-
 	if (num_threads > 0)
 		f.set_number_of_threads(num_threads);
 
