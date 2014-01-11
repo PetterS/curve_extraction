@@ -212,15 +212,6 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 	// Create the points and add them as variables
 	// to the function.
 	vector<Point> points(n);
-	vector<double> lower_bound(3, 0.0);
-	vector<double> upper_bound(3, 0.0);
-	upper_bound[0] = unary_matrix.M - 1;
-	upper_bound[1] = unary_matrix.N - 1;
-	upper_bound[2] = unary_matrix.O - 1;
-	if (unary_matrix.O == 1) {
-		lower_bound[2] = -1;
-		upper_bound[2] = +1;	
-	}
 
 	for (int i = 0; i < n; i++)
 	{
@@ -238,7 +229,7 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 		points[i].xyz[1] = min(points[i].xyz[1], unary_matrix.N - 1.0);
 		points[i].xyz[2] = min(points[i].xyz[2], unary_matrix.O - 1.0);
 
-		f.add_variable_with_change<spii::Box>(points[i].xyz, 3, 3, &lower_bound[0], &upper_bound[0]);
+		f.add_variable(points[i].xyz, 3);
 	}
 
 	// The start and end of the curve is fixed.
@@ -342,6 +333,7 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 	{
 		std::stringstream sout;
 		sout << results << endl;
+		f.print_timing_information(sout);
 		mexPrintf("%s\n", sout.str().c_str());
 		mexPrintf("Final function value:   %.3e\n", f.evaluate());
 	}
