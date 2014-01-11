@@ -228,16 +228,14 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 		points[i].xyz[1] = path(i,1) - 1;
 		points[i].xyz[2] = path(i,2) - 1;
 
-		const double magic_one_offset = 0.1;
-
 		for (int j = 0; j < 3; ++j) {
-			points[i].xyz[j] = max(points[i].xyz[j], magic_one_offset);
+			points[i].xyz[j] = max(points[i].xyz[j], 0.0);
 		}
 
 
-		points[i].xyz[0] = min(points[i].xyz[0], unary_matrix.M - 1.0 - magic_one_offset);
-		points[i].xyz[1] = min(points[i].xyz[1], unary_matrix.N - 1.0 - magic_one_offset);
-		points[i].xyz[2] = min(points[i].xyz[2], unary_matrix.O - 1.0 - magic_one_offset);
+		points[i].xyz[0] = min(points[i].xyz[0], unary_matrix.M - 1.0);
+		points[i].xyz[1] = min(points[i].xyz[1], unary_matrix.N - 1.0);
+		points[i].xyz[2] = min(points[i].xyz[2], unary_matrix.O - 1.0);
 
 		f.add_variable_with_change<spii::Box>(points[i].xyz, 3, 3, &lower_bound[0], &upper_bound[0]);
 	}
@@ -327,7 +325,7 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 	if (settings.verbose)
 		solver->log_function = mex_log_function;
 	else
-		solver->log_function = false;
+		solver->log_function = nullptr;
 	
 
 	solver->maximum_iterations = maxiter;
