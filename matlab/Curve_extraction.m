@@ -191,7 +191,7 @@ classdef Curve_extraction < handle
 
 		function set.num_threads(self, num_threads)
 			assert(num_threads > 0);
-			self.num_threads = int32(self.num_threads);
+			self.num_threads = int32(num_threads);
 		end
 
 		function set.voxeldimensions(self, voxeldimensions)
