@@ -167,6 +167,7 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 
 	const double function_improvement_tolerance = params.get<double>("function_improvement_tolerance", 1e-12);
 	const double argument_improvement_tolerance = params.get<double>("argument_improvement_tolerance", 1e-12);
+	int num_threads = params.get<int>("num_threads", -1);
 	const int maxiter = params.get<double>("maxiter", 1000);
 
 	string str_unary_type = params.get<string>("unary_type", "linear");
@@ -332,7 +333,10 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 	solver->function_improvement_tolerance = function_improvement_tolerance;
 	solver->argument_improvement_tolerance = argument_improvement_tolerance;
 
-	f.set_number_of_threads(1);
+	mexPrintf("num_threads %d \n", num_threads);
+
+	if (num_threads > 0)
+		f.set_number_of_threads(num_threads);
 
 	solver->solve(f, &results);
 
