@@ -57,3 +57,4 @@ end
 
 %return to coordinate system starting with 1.
 curve = curve + 1;
+shortest_path_tree = shortest_path_tree + 1;

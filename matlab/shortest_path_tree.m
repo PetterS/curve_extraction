@@ -1,12 +1,3 @@
-% This script reproduces Figure 6 in
-% Shortest Paths with Curvature and Torsion
-% Petter Strandmark, Johannes Ulén, Fredrik Kahl, Leo Grady. 
-% International Conference on Computer Vision. 2013.
-%
-% Windows note:
-% If you are using precompiled mex files
-% you need Visual C++ Redistributable Packages for Visual Studio 2013:
-% http://www.microsoft.com/en-us/download/details.aspx?id=40784
 close all
 clear all
 
@@ -92,11 +83,22 @@ C.use_a_star = false;
 
 %% Solve
 
-tree = C.compute_tree()
+tree = C.compute_tree();
 
-% Placeholder "visualization."
-imagesc(tree);
-
-
-
-
+% Visualize the tree as a quiver.
+X = [];
+Y = [];
+U = [];
+V = [];
+for i = 1:size(tree, 1)
+    for j = 1:size(tree, 2)
+        if tree(i, j) > 0
+            [i2, j2] = ind2sub(size(tree), tree(i, j));
+            X(end+1) = i;
+            Y(end+1) = j;
+            U(end+1) = i2 - i;
+            V(end+1) = j2 - j;
+        end
+    end
+end
+quiver(X,Y,U,V, 0);
