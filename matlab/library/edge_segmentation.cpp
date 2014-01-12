@@ -70,13 +70,13 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
                         const InstanceSettings& settings,
                         const PointSets& start_sets,
                         const PointSets& end_sets,
-                        const std::vector<double>& voxeldimensions,
+                        const std::vector<double>& voxel_dimensions,
                         const ShortestPathOptions& options,
                         matrix<double>& visit_time)
 {
   // Create functor handling regularization costs
-  length_cost_functor length_cost(voxeldimensions, settings.length_penalty);
-  curvature_cost_functor curvature_cost(voxeldimensions, settings.curvature_penalty, settings.curvature_power);
+  length_cost_functor length_cost(voxel_dimensions, settings.length_penalty);
+  curvature_cost_functor curvature_cost(voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
 
   // Some notation for the edge graph
   // Elements corresponds to points in the original graph
@@ -348,7 +348,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
                       settings,
                       start_sets,
                       end_sets,
-                      voxeldimensions,
+                      voxel_dimensions,
                       heuristic_options,
                       visit_time,
                       empty_matrix);

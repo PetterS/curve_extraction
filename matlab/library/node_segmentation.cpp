@@ -11,13 +11,13 @@ void node_segmentation(std::vector<Mesh::Point>& points,
                       const InstanceSettings& settings,
                       const PointSets& start_sets,
                       const PointSets& end_sets,
-                      const std::vector<double>& voxeldimensions,
+                      const std::vector<double>& voxel_dimensions,
                       const ShortestPathOptions& options,
                       matrix<double>& visit_time,
                       matrix<int>& shortest_path_tree)
 {
   // Create functor handling regularization costs
-  length_cost_functor length_cost(voxeldimensions, settings.length_penalty);
+  length_cost_functor length_cost(voxel_dimensions, settings.length_penalty);
   
   // Precalculate regularization cost for every item connectivity
   std::vector<double> regularization_cache(connectivity.M);
@@ -33,7 +33,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
 
   auto get_neighbors =
     [&evaluations, &data_term, &connectivity, 
-      &regularization_cache, &voxeldimensions]
+      &regularization_cache, &voxel_dimensions]
     (int n, std::vector<Neighbor>* neighbors) -> void
   {
     evaluations++;

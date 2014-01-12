@@ -28,7 +28,7 @@ class length_cost_functor
 { 
   public:
     length_cost_functor (const vector<double>& vd_, float p_) 
-      : voxeldimensions(vd_), penalty(p_) {};
+      : voxel_dimensions(vd_), penalty(p_) {};
 
     float operator () (float x1,float y1,float z1, float x2, float y2, float z2)
     {
@@ -37,16 +37,16 @@ class length_cost_functor
         return 0;
       } else
       {
-        float dx =voxeldimensions[0]*(x2-x1);
-        float dy =voxeldimensions[1]*(y2-y1);
-        float dz =voxeldimensions[2]*(z2-z1);
+        float dx =voxel_dimensions[0]*(x2-x1);
+        float dy =voxel_dimensions[1]*(y2-y1);
+        float dz =voxel_dimensions[2]*(z2-z1);
 
         return penalty*std::sqrt( dx*dx + dy*dy + dz*dz );
       }
     }
 
   private:
-    vector<double> voxeldimensions;
+    vector<double> voxel_dimensions;
     float penalty;
 };
 
@@ -54,22 +54,22 @@ class curvature_cost_functor
 {
   public: 
     curvature_cost_functor (const vector<double>& vd_, double p_, double pow_) 
-      : voxeldimensions(vd_), penalty(p_), power(pow_) {};
+      : voxel_dimensions(vd_), penalty(p_), power(pow_) {};
 
   float operator () (double x1, double y1, double z1,
                       double x2, double y2, double z2,
                       double x3, double y3, double z3) 
   {
     return penalty* compute_curvature<float>
-        (x1*voxeldimensions[0],y1*voxeldimensions[1],z1*voxeldimensions[2],
-         x2*voxeldimensions[0],y2*voxeldimensions[1],z2*voxeldimensions[2],
-         x3*voxeldimensions[0],y3*voxeldimensions[1],z3*voxeldimensions[2],
+        (x1*voxel_dimensions[0],y1*voxel_dimensions[1],z1*voxel_dimensions[2],
+         x2*voxel_dimensions[0],y2*voxel_dimensions[1],z2*voxel_dimensions[2],
+         x3*voxel_dimensions[0],y3*voxel_dimensions[1],z3*voxel_dimensions[2],
          power);
   }
 
   private:
     // Voxel dimensions
-    const vector<double> voxeldimensions;
+    const vector<double> voxel_dimensions;
     double penalty;
     double power;
 };
@@ -78,7 +78,7 @@ class torsion_cost_functor
 {
   public: 
     torsion_cost_functor (const std::vector<double>& vd_, double p_, double pow_) 
-      : voxeldimensions(vd_), penalty(p_), power(pow_) {};
+      : voxel_dimensions(vd_), penalty(p_), power(pow_) {};
 
   float operator () (double x1, double y1, double z1,
                       double x2, double y2, double z2,
@@ -91,36 +91,27 @@ class torsion_cost_functor
     } else
     {
       return penalty* compute_torsion<float>(
-          x1*voxeldimensions[0], y1*voxeldimensions[1], z1*voxeldimensions[2],
-          x2*voxeldimensions[0], y2*voxeldimensions[1], z2*voxeldimensions[2],
-          x3*voxeldimensions[0], y3*voxeldimensions[1], z3*voxeldimensions[2],
-          x4*voxeldimensions[0], y4*voxeldimensions[1], z4*voxeldimensions[2],
+          x1*voxel_dimensions[0], y1*voxel_dimensions[1], z1*voxel_dimensions[2],
+          x2*voxel_dimensions[0], y2*voxel_dimensions[1], z2*voxel_dimensions[2],
+          x3*voxel_dimensions[0], y3*voxel_dimensions[1], z3*voxel_dimensions[2],
+          x4*voxel_dimensions[0], y4*voxel_dimensions[1], z4*voxel_dimensions[2],
           power);
     }
   }
 
   private:
     // Voxel dimensions
-    const std::vector<double> voxeldimensions;
+    const std::vector<double> voxel_dimensions;
     double penalty;
     double power;
 };
 
+enum Descent_method {lbfgs, nelder_mead};
+enum Unary_type {linear_interpolation};
 
 struct InstanceSettings
 {
-  InstanceSettings() :
-         length_penalty(0),
-         curvature_penalty(0),
-         torsion_penalty(0),
-         curvature_power(2.0),
-         torsion_power(2.0),
-         regularization_radius(4.0),
-         use_a_star(false),
-         verbose(false),
-         unary_type("linear"),
-         store_visit_time(false),
-         store_parents(false)
+  InstanceSettings() 
   { }
 
   double length_penalty;
@@ -134,10 +125,22 @@ struct InstanceSettings
 
   bool use_a_star;
   bool verbose;
-  string unary_type;
+  
   bool store_visit_time;
-
   bool store_parents;
+
+  Unary_type unary_type;
+  string unary_type_str;
+
+  vector<double> voxel_dimensions;
+
+  double function_improvement_tolerance;
+  double argument_improvement_tolerance;
+  int num_threads;
+  double maxiter;
+
+  Descent_method descent_method;
+  string descent_method_str;
 };
 
 InstanceSettings parse_settings(MexParams params)
@@ -161,12 +164,38 @@ InstanceSettings parse_settings(MexParams params)
 
   // Whether the time of visits should be stored.
   settings.store_visit_time = params.get<bool>("store_visit_time", false);
-  settings.unary_type = params.get<string>("unary_type", "linear");
-
   settings.store_parents = params.get<bool>("store_parents", false);
 
-  if (settings.unary_type != "linear") 
-    throw runtime_error("Only linear data term allowed");
+  // Used by local optimization
+  settings.function_improvement_tolerance = params.get<double>("function_improvement_tolerance", 1e-12);
+  settings.argument_improvement_tolerance = params.get<double>("argument_improvement_tolerance", 1e-12);
+  settings.num_threads = params.get<int>("num_threads", -1);
+  settings.maxiter = params.get<double>("maxiter", 1000);
+
+  settings.descent_method_str = params.get<string>("descent_method","lbfgs");
+
+  if (settings.descent_method_str == "lbfgs")
+    settings.descent_method = lbfgs;
+  else if (settings.descent_method_str == "nelder-mead")
+    settings.descent_method = nelder_mead;
+  else
+    throw runtime_error("Unknown descent_method");
+
+  settings.unary_type_str = params.get<string>("unary_type", "linear_interpolation");
+  
+  if (settings.unary_type_str == "linear_interpolation")
+    settings.unary_type = linear_interpolation;
+  else
+    throw runtime_error("Unknown unary type");
+
+  settings.voxel_dimensions = params.get< vector<double> >("voxel_dimensions");
+
+  if (settings.voxel_dimensions.empty())
+  {
+    settings.voxel_dimensions.push_back(1.0);
+    settings.voxel_dimensions.push_back(1.0);
+    settings.voxel_dimensions.push_back(1.0);
+  }
 
   return settings;
 }
@@ -188,7 +217,7 @@ points_in_a_edgepair(int edgepair_num, const matrix<int>& connectivity);
 std::vector<Mesh::Point>  
 edgepath_to_points(const std::vector<int>& path, const matrix<int>& connectivity);
 
-float distance_between_points(float x1,float y1,float z1, float x2, float y2, float z2, const std::vector<double>& voxeldimensions);
+float distance_between_points(float x1,float y1,float z1, float x2, float y2, float z2, const std::vector<double>& voxel_dimensions);
 
 void edge_segmentation( std::vector<Mesh::Point>& points,
                         double& run_time,
@@ -200,7 +229,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
                         const InstanceSettings& settings,
                         const PointSets& start_sets,
                         const PointSets& end_sets,
-                        const std::vector<double>& voxeldimensions,
+                        const std::vector<double>& voxel_dimensions,
                         const ShortestPathOptions& options,
                         matrix<double>& visit_time);
 
@@ -212,7 +241,7 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
                               PieceWiseConstant& data_term,
                               const matrix<int>& connectivity,
                               InstanceSettings& settings,
-                              const std::vector<double>& voxeldimensions,
+                              const std::vector<double>& voxel_dimensions,
                               const ShortestPathOptions& options,
                               matrix<double>& visit_time
                              );
@@ -227,7 +256,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
                       const InstanceSettings& settings,
                       const PointSets& start_sets,
                       const PointSets& end_sets,
-                      const std::vector<double>& voxeldimensions,
+                      const std::vector<double>& voxel_dimensions,
                       const ShortestPathOptions& options,
                       matrix<double>& visit_time,
                       matrix<int>& shortest_path_tree

@@ -28,14 +28,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	MexParams params(nrhs-curarg, prhs+curarg);
   InstanceSettings settings = parse_settings(params); 
 
- 	vector<double> voxeldimensions = params.get< vector<double> >("voxeldimensions");
-
-  if (voxeldimensions.empty())
-  {
-    voxeldimensions.push_back(1.0);
-    voxeldimensions.push_back(1.0);
-    voxeldimensions.push_back(1.0);
-  }
 
   // Returns length, curvature and unary cost
   matrix<double> unary_cost(1);
@@ -56,16 +48,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   plhs[3] = curvature_cost;
   plhs[4] = torsion_cost;
 
-
   PieceWiseConstant data_term( unary_matrix.data,
                                unary_matrix.M,
                                unary_matrix.N,
                                unary_matrix.O,
-                               voxeldimensions);
-
-  
-  
- 
+                               settings.voxel_dimensions);
 
   // Unary and length
   for (int k = 0; k < path.M-1; k++)
@@ -77,7 +64,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   if (settings.length_penalty > 0)
   {
-    length_cost_functor length_cost_fun(voxeldimensions, settings.length_penalty);
+    length_cost_functor length_cost_fun(settings.voxel_dimensions, settings.length_penalty);
 
     for (int k = 0; k < path.M-1; k++)
     {
@@ -89,7 +76,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
  	// Curvature
   if (settings.curvature_penalty > 0)
   {
-    curvature_cost_functor curvature_cost_fun(voxeldimensions, settings.curvature_penalty, settings.curvature_power);
+    curvature_cost_functor curvature_cost_fun(settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
 
    	for (int k = 0; k < path.M-2; k++)
    	{
@@ -108,7 +95,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   if (settings.torsion_penalty > 0)
   {
-    torsion_cost_functor torsion_cost_fun(voxeldimensions, settings.torsion_penalty, settings.torsion_power);
+    torsion_cost_functor torsion_cost_fun(settings.voxel_dimensions, settings.torsion_penalty, settings.torsion_power);
 
     // Torsion
     for (int k = 0; k < path.M-3; k++)

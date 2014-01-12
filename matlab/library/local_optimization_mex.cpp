@@ -155,43 +155,7 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 	const matrix<double> path(prhs[1]);
 
 	MexParams params(1, prhs+2);
-	vector<double> voxeldimensions = params.get< vector<double> >("voxeldimensions");
 	InstanceSettings settings = parse_settings(params);
-
-	if (voxeldimensions.empty())
-	{
-		voxeldimensions.push_back(1.0);
-		voxeldimensions.push_back(1.0);
-		voxeldimensions.push_back(1.0);
-	}
-
-	const double function_improvement_tolerance = params.get<double>("function_improvement_tolerance", 1e-12);
-	const double argument_improvement_tolerance = params.get<double>("argument_improvement_tolerance", 1e-12);
-	int num_threads = params.get<int>("num_threads", -1);
-	const int maxiter = params.get<double>("maxiter", 1000);
-
-	string str_unary_type = params.get<string>("unary_type", "linear");
-	enum Unary_type {trilinear, linear};
-	Unary_type unary_type;
-
-	if (str_unary_type == "linear")
-		unary_type = linear;
-	else if  (str_unary_type == "trilinear")
-		unary_type = trilinear;
-	else
-		throw runtime_error("Unknown unary type");
-
-	string str_descent_method = params.get<string>("descent_method","lbfgs");
-	enum Descent_method {lbfgs, nelder_mead};
-	Descent_method descent_method;
-
-	if (str_descent_method == "lbfgs")
-		descent_method = lbfgs;
-	else if (str_descent_method == "nelder-mead")
-		descent_method = nelder_mead;
-	else
-		throw runtime_error("Unknown Solver");
-
 
 	const int n = path.M;
 	const int dim = path.N;
@@ -200,10 +164,10 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 
 	if (settings.verbose)
 	{
-		mexPrintf("Solving using : %s \n", str_descent_method.c_str());
-		mexPrintf("Maximum iterations: %d \n", maxiter);
-		mexPrintf("function_improvement_tolerance: %g \n", function_improvement_tolerance);
-		mexPrintf("argument_improvement_tolerance: %g \n", argument_improvement_tolerance);
+		mexPrintf("Solving using : %s \n", settings.descent_method_str.c_str());
+		mexPrintf("Maximum iterations: %d \n", settings.maxiter);
+		mexPrintf("function_improvement_tolerance: %g \n", settings.function_improvement_tolerance);
+		mexPrintf("argument_improvement_tolerance: %g \n", settings.argument_improvement_tolerance);
 	}
 
 	// Function to be optimized
@@ -243,26 +207,23 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 	                             unary_matrix.M,
 	                             unary_matrix.N,
 	                             unary_matrix.O,
-	                             voxeldimensions);
+	                             settings.voxel_dimensions);
 
 	// Adding unary cost
-	if (unary_type == linear)
+	if (settings.unary_type == linear_interpolation)
 	{
 		auto unary = std::make_shared<AutoDiffTerm<LinearUnary<PieceWiseConstant>, 3, 3>>(data_term);
 
 		for (int i = 1; i < n; ++i)
 			f.add_term(unary, points[i-1].xyz, points[i].xyz);
 	}
-	else if (unary_type == trilinear)
-	{
-		mexErrMsgTxt("Trilinear not supported.");
-	}
+
 	// Functor for each type of regularization penalty
-	auto length = std::make_shared<AutoDiffTerm<Length, 3, 3>>(voxeldimensions, settings.length_penalty);
+	auto length = std::make_shared<AutoDiffTerm<Length, 3, 3>>(settings.voxel_dimensions, settings.length_penalty);
 	auto curvature = std::make_shared<AutoDiffTerm<Curvature, 3, 3, 3>>
-				(voxeldimensions, settings.curvature_penalty, settings.curvature_power);
+				(settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
 	auto torsion = std::make_shared<AutoDiffTerm<Torsion, 3, 3, 3, 3>>
-				(voxeldimensions, settings.torsion_penalty, settings.torsion_power);
+				(settings.voxel_dimensions, settings.torsion_penalty, settings.torsion_power);
 
 	// Adding length cost
 	if (settings.length_penalty > 0)
@@ -302,15 +263,12 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 	if (settings.verbose)
 		mexPrintf("Initial function value: %.3e\n", f.evaluate());
 
-
 	std::unique_ptr<Solver> solver;
 
-  if (descent_method == lbfgs) 
+  if (settings.descent_method == lbfgs) 
 		solver.reset(new LBFGSSolver);
-	else if (descent_method == nelder_mead)
+	else if (settings.descent_method == nelder_mead)
 		solver.reset(new NelderMeadSolver);
-	else 
-		mexErrMsgTxt("Unknown method.");
 
 	SolverResults results;
 
@@ -320,12 +278,12 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 		solver->log_function = nullptr;
 	
 
-	solver->maximum_iterations = maxiter;
-	solver->function_improvement_tolerance = function_improvement_tolerance;
-	solver->argument_improvement_tolerance = argument_improvement_tolerance;
+	solver->maximum_iterations = settings.maxiter;
+	solver->function_improvement_tolerance = settings.function_improvement_tolerance;
+	solver->argument_improvement_tolerance = settings.argument_improvement_tolerance;
 
-	if (num_threads > 0)
-		f.set_number_of_threads(num_threads);
+	if (settings.num_threads > 0)
+		f.set_number_of_threads(settings.num_threads);
 
 	solver->solve(f, &results);
 

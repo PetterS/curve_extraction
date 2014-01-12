@@ -122,19 +122,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   MexParams params(nrhs-curarg, prhs+curarg); //Structure to hold and parse additional parameters
   InstanceSettings settings = parse_settings(params); 
 
-  vector<double> voxeldimensions = params.get< vector<double> >("voxeldimensions");
-
-  if (voxeldimensions.empty())
-  {
-    voxeldimensions.push_back(1.0);
-    voxeldimensions.push_back(1.0);
-    voxeldimensions.push_back(1.0);
-  }
-
   int num_threads_to_use = params.get<int>("num_threads", -1);
 
   // Check input
-  ASSERT(voxeldimensions.size() == 3);
+  ASSERT(settings.voxel_dimensions.size() == 3);
   ASSERT(settings.regularization_radius > 0);
   ASSERT(mesh_map.ndim() == unary.ndim());
   ASSERT(mesh_map.M      == unary.M);
@@ -268,7 +259,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                               unary.M,
                               unary.N,
                               unary.O,
-                              voxeldimensions);
+                              settings.voxel_dimensions);
 
   options.store_visited = settings.store_visit_time;
 
@@ -303,7 +294,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   {
     edgepair_segmentation(points, run_time, evaluations, cost,
                           mesh_map, data_term, connectivity, settings,
-                          voxeldimensions, options, o_visit_map);
+                          settings.voxel_dimensions, options, o_visit_map);
   }
   else if (use_edges)
   {
@@ -311,13 +302,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                         mesh_map, data_term, connectivity,
                         settings,
                         start_sets, end_sets, 
-                        voxeldimensions, options, o_visit_map);
+                        settings.voxel_dimensions, options, o_visit_map);
   } else 
   {
     node_segmentation( points, run_time, evaluations, cost,
                        mesh_map, data_term,  connectivity,
                        settings, start_sets, end_sets,
-                       voxeldimensions, options, o_visit_map, o_shortest_path_tree);
+                       settings.voxel_dimensions, options, o_visit_map, o_shortest_path_tree);
   } 
 
   matrix<double>  o_path(points.size(),3);

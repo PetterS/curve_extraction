@@ -12,7 +12,7 @@ classdef Curve_extraction < handle
 		use_a_star = true;
 		verbose = false;
 		store_visit_time = false;
-		unary_type = 'linear';
+		unary_type = 'linear_interpolation';
 		num_threads = int32(1);
 
 		unary =  [];
@@ -24,7 +24,7 @@ classdef Curve_extraction < handle
 		maxiter = 1000;
 		descent_method = 'lbfgs';
 		
-		voxeldimensions = [1 1 1];
+		voxel_dimensions = [1 1 1];
 		
 		curve = [];
 	end
@@ -59,7 +59,7 @@ classdef Curve_extraction < handle
 			settings.maxiter = self.maxiter;
 			settings.store_visit_time =  self.store_visit_time;
 			settings.descent_method = self.descent_method;	
-			settings.voxeldimensions = self.voxeldimensions;
+			settings.voxel_dimensions = self.voxel_dimensions;
 			settings.num_threads = self.num_threads;
 		end
 	end
@@ -70,7 +70,9 @@ classdef Curve_extraction < handle
 			
 			self.problem_size = size(unary);
 			
-			
+			if (length(self.problem_size) ~= 2) && (length(self.problem_size) ~= 3)
+				error('Only two- and three-dimensional problems supported.');
+			end		
 			% Create a structure holding the start/end and allowed pixels
 			% for the algorithm to visit.
 			mesh_map = ones(self.problem_size,'uint8');
@@ -200,15 +202,15 @@ classdef Curve_extraction < handle
 			self.num_threads = int32(num_threads);
 		end
 
-		function set.voxeldimensions(self, voxeldimensions)
-			assert(length(voxeldimensions) == 2 || length(voxeldimensions == 3));
-			assert(all(voxeldimensions) > 0);
+		function set.voxel_dimensions(self, voxel_dimensions)
+			assert(length(voxel_dimensions) == 2 || length(voxel_dimensions == 3));
+			assert(all(voxel_dimensions) > 0);
 			
-			if (length(voxeldimensions) == 2)
-				voxeldimensions =[voxeldimensions 1];
+			if (length(voxel_dimensions) == 2)
+				voxel_dimensions =[voxel_dimensions 1];
 			end
 			
-			self.voxeldimensions = voxeldimensions;
+			self.voxel_dimensions = voxel_dimensions;
 		end
 		
 		function set.descent_method(self, method)
@@ -300,8 +302,8 @@ classdef Curve_extraction < handle
 		end
 		
 		function set.unary_type(self, unary_type)
-			if ~strcmp(unary_type,'linear')
-				error('Currently only linear data term supported.');
+			if ~strcmp(unary_type,'linear_interpolation')
+				error('Currently only linear_interpolation data term supported.');
 			end
 			
 			self.unary_type = unary_type;
