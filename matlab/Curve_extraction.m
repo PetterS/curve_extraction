@@ -9,7 +9,6 @@ classdef Curve_extraction < handle
 		torsion_penalty = 0,
 		power_curvature = 2.0;
 		power_torsion = 2.0;
-		regularization_radius = 4.0
 		use_a_star = true;
 		verbose = false;
 		store_visit_time = false;
@@ -54,7 +53,6 @@ classdef Curve_extraction < handle
 			settings.curvature_penalty = self.curvature_penalty;
 			settings.torsion_penalty = self.torsion_penalty;
 			settings.power_curvature = self.power_curvature;
-			settings.regularization_radius = self.regularization_radius;
 			settings.use_a_star = self.use_a_star;
 			settings.verbose = self.verbose;
 			settings.unary_type = self.unary_type;
