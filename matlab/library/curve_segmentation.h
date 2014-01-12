@@ -119,7 +119,8 @@ struct InstanceSettings
          use_a_star(false),
          verbose(false),
          unary_type("linear"),
-         store_visit_time(false)
+         store_visit_time(false),
+         store_parents(false)
   { }
 
   double length_penalty;
@@ -135,6 +136,8 @@ struct InstanceSettings
   bool verbose;
   string unary_type;
   bool store_visit_time;
+
+  bool store_parents;
 };
 
 InstanceSettings parse_settings(MexParams params)
@@ -159,6 +162,8 @@ InstanceSettings parse_settings(MexParams params)
   // Whether the time of visits should be stored.
   settings.store_visit_time = params.get<bool>("store_visit_time", false);
   settings.unary_type = params.get<string>("unary_type", "linear");
+
+  settings.store_parents = params.get<bool>("store_parents", false);
 
   if (settings.unary_type != "linear") 
     throw runtime_error("Only linear data term allowed");
@@ -211,7 +216,7 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
                               const ShortestPathOptions& options,
                               matrix<double>& visit_time
                              );
-		 
+
 void node_segmentation(std::vector<Mesh::Point>& points,
                       double& run_time,
                       int& evaluations,
@@ -224,7 +229,8 @@ void node_segmentation(std::vector<Mesh::Point>& points,
                       const PointSets& end_sets,
                       const std::vector<double>& voxeldimensions,
                       const ShortestPathOptions& options,
-                      matrix<double>& visit_time
+                      matrix<double>& visit_time,
+                      matrix<int>& shortest_path_tree
                       );
 
 #endif

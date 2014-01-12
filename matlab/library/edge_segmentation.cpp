@@ -333,6 +333,11 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
     int heuristic_evaluations = 0;
     double heuristic_cost = 0;
 
+    // Currently, computing the shortest path tree
+    // is not supported in this function.
+    matrix<int> empty_matrix;
+    ASSERT(!options.store_parents);
+
     node_segmentation(points,
                       heuristic_runtime,
                       heuristic_evaluations,
@@ -345,7 +350,8 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
                       end_sets,
                       voxeldimensions,
                       heuristic_options,
-                      visit_time);
+                      visit_time,
+                      empty_matrix);
 
     lower_bound_pointer = &lower_bound;
   }

@@ -92,7 +92,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   startTime();
 
   // Check input and outputs
-  ASSERT(nlhs == 5);
+  ASSERT(nlhs == 6);
   ASSERT(nrhs == 3 || nrhs == 4); 
 	
   // Mesh defining allowed pixels
@@ -260,6 +260,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                                unary.N, 
                                unary.O);
 
+  matrix<int> o_shortest_path_tree(unary.M, 
+                                   unary.N, 
+                                   unary.O);
 
   PieceWiseConstant data_term(unary.data,
                               unary.M,
@@ -268,6 +271,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                               voxeldimensions);
 
   options.store_visited = settings.store_visit_time;
+
+  options.store_parents = settings.store_parents;
+  if (options.store_parents)
+  {
+  	// We want the entire tree.
+  	options.compute_all_distances = true;
+  }
 
   double run_time;
   double cost;
@@ -307,7 +317,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     node_segmentation( points, run_time, evaluations, cost,
                        mesh_map, data_term,  connectivity,
                        settings, start_sets, end_sets,
-                       voxeldimensions, options, o_visit_map);
+                       voxeldimensions, options, o_visit_map, o_shortest_path_tree);
   } 
 
   matrix<double>  o_path(points.size(),3);
@@ -334,4 +344,5 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   plhs[2] = o_time;
   plhs[3] = o_eval;
   plhs[4] = o_visit_map;
+  plhs[5] = o_shortest_path_tree;  
 }

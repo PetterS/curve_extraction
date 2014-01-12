@@ -122,6 +122,14 @@ classdef Curve_extraction < handle
 			self.cost =  cost;
 			self.evaluations = evaluations;
 			self.visit_map = visit_map;
+        end
+        
+        function  [tree] = compute_tree(self)
+			settings = gather_settings(self);
+            settings.store_parents = true;
+			
+			[~, ~, ~, ~, ~, tree] = ...
+			 		 curve_segmentation(self.mesh_map, self.unary, self.connectivity, settings);
 		end
 		
 		% Move away from discretized solution and find a local optimum.

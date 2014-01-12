@@ -13,7 +13,8 @@ void node_segmentation(std::vector<Mesh::Point>& points,
                       const PointSets& end_sets,
                       const std::vector<double>& voxeldimensions,
                       const ShortestPathOptions& options,
-                      matrix<double>& visit_time)
+                      matrix<double>& visit_time,
+                      matrix<int>& shortest_path_tree)
 {
   // Create functor handling regularization costs
   length_cost_functor length_cost(voxeldimensions, settings.length_penalty);
@@ -150,5 +151,13 @@ void node_segmentation(std::vector<Mesh::Point>& points,
     
     for (int i = 0; i < visit_time.numel(); i++)
       visit_time(i) = options.visit_time[i];
-  } 
+  }
+
+  if (options.store_parents)
+  {
+    ASSERT(shortest_path_tree.numel() == options.parents.size());
+
+    for (int i = 0; i < shortest_path_tree.numel(); i++)
+      shortest_path_tree(i) = options.parents[i];
+  }
 }

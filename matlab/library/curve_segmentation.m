@@ -1,5 +1,5 @@
 % Wrapper for mex function.
-function [curve, cost, time, evaluations, visit_map ] ...
+function [curve, cost, time, evaluations, visit_map, shortest_path_tree] ...
  = curve_segmentation(mesh_map, unary, dirs, settings)
 
 unary(mesh_map == 0) = max( max(unary(:))*1e2, 1e10);
@@ -46,7 +46,7 @@ sources{3} = 'edgepair_segmentaion.cpp'; % Torsion
 compile(base_path, base_name, sources, extra_args)
 
 
-[curve, cost, time, evaluations, visit_map] ...
+[curve, cost, time, evaluations, visit_map, shortest_path_tree] ...
  = curve_segmentation_mex(mesh_map, unary, dirs, settings);
 
 %% Post process
