@@ -127,6 +127,9 @@ double shortest_path(int n, const std::set<int>& start_set, const std::set<int>&
 
 			if (!options.compute_all_distances) {
 				// We are satisfied with the shortest path only.
+				if (options.store_parents) {
+					options.parents = std::move(previous);
+				}
 				return distance[i];
 			}
 		}
@@ -204,6 +207,10 @@ double shortest_path(int n, const std::set<int>& start_set, const std::set<int>&
 
 	// Copy the distance to the output.
 	options.distance = distance;
+
+	if (options.store_parents) {
+		options.parents = std::move(previous);
+	}
 
 	// If we had an end set, return the distance to it.
 	if (end_node >= 0)

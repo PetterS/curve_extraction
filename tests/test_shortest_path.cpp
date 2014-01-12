@@ -276,3 +276,48 @@ TEST_CASE("A_star/random_grid", "")
 	}
 	EXPECT_LT( std::abs(min_dist - d) / min_dist, 1e-6);
 }
+
+TEST_CASE("shortest_path/store_parents", "")
+{
+	//  0  1  2  3
+	//  4  5  6  7
+	//  8  9 10 11
+	// 12 13 14 15
+	// 16 17 18 19
+
+	int m = 4;
+	int n = 5;
+	auto get_neighbors = [m, n](int i, std::vector<Neighbor>* neighbors) -> void {
+		int x = i % m;
+		int y = i / m;
+		if (x > 0) {
+			neighbors->push_back(Neighbor(i - 1, 1.0));
+		}
+		if (x < m - 1) {
+			neighbors->push_back(Neighbor(i + 1, 1.0));
+		}
+		if (y > 0) {
+			neighbors->push_back(Neighbor(i - m, 1.0));
+		}
+		if (y < n - 1) {
+			neighbors->push_back(Neighbor(i + m, 1.0));
+		}
+	};
+
+	ShortestPathOptions options;
+	options.store_parents = true;
+	options.compute_all_distances = true;
+
+	std::set<int> start_set;
+	std::set<int> end_set;
+	std::vector<int> path;
+	start_set.insert(16);
+	end_set.insert(3);
+	double min_dist = shortest_path(m * n, start_set, end_set, get_neighbors, &path, 0, options);
+
+	int prev = -1;
+	for (int node: path) {
+		CHECK(options.parents.at(node) == prev);
+		prev = node;
+	}
+}
