@@ -40,7 +40,8 @@ struct ShortestPathOptions
 	                     print_progress(false),
 	                     maximum_queue_size(0),
 	                     compute_all_distances(false),
-						 store_visited(false)
+	                     store_visited(false),
+	                     store_parents(false)
 	{ }
 	// Prints progress to stderr about the number of
 	// nodes visited.
@@ -57,6 +58,12 @@ struct ShortestPathOptions
 	// were visited.
 	bool store_visited;
 	mutable std::vector<int> visit_time;
+	// Store the shortest path graph, i.e. the parent
+	// of every node.
+	// This options is probably most useful in
+	// combination with compute_all_distances.
+	bool store_parents;
+	mutable std::vector<int> parents;
 };
 
 // Computes the shortest path between two sets of nodes in a graph.
