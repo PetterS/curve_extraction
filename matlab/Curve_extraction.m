@@ -214,6 +214,7 @@ classdef Curve_extraction < handle
 				if (length(self.problem_size) == 2)
 					imagesc(3-self.mesh_map);
 					colormap(gray(4));
+					axis ij;
 				end
 			end
 			
