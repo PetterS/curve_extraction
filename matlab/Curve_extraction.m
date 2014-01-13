@@ -14,7 +14,7 @@ classdef Curve_extraction < handle
 		store_visit_time = false;
 		num_threads = int32(1);
 
-		unary =  [];
+		data =  [];
 
 		% Created in the constructor.
 		connectivity = []; 
@@ -30,7 +30,7 @@ classdef Curve_extraction < handle
 	
 	% Stored by the solver
 	properties (SetAccess = protected)
-		unary_type = '';
+		data_type = '';
 		time = nan;
 		cost = nan;
 		evaluations = nan,
@@ -54,7 +54,7 @@ classdef Curve_extraction < handle
 			settings.power_curvature = self.power_curvature;
 			settings.use_a_star = self.use_a_star;
 			settings.verbose = self.verbose;
-			settings.unary_type = self.unary_type;
+			settings.data_type = self.data_type;
 			settings.maxiter = self.maxiter;
 			settings.store_visit_time =  self.store_visit_time;
 			settings.descent_method = self.descent_method;	
@@ -62,9 +62,9 @@ classdef Curve_extraction < handle
 			settings.num_threads = self.num_threads;
 		end
 
-		function interpolation_constructor(self, unary, varargin)		
-			self.problem_size = size(unary);
-			self.unary = unary;
+		function interpolation_constructor(self, data, varargin)		
+			self.problem_size = size(data);
+			self.data = data;
 
 			default_radius = 4;
 			self.set_connectivity_by_radius(default_radius);
@@ -72,12 +72,12 @@ classdef Curve_extraction < handle
 			self.create_mesh_map(varargin{:});
 		end
 
-		function edge_constructor(self, unary, connectivity, varargin)		
+		function edge_constructor(self, data, connectivity, varargin)		
 			self.connectivity = int32(connectivity);
-			self.problem_size = size(unary);
-			self.unary = unary;
+			self.problem_size = size(data);
+			self.data = data;
 
-			sz = size(unary);
+			sz = size(data);
 			self.problem_size = sz(1:end-1);
 
 			self.create_mesh_map(varargin{:});
@@ -112,13 +112,13 @@ classdef Curve_extraction < handle
 	end
 	methods
 		% Find global solution in the mesh implicitly defined by the connectivity.
-		function self = Curve_extraction(unary_type, varargin)
+		function self = Curve_extraction(data_type, varargin)
 			addpath([fileparts(mfilename('fullpath')) filesep 'library']);
 			
-			self.unary_type = unary_type;
+			self.data_type = data_type;
 
 			% Send the input to the correct constructor:
-			switch unary_type
+			switch data_type
 				case 'linear_interpolation'
 					self.interpolation_constructor(varargin{:});
 				case 'edge'
@@ -134,12 +134,12 @@ classdef Curve_extraction < handle
 		% Solution cost decomposed in the different terms.
 		function cost = curve_info(self)
 
-			if ~strcmp(self.unary_type,'linear_interpolation')
-				error('curve_info is only supported linear_interpolation unary costs _At the moment_');
+			if ~strcmp(self.data_type,'linear_interpolation')
+				error('curve_info is only supported linear_interpolation data costs _At the moment_');
 			end
 
 			settings = gather_settings(self);
-			cost = curve_info(self.unary, self.curve, self.connectivity, settings);
+			cost = curve_info(self.data, self.curve, self.connectivity, settings);
 		end
 		
 				
@@ -148,7 +148,7 @@ classdef Curve_extraction < handle
 			settings = gather_settings(self);
 						
 			[curve, cost, time, evaluations, visit_map] = ...
-			 		 curve_segmentation(self.mesh_map, self.unary, self.connectivity, settings);
+			 		 curve_segmentation(self.mesh_map, self.data, self.connectivity, settings);
 			
 			% Saving solution
 			self.curve = curve;
@@ -163,14 +163,14 @@ classdef Curve_extraction < handle
       settings.store_parents = true;
 			
 			[~, ~, ~, ~, ~, tree] = ...
-			 		 curve_segmentation(self.mesh_map, self.unary, self.connectivity, settings);
+			 		 curve_segmentation(self.mesh_map, self.data, self.connectivity, settings);
 		end
 		
 		% Move away from discretized solution and find a local optimum.
 		function [curve,cost,time] = local_optimization(self)
 			
-			if ~strcmp(self.unary_type,'linear_interpolation')
-				error('Local optimization is only supported  for linear_interpolation unary costs');
+			if ~strcmp(self.data_type,'linear_interpolation')
+				error('Local optimization is only supported  for linear_interpolation data costs');
 			end
 
 			if isempty(self.curve)
@@ -180,7 +180,7 @@ classdef Curve_extraction < handle
 			
 			
 			settings = gather_settings(self);
-			[curve, cost, time] = local_optimization(self.mesh_map, self.unary, self.curve, settings);
+			[curve, cost, time] = local_optimization(self.mesh_map, self.data, self.curve, settings);
 			
 			if (cost > self.cost)
 				warning('Unable to find a better local optima');
@@ -198,16 +198,16 @@ classdef Curve_extraction < handle
 			details(self);
 			clf; hold on;
 			
-			if (strcmp(self.unary_type,'linear_interpolation'))
+			if (strcmp(self.data_type,'linear_interpolation'))
 				
 				if (length(self.problem_size) == 2)
-					cost_im = self.unary;
+					cost_im = self.data;
 					cost_im(self.mesh_map ~= 1) = -1;
 					imagesc(double(cost_im))
 					colormap gray(256); hold on; axis equal; axis off;
 				end
 				
-			elseif (strcmp(self.unary_type,'edge'))
+			elseif (strcmp(self.data_type,'edge'))
 				
 				% Just display start,end,allowed set.
 				if (length(self.problem_size) == 2)
@@ -236,8 +236,8 @@ classdef Curve_extraction < handle
 		%% Set functions
 		function set_connectivity_by_radius(self, radius)
 
-			if strcmp(self.unary_type,'edge')
-				error('Cannot modify connectivity for Curve_extraction object with unary_type: edge.');
+			if strcmp(self.data_type,'edge')
+				error('Cannot modify connectivity for Curve_extraction object with data_type: edge.');
 			end
 
 			% Generate connectivity
@@ -292,8 +292,8 @@ classdef Curve_extraction < handle
 			self.connectivity = connectivity;
 		end
 
-		function set.unary(self, unary)
-			self.unary = unary;
+		function set.data(self, data)
+			self.data = data;
 			self.reset_solution();
 		end
 		
@@ -361,18 +361,18 @@ classdef Curve_extraction < handle
 			self.cost = nan;
 		end
 		
-		function set.unary_type(self, unary_type)
+		function set.data_type(self, data_type)
 
-			switch unary_type
+			switch data_type
 				case 'linear_interpolation'
 					%ok
 				case 'edge'
 					%ok
 				otherwise
-					error(sprintf('Possible unary types = {linear_interpolation, edge}'));
+					error(sprintf('Possible data types = {linear_interpolation, edge}'));
 			end
 			
-			self.unary_type = unary_type;
+			self.data_type = data_type;
 		end
 		
 		% Interface the start,end and disallowed set

@@ -132,8 +132,8 @@ struct InstanceSettings
   bool store_visit_time;
   bool store_parents;
 
-  Unary_type unary_type;
-  string unary_type_str;
+  Unary_type data_type;
+  string data_type_str;
 
   vector<double> voxel_dimensions;
 
@@ -184,14 +184,14 @@ InstanceSettings parse_settings(MexParams params)
   else
     throw runtime_error("Unknown descent_method");
 
-  settings.unary_type_str = params.get<string>("unary_type", "linear_interpolation");
+  settings.data_type_str = params.get<string>("data_type", "linear_interpolation");
   
-  if (settings.unary_type_str == "linear_interpolation")
-    settings.unary_type = linear_interpolation;
-  else if (settings.unary_type_str == "edge")
-    settings.unary_type = edge;
+  if (settings.data_type_str == "linear_interpolation")
+    settings.data_type = linear_interpolation;
+  else if (settings.data_type_str == "edge")
+    settings.data_type = edge;
   else
-    throw runtime_error("Unknown unary type");
+    throw runtime_error("Unknown data type");
 
   settings.voxel_dimensions = params.get< vector<double> >("voxel_dimensions");
 
@@ -235,9 +235,9 @@ class Linear_interpolation_data_cost : public Data_cost_base
 {
   public: 
     Linear_interpolation_data_cost(
-          const matrix<double>& unary, 
+          const matrix<double>& data, 
           const std::vector<double>& voxel_dimensions) :
-          data_term(unary.data, unary.M, unary.N, unary.O, voxel_dimensions)
+          data_term(data.data, data.M, data.N, data.O, voxel_dimensions)
   {};
 
   float operator () (float x1,float y1,float z1, float x2, float y2, float z2) 
@@ -252,11 +252,11 @@ class Edge_data_cost : public Data_cost_base
 {
 public:
   Edge_data_cost(
-    const matrix<double>& unary,
+    const matrix<double>& data,
     const matrix<int>& connectivity
-  ) : unary(unary), connectivity(connectivity)
+  ) : data(data), connectivity(connectivity)
   {
-    dims = unary.ndim() -1;
+    dims = data.ndim() -1;
 
     // Create fast table from (dx,dy,dz) to index in connectivity.
     for (int i = 0; i < connectivity.M; i++)
@@ -278,26 +278,26 @@ public:
   {
     int dx,dy,dz;
 
-    dx = (int) x2-x1;
-    dy = (int) y2-y1;
+    dx = (int) x2 - x1;
+    dy = (int) y2 - y1;
     
     if (dims == 3)
     { 
-      dz = (int) z2-z1;
+      dz = (int) z2 - z1;
       int index = lookup[std::tuple<int, int, int>(dx,dy,dz)];
-      return unary(x1,y1,z1, index);
+      return data(x1,y1,z1, index);
     }
     else 
     {
       dz = 0;
       int index = lookup[std::tuple<int, int, int>(dx,dy,dz)];
-      return unary(x1,y1, index);
+      return data(x1,y1, index);
     }
   }
 
 private:
   std::map<std::tuple<int, int, int>, int> lookup;
-  const matrix<double> unary;
+  const matrix<double> data;
   const matrix<int> connectivity;
   unsigned char dims;
 };
@@ -312,14 +312,14 @@ public:
     delete ptr;
   }
 
-  Data_cost(matrix<double> unary, 
+  Data_cost(matrix<double> data, 
             matrix<int> connectivity, 
             InstanceSettings settings)
   {
-    if (settings.unary_type == linear_interpolation)
-      ptr = new Linear_interpolation_data_cost(unary, settings.voxel_dimensions);
-    else if (settings.unary_type == edge)
-      ptr = new Edge_data_cost(unary, connectivity);
+    if (settings.data_type == linear_interpolation)
+      ptr = new Linear_interpolation_data_cost(data, settings.voxel_dimensions);
+    else if (settings.data_type == edge)
+      ptr = new Edge_data_cost(data, connectivity);
   }
 
   float operator ()  (float x1,float y1,float z1, float x2, float y2, float z2)

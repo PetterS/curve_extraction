@@ -55,7 +55,7 @@ River_colors{end+1} = [182 149 121];
 River_colors{end+1} = [205 176 165];
 River_colors{end+1} = [156 133 102];
 
-unary = inf(size(I,1), size(I,2));
+data = inf(size(I,1), size(I,2));
 target_intensity = zeros(size(I));
 for i = 1 : numel(River_colors);
     
@@ -63,17 +63,17 @@ for i = 1 : numel(River_colors);
     target_intensity(:,:,2) = River_colors{i}(2);  % G
     target_intensity(:,:,3) = River_colors{i}(3);  % B
     
-    unary_i = LAB(I) - LAB(target_intensity);
-    unary_i = sum(unary_i.^2, 3);
-    unary = min(unary, unary_i);
+    data_i = LAB(I) - LAB(target_intensity);
+    data_i = sum(data_i.^2, 3);
+    data = min(data, data_i);
 end
 
 % Scale down
-unary = unary/1e3;
+data = data/1e3;
 
 % Setup the problem instance
-unary_type = 'linear_interpolation';
-C = Curve_extraction(unary_type, unary, start_set, end_set);
+data_type = 'linear_interpolation';
+C = Curve_extraction(data_type, data, start_set, end_set);
 
 C.num_threads = min(feature('numThreads'),2);
 C.descent_method = 'lbfgs';

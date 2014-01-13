@@ -103,7 +103,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // 3: End set.
   int curarg =0;
   const matrix<unsigned char> mesh_map(prhs[curarg++]);
-  const matrix<double> unary(prhs[curarg++]);
+  const matrix<double> data(prhs[curarg++]);
   const matrix<int> connectivity(prhs[curarg++]);
 
   // For 2 images third column should be zeros.
@@ -249,7 +249,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                                    mesh_map.N, 
                                    mesh_map.O);
 
-  Data_cost data_cost(unary, connectivity, settings);
+  Data_cost data_cost(data, connectivity, settings);
 
   options.store_visited = settings.store_visit_time;
   options.store_parents = settings.store_parents;

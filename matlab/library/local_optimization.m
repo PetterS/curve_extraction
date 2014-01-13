@@ -1,7 +1,7 @@
 % Wrapper for mex function.
-function [optimized_path, solution_cost, solve_time] = local_optimization(mesh_map, unary, input_path, settings)
+function [optimized_path, solution_cost, solve_time] = local_optimization(mesh_map, data, input_path, settings)
 
-problem_size = size(unary);
+problem_size = size(data);
 
 % Check file modification dates and recompile mex file
 my_name = mfilename('fullpath');
@@ -11,13 +11,13 @@ addpath(base_path);
 compile(base_path, base_name)
 
 % Checks for disallowed pixels
-unary(mesh_map == 0) = inf;
+data(mesh_map == 0) = inf;
 
  if length(problem_size) == 2
    input_path = [input_path ones(size(input_path,1),1)]; 
 end
 
-[optimized_path, solution_cost, solve_time] = local_optimization_mex(unary, input_path, settings);
+[optimized_path, solution_cost, solve_time] = local_optimization_mex(data, input_path, settings);
 
 % Check that the solution fulfills constraints
 assert( size(optimized_path,2) == size(input_path, 2) );

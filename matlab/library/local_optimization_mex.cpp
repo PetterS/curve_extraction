@@ -151,7 +151,7 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 	using namespace std;
 	ASSERT(nrhs == 3);
 
-	const matrix<double> unary_matrix(prhs[0]);
+	const matrix<double> data_matrix(prhs[0]);
 	const matrix<double> path(prhs[1]);
 
 	MexParams params(1, prhs+2);
@@ -189,9 +189,9 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 		}
 
 
-		points[i].xyz[0] = min(points[i].xyz[0], unary_matrix.M - 1.0);
-		points[i].xyz[1] = min(points[i].xyz[1], unary_matrix.N - 1.0);
-		points[i].xyz[2] = min(points[i].xyz[2], unary_matrix.O - 1.0);
+		points[i].xyz[0] = min(points[i].xyz[0], data_matrix.M - 1.0);
+		points[i].xyz[1] = min(points[i].xyz[1], data_matrix.N - 1.0);
+		points[i].xyz[2] = min(points[i].xyz[2], data_matrix.O - 1.0);
 
 		f.add_variable(points[i].xyz, 3);
 	}
@@ -203,19 +203,19 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 	f.set_constant(points[n-2].xyz, true);
 	f.set_constant(points[n-1].xyz, true);
 
-	PieceWiseConstant data_term( unary_matrix.data,
-	                             unary_matrix.M,
-	                             unary_matrix.N,
-	                             unary_matrix.O,
+	PieceWiseConstant data_term( data_matrix.data,
+	                             data_matrix.M,
+	                             data_matrix.N,
+	                             data_matrix.O,
 	                             settings.voxel_dimensions);
 
-	// Adding unary cost
-	if (settings.unary_type == linear_interpolation)
+	// Adding data cost
+	if (settings.data_type == linear_interpolation)
 	{
-		auto unary = std::make_shared<AutoDiffTerm<LinearUnary<PieceWiseConstant>, 3, 3>>(data_term);
+		auto data = std::make_shared<AutoDiffTerm<LinearUnary<PieceWiseConstant>, 3, 3>>(data_term);
 
 		for (int i = 1; i < n; ++i)
-			f.add_term(unary, points[i-1].xyz, points[i].xyz);
+			f.add_term(data, points[i-1].xyz, points[i].xyz);
 	}
 
 	// Functor for each type of regularization penalty

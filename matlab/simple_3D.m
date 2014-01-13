@@ -11,14 +11,14 @@ close all; clear all;
 
 rng(1)
 n = 10;
-unary = rand(n,n,n);
+data = rand(n,n,n);
 
 % True at voxels where it allowed to start/end
-start_set = false(size(unary));
-end_set = false(size(unary));
+start_set = false(size(data));
+end_set = false(size(data));
 
 % Possible to forbid certain voxels.
-disallowed = false(size(unary));
+disallowed = false(size(data));
 
 % Define start/end set.
 start_set(:,:,1) = true;
@@ -26,8 +26,8 @@ end_set(:,:,end) = true;
 
 
 %% Create Curve object
-unary_type = 'linear_interpolation';
-C = Curve_extraction(unary_type, unary, start_set, end_set, disallowed);
+data_type = 'linear_interpolation';
+C = Curve_extraction(data_type, data, start_set, end_set, disallowed);
 C.num_threads = min(feature('numThreads'),2);
 
 C.store_visit_time = true;

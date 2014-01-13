@@ -1,22 +1,22 @@
 % Wrapper for mex function.
 function [curve, cost, time, evaluations, visit_map, shortest_path_tree] ...
- = curve_segmentation(mesh_map, unary, dirs, settings)
+ = curve_segmentation(mesh_map, data, dirs, settings)
 
-unary(mesh_map == 0) = max( max(unary(:))*1e2, 1e10);
-
-if (~isa(mesh_map, 'uint8'))
-    warning('mesh_map is not unsigned char (uint8) convering.')
-    mesh_map = uint8(mesh_map);
-end
-
-unary(mesh_map == 0) = max( max(unary(:))*1e2, 1e10);
+data(mesh_map == 0) = max( max(data(:))*1e2, 1e10);
 
 if (~isa(mesh_map, 'uint8'))
     warning('mesh_map is not unsigned char (uint8) convering.')
     mesh_map = uint8(mesh_map);
 end
 
-assert(isa(unary,'double'));
+data(mesh_map == 0) = max( max(data(:))*1e2, 1e10);
+
+if (~isa(mesh_map, 'uint8'))
+    warning('mesh_map is not unsigned char (uint8) convering.')
+    mesh_map = uint8(mesh_map);
+end
+
+assert(isa(data,'double'));
 
 if (~any(mesh_map(:) == 1))
     error('Atleast one pixel needs to be a normal visitable pixel.');
@@ -30,7 +30,7 @@ if (~any(mesh_map(:) == 3)) && ~isfield(settings, 'end_sets')
     error('No end set');
 end
 
-assert(min(unary(:)) >= 0);
+assert(min(data(:)) >= 0);
 
 % Check file modification dates and recompile mex file
 my_name = mfilename('fullpath');
@@ -46,7 +46,7 @@ compile(base_path, base_name, sources, extra_args)
 
 
 [curve, cost, time, evaluations, visit_map, shortest_path_tree] ...
- = curve_segmentation_mex(mesh_map, unary, dirs, settings);
+ = curve_segmentation_mex(mesh_map, data, dirs, settings);
 
 %% Post process
 % Remove third dim for 2 images
