@@ -139,16 +139,12 @@ classdef Curve_extraction < handle
 			end
 
 			settings = gather_settings(self);
-			cost = curve_info(self.unary, self.curve, settings);
+			cost = curve_info(self.unary, self.curve, self.connectivity, settings);
 		end
 		
 				
 		function  [curve, cost, time, evaluations, visit_map ] = solve(self)
-			
-			if ~strcmp(self.unary_type,'linear_interpolation')
-				error('Solve is only supported for linear_interpolation unary costs _At the moment_');
-			end
-
+		
 			settings = gather_settings(self);
 						
 			[curve, cost, time, evaluations, visit_map] = ...
@@ -200,33 +196,49 @@ classdef Curve_extraction < handle
 		% Draw current solution (only supports 2D curves)
 		function display(self)
 			details(self);
-
-			if (~ismatrix(self.unary))
-				if (~isempty(self.curve))
-					plot3(self.curve(:,1), self.curve(:,2), self.curve(:,3),'-r');
-					title(sprintf('Solution cost: %g \n', self.cost));
-					fprintf('Solution cost: %g \n', self.cost);
+			clf; hold on;
+			
+			if (strcmp(self.unary_type,'linear_interpolation'))
+				
+				if (length(self.problem_size) == 2)
+					cost_im = self.unary;
+					cost_im(self.mesh_map ~= 1) = -1;
+					imagesc(double(cost_im))
+					colormap gray(256); hold on; axis equal; axis off;
 				end
-			else
 				
-				figure();
-				cost_im = self.unary;
-				cost_im(self.mesh_map ~= 1) = -1;
-				imagesc(double(cost_im))
-				colormap gray(256); hold on; axis equal; axis off;
+			elseif (strcmp(self.unary_type,'edge'))
 				
-				if (~isempty(self.curve))
-					plot(self.curve(:,2),self.curve(:,1),'-r' , 'linewidth',5)
-					title(sprintf('Solution cost: %g \n', self.cost));
+				% Just display start,end,allowed set.
+				if (length(self.problem_size) == 2)
+					imagesc(3-self.mesh_map);
+					colormap(gray(4));
+				end
+			end
+			
+			if (~isempty(self.curve))
+				msg = sprintf('Solution cost: %g \n', self.cost);
+				fprintf(msg);
+				title(msg);
+							
+				% Draw the stored solution.
+				if (length(self.problem_size) == 3)
+					plot3(self.curve(:,1), self.curve(:,2), self.curve(:,3),'-r');
 					fprintf('Solution cost: %g \n', self.cost);
 				else
-					fprintf('No solution stored, please run obj.solve() \n');
-				end								
+					plot(self.curve(:,2),self.curve(:,1),'-r' , 'linewidth',2)
+				end			
+			else
+				fprintf('No solution stored, please run obj.solve() \n');
 			end
 		end
 		
 		%% Set functions
 		function set_connectivity_by_radius(self, radius)
+
+			if strcmp(self.unary_type,'edge')
+				error('Cannot modify connectivity for Curve_extraction object with unary_type: edge.');
+			end
 
 			% Generate connectivity
 			connectivity = get_all_directions(radius, length(self.problem_size));

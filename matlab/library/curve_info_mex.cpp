@@ -19,12 +19,13 @@ double get_wtime()
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
 	ASSERT(nlhs == 5);
-	ASSERT(nrhs == 3);
+	ASSERT(nrhs == 4 || nrhs == 3);
 
 	// Parse data
 	int curarg = 0;
 	const matrix<double> unary_matrix(prhs[curarg++]);
 	const matrix<double> path(prhs[curarg++]);
+  const matrix<int> connectivity(prhs[curarg++]);
 	MexParams params(nrhs-curarg, prhs+curarg);
   InstanceSettings settings = parse_settings(params); 
 
@@ -48,7 +49,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   plhs[3] = curvature_cost;
   plhs[4] = torsion_cost;
 
-  Data_cost data_cost(unary_matrix, settings.voxel_dimensions);
+  Data_cost data_cost(unary_matrix, connectivity, settings);
 
   // Unary and length
   for (int k = 0; k < path.M-1; k++)

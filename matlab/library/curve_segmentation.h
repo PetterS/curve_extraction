@@ -9,6 +9,9 @@
 #include <iostream>
 #include <stdexcept>
 #include <tuple>
+#include <map>
+#include <memory>
+
 using std::ignore;
 using std::tie;
 
@@ -23,20 +26,6 @@ extern double timer;
 extern int M,N,O;
 extern bool verbose;
 
-class Data_cost
-{
-  public: Data_cost(const matrix<double>& unary, 
-                    const std::vector<double>& voxel_dimensions) :
-          data_term(unary.data, unary.M, unary.N, unary.O, voxel_dimensions)
-  {};
-
-  float operator () (float x1,float y1,float z1, float x2, float y2, float z2) 
-  {
-    return data_term.evaluate_line_integral<double>(x1,y1,z1, x2,y2,z2);
-  }
-
-  PieceWiseConstant data_term;
-};
 
 class Length_cost
 { 
@@ -51,9 +40,9 @@ class Length_cost
         return 0;
       } else
       {
-        float dx =voxel_dimensions[0]*(x2-x1);
-        float dy =voxel_dimensions[1]*(y2-y1);
-        float dz =voxel_dimensions[2]*(z2-z1);
+        float dx = voxel_dimensions[0]*(x2-x1);
+        float dy = voxel_dimensions[1]*(y2-y1);
+        float dz = voxel_dimensions[2]*(z2-z1);
 
         return penalty*std::sqrt( dx*dx + dy*dy + dz*dz );
       }
@@ -121,7 +110,7 @@ class Torsion_cost
 };
 
 enum Descent_method {lbfgs, nelder_mead};
-enum Unary_type {linear_interpolation};
+enum Unary_type {linear_interpolation, edge};
 
 struct InstanceSettings
 {
@@ -199,6 +188,8 @@ InstanceSettings parse_settings(MexParams params)
   
   if (settings.unary_type_str == "linear_interpolation")
     settings.unary_type = linear_interpolation;
+  else if (settings.unary_type_str == "edge")
+    settings.unary_type = edge;
   else
     throw runtime_error("Unknown unary type");
 
@@ -232,6 +223,114 @@ std::vector<Mesh::Point>
 edgepath_to_points(const std::vector<int>& path, const matrix<int>& connectivity);
 
 float distance_between_points(float x1,float y1,float z1, float x2, float y2, float z2, const std::vector<double>& voxel_dimensions);
+
+// Pure virtual class used as base for all Data costs
+class Data_cost_base 
+{
+public:
+  virtual float operator ()  (float x1,float y1,float z1, float x2, float y2, float z2) = 0;
+};
+
+class Linear_interpolation_data_cost : public Data_cost_base
+{
+  public: 
+    Linear_interpolation_data_cost(
+          const matrix<double>& unary, 
+          const std::vector<double>& voxel_dimensions) :
+          data_term(unary.data, unary.M, unary.N, unary.O, voxel_dimensions)
+  {};
+
+  float operator () (float x1,float y1,float z1, float x2, float y2, float z2) 
+  {
+    return data_term.evaluate_line_integral<double>(x1,y1,z1, x2,y2,z2);
+  }
+
+  PieceWiseConstant data_term;
+};
+
+class Edge_data_cost : public Data_cost_base
+{
+public:
+  Edge_data_cost(
+    const matrix<double>& unary,
+    const matrix<int>& connectivity
+  ) : unary(unary), connectivity(connectivity)
+  {
+    dims = unary.ndim() -1;
+
+    // Create fast table from (dx,dy,dz) to index in connectivity.
+    for (int i = 0; i < connectivity.M; i++)
+    {
+      int dx,dy,dz;
+      dx = connectivity(i,0);
+      dy = connectivity(i,1);
+
+      if (dims == 3)
+        dz = connectivity(i,2);
+      else
+        dz = 0;
+
+      lookup[ std::tuple<int, int, int>(dx,dy,dz) ] = i;
+    }
+  };
+
+  float operator () (float x1,float y1,float z1, float x2, float y2, float z2) 
+  {
+    int dx,dy,dz;
+
+    dx = (int) x2-x1;
+    dy = (int) y2-y1;
+    
+    if (dims == 3)
+    { 
+      dz = (int) z2-z1;
+      int index = lookup[std::tuple<int, int, int>(dx,dy,dz)];
+      return unary(x1,y1,z1, index);
+    }
+    else 
+    {
+      dz = 0;
+      int index = lookup[std::tuple<int, int, int>(dx,dy,dz)];
+      return unary(x1,y1, index);
+    }
+  }
+
+private:
+  std::map<std::tuple<int, int, int>, int> lookup;
+  const matrix<double> unary;
+  const matrix<int> connectivity;
+  unsigned char dims;
+};
+
+// This wrapper class is introduced so that the data_cost can be
+// passed as reference and initialized even though it's a pure virtual.
+class Data_cost
+{
+public:
+  ~Data_cost()
+  {
+    delete ptr;
+  }
+
+  Data_cost(matrix<double> unary, 
+            matrix<int> connectivity, 
+            InstanceSettings settings)
+  {
+    if (settings.unary_type == linear_interpolation)
+      ptr = new Linear_interpolation_data_cost(unary, settings.voxel_dimensions);
+    else if (settings.unary_type == edge)
+      ptr = new Edge_data_cost(unary, connectivity);
+  }
+
+  float operator ()  (float x1,float y1,float z1, float x2, float y2, float z2)
+  {
+    return ptr->operator() (x1,y1,z1, x2, y2, z2);
+  }
+ 
+private:
+  Data_cost_base * ptr;
+};
+
 
 void edge_segmentation( std::vector<Mesh::Point>& points,
                         double& run_time,

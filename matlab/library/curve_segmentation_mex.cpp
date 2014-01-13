@@ -110,9 +110,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   ASSERT(connectivity.N == 3);
   ASSERT(connectivity.ndim() == 2);
 
-  M = unary.M;
-  N = unary.N;
-  O = unary.O;
+  M = mesh_map.M;
+  N = mesh_map.N;
+  O = mesh_map.O;
 
   // Only 2 or 3d grid
   if ((mesh_map.ndim() != 2) && (mesh_map.ndim() != 3))
@@ -125,10 +125,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // Check input
   ASSERT(settings.voxel_dimensions.size() == 3);
   ASSERT(settings.regularization_radius > 0);
-  ASSERT(mesh_map.ndim() == unary.ndim());
-  ASSERT(mesh_map.M      == unary.M);
-  ASSERT(mesh_map.N      == unary.N);
-  ASSERT(mesh_map.O      == unary.O);
   ASSERT(settings.length_penalty >= 0);
   ASSERT(settings.curvature_penalty >= 0);
   ASSERT(settings.torsion_penalty >= 0);
@@ -245,19 +241,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   options.maximum_queue_size = 1000 * 1000 * 1000;
 
   // Output
-  matrix<double>  o_visit_map( unary.M, 
-                               unary.N, 
-                               unary.O);
+  matrix<double>  o_visit_map( mesh_map.M, 
+                               mesh_map.N, 
+                               mesh_map.O);
 
-  matrix<int> o_shortest_path_tree(unary.M, 
-                                   unary.N, 
-                                   unary.O);
+  matrix<int> o_shortest_path_tree(mesh_map.M, 
+                                   mesh_map.N, 
+                                   mesh_map.O);
 
-  Data_cost data_cost(unary, settings.voxel_dimensions);
+  Data_cost data_cost(unary, connectivity, settings);
 
   options.store_visited = settings.store_visit_time;
-
   options.store_parents = settings.store_parents;
+
   if (options.store_parents)
   {
   	// We want the entire tree.

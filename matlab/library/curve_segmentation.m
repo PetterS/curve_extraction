@@ -31,7 +31,6 @@ if (~any(mesh_map(:) == 3)) && ~isfield(settings, 'end_sets')
 end
 
 assert(min(unary(:)) >= 0);
-assert( all( size(mesh_map) == size(unary)));
 
 % Check file modification dates and recompile mex file
 my_name = mfilename('fullpath');
@@ -51,7 +50,7 @@ compile(base_path, base_name, sources, extra_args)
 
 %% Post process
 % Remove third dim for 2 images
-if (ndims(unary) == 2)
+if (ndims(mesh_map) == 2)
     curve = curve(:,1:2);
 end
 
