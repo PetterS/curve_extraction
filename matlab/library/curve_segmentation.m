@@ -2,14 +2,12 @@
 function [curve, cost, time, evaluations, visit_map, shortest_path_tree] ...
  = curve_segmentation(mesh_map, data, dirs, settings)
 
-data(mesh_map == 0) = max( max(data(:))*1e2, 1e10);
-
 if (~isa(mesh_map, 'uint8'))
     warning('mesh_map is not unsigned char (uint8) convering.')
     mesh_map = uint8(mesh_map);
 end
 
-data(mesh_map == 0) = max( max(data(:))*1e2, 1e10);
+data(mesh_map == 0) = inf;
 
 if (~isa(mesh_map, 'uint8'))
     warning('mesh_map is not unsigned char (uint8) convering.')
@@ -43,7 +41,6 @@ sources{2} = 'edge_segmentation.cpp'; % Curvature
 sources{3} = 'edgepair_segmentaion.cpp'; % Torsion
 
 compile(base_path, base_name, sources, extra_args)
-
 
 [curve, cost, time, evaluations, visit_map, shortest_path_tree] ...
  = curve_segmentation_mex(mesh_map, data, dirs, settings);
