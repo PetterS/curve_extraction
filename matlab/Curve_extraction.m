@@ -62,8 +62,7 @@ classdef Curve_extraction < handle
 			settings.num_threads = self.num_threads;
 		end
 
-		function interpolation_constructor(self, unary, varargin)
-			
+		function interpolation_constructor(self, unary, varargin)		
 			self.problem_size = size(unary);
 			self.unary = unary;
 
@@ -72,6 +71,18 @@ classdef Curve_extraction < handle
 
 			self.create_mesh_map(varargin{:});
 		end
+
+		function edge_constructor(self, unary, connectivity, varargin)		
+			self.connectivity = int32(connectivity);
+			self.problem_size = size(unary);
+			self.unary = unary;
+
+			sz = size(unary);
+			self.problem_size = sz(1:end-1);
+
+			self.create_mesh_map(varargin{:});
+		end
+
 
 		function self = create_mesh_map(self, start_set, end_set, disallowed)
 			% Create a structure holding the start/end and allowed pixels
@@ -111,7 +122,7 @@ classdef Curve_extraction < handle
 				case 'linear_interpolation'
 					self.interpolation_constructor(varargin{:});
 				case 'edge'
-					error('not yet implemented');
+					self.edge_constructor(varargin{:});
 			end
 
 			if (length(self.problem_size) ~= 2) && (length(self.problem_size) ~= 3)
@@ -122,15 +133,24 @@ classdef Curve_extraction < handle
 		
 		% Solution cost decomposed in the different terms.
 		function cost = curve_info(self)
+
+			if ~strcmp(self.unary_type,'linear_interpolation')
+				error('curve_info is only supported linear_interpolation unary costs _At the moment_');
+			end
+
 			settings = gather_settings(self);
 			cost = curve_info(self.unary, self.curve, settings);
 		end
 		
 				
 		function  [curve, cost, time, evaluations, visit_map ] = solve(self)
+			
+			if ~strcmp(self.unary_type,'linear_interpolation')
+				error('Solve is only supported for linear_interpolation unary costs _At the moment_');
+			end
+
 			settings = gather_settings(self);
-			
-			
+						
 			[curve, cost, time, evaluations, visit_map] = ...
 			 		 curve_segmentation(self.mesh_map, self.unary, self.connectivity, settings);
 			
@@ -142,9 +162,9 @@ classdef Curve_extraction < handle
 			self.visit_map = visit_map;
         end
         
-        function  [tree] = compute_tree(self)
+    function  [tree] = compute_tree(self)
 			settings = gather_settings(self);
-            settings.store_parents = true;
+      settings.store_parents = true;
 			
 			[~, ~, ~, ~, ~, tree] = ...
 			 		 curve_segmentation(self.mesh_map, self.unary, self.connectivity, settings);
@@ -153,6 +173,10 @@ classdef Curve_extraction < handle
 		% Move away from discretized solution and find a local optimum.
 		function [curve,cost,time] = local_optimization(self)
 			
+			if ~strcmp(self.unary_type,'linear_interpolation')
+				error('Local optimization is only supported  for linear_interpolation unary costs');
+			end
+
 			if isempty(self.curve)
 				fprintf('No curve stored, running the solver \n');
 				self.solve()
@@ -205,7 +229,7 @@ classdef Curve_extraction < handle
 		function set_connectivity_by_radius(self, radius)
 
 			% Generate connectivity
-			[~, connectivity] = get_all_directions(radius, length(self.problem_size));
+			connectivity = get_all_directions(radius, length(self.problem_size));
 			connectivity = int32(connectivity);
 			
 			if size(connectivity,2) == 2
@@ -238,13 +262,19 @@ classdef Curve_extraction < handle
 					case 'nelder-mead'
 						%ok
 					otherwise
-						error(sprintf('Possible descent methods = {lbfgs, nelder-mead}'));
+						error('Possible descent methods = {lbfgs, nelder-mead}');
 				end
 				
 				self.descent_method = method;
 		end
 		
 		function set.connectivity(self, connectivity)
+
+			% Padding
+			if (size(connectivity,2) == 2)
+				connectivity = [connectivity zeros(size(connectivity,1),1)];
+			end
+			
 			assert(size(connectivity,2) == 3);
 
 			self.connectivity = connectivity;

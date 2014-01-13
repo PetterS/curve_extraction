@@ -65,7 +65,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
                         int& evaluations,
                         double& cost,
                         const matrix<unsigned char>& mesh_map,
-                        PieceWiseConstant& data_term,
+                        Data_cost& data_cost,
                         const matrix<int>& connectivity,
                         const InstanceSettings& settings,
                         const PointSets& start_sets,
@@ -222,7 +222,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
     mexPrintf("done.\n");
 
   auto get_neighbors =
-    [ &evaluations, &data_term, &num_points_per_element, &regularization_cache,
+    [ &evaluations, &data_cost, &num_points_per_element, &regularization_cache,
       &e_super, &start_set, &connectivity, &length_cost]
     (int e, std::vector<Neighbor>* neighbors) -> void
   {
@@ -246,10 +246,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
         y2 = y1 + connectivity(k,1);
         z2 = z1 + connectivity(k,2);
 
-        float cost = data_term.evaluate_line_integral<double>
-                      (x1, y1, z1,
-                       x2, y2, z2);
-
+        float cost = data_cost(x1, y1, z1, x2, y2, z2);
         cost += length_cost(x1,y1,z1,x2,y2,z2);              
 
         neighbors->push_back(Neighbor(*itr, cost));
@@ -289,9 +286,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
           if (validind(x3,y3,z3))
           {
             // Adjacency id  
-            cost = data_term.evaluate_line_integral<double>
-                    (x2, y2, z2,
-                     x3, y3, z3);
+            cost = data_cost(x2, y2, z2, x3, y3, z3);
 
             // Lookup id
             int edge_type =  edge_id_1*num_points_per_element + edge_id_2;
@@ -343,7 +338,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
                       heuristic_evaluations,
                       heuristic_cost,
                       mesh_map,
-                      data_term,
+                      data_cost,
                       connectivity,
                       settings,
                       start_sets,

@@ -23,6 +23,20 @@ extern double timer;
 extern int M,N,O;
 extern bool verbose;
 
+class Data_cost
+{
+  public: Data_cost(const matrix<double>& unary, 
+                    const std::vector<double>& voxel_dimensions) :
+          data_term(unary.data, unary.M, unary.N, unary.O, voxel_dimensions)
+  {};
+
+  float operator () (float x1,float y1,float z1, float x2, float y2, float z2) 
+  {
+    return data_term.evaluate_line_integral<double>(x1,y1,z1, x2,y2,z2);
+  }
+
+  PieceWiseConstant data_term;
+};
 
 class length_cost_functor
 { 
@@ -224,7 +238,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
                         int& evaluations,
                         double& cost,
                         const matrix<unsigned char>& mesh_map,
-                        PieceWiseConstant& data_term,
+                        Data_cost& data_cost,
                         const matrix<int>& connectivity,
                         const InstanceSettings& settings,
                         const PointSets& start_sets,
@@ -238,7 +252,7 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
                               int& evaluations,
                               double& cost,
                               const matrix<unsigned char>& mesh_map,
-                              PieceWiseConstant& data_term,
+                              Data_cost& data_cost,
                               const matrix<int>& connectivity,
                               InstanceSettings& settings,
                               const std::vector<double>& voxel_dimensions,
@@ -251,7 +265,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
                       int& evaluations,
                       double& cost,
                       const matrix<unsigned char>& mesh_map,
-                      PieceWiseConstant& data_term,
+                      Data_cost& data_cost,
                       const matrix<int>& connectivity,
                       const InstanceSettings& settings,
                       const PointSets& start_sets,

@@ -83,7 +83,7 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
                               int& evaluations,
                               double& cost,
                               const matrix<unsigned char>& mesh_map,
-                              PieceWiseConstant& data_term,
+                              Data_cost& data_cost,
                               const matrix<int>& connectivity,
                               InstanceSettings& settings,
                               const std::vector<double>& voxel_dimensions,
@@ -160,7 +160,7 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
   super_edge.insert(e_super);
 
  auto get_neighbors_torsion =
-    [&evaluations, &data_term,
+    [&evaluations, &data_cost,
      &e_super, &connectivity, &start_set_pairs,
      &length_cost, &curvature_cost, &torsion_cost]
     (int ep, std::vector<Neighbor>* neighbors) -> void
@@ -185,11 +185,8 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
         tie(x3,y3,z3) = ind2sub(q2);
         tie(x4,y4,z4) = ind2sub(q3);
 
-        float cost = data_term.evaluate_line_integral<double>(x2, y2, z2,
-                                                              x3, y3, z3);
-
-              cost += data_term.evaluate_line_integral<double>(x3, y3, z3,
-                                                               x4, y4, z4);
+        float cost = data_cost(x2, y2, z2, x3, y3, z3);
+              cost += data_cost(x3, y3, z3, x4, y4, z4);
 
         cost += curvature_cost(x2,y2,z2, x3,y3,z3, x4,y4,z4);
         cost += length_cost(x2,y2,z2,x3,y3,z3);
@@ -242,8 +239,7 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
           continue;
 
         // Unary cost
-        cost = data_term.evaluate_line_integral<double>(x3,y3,z3,
-                                                        x4,y4,z4);
+        cost = data_cost(x3,y3,z3, x4,y4,z4);
 
         cost += length_cost(x3,y3,z3,x4,y4,z4);
         cost += torsion_cost(x1,y1,z1, x2,y2,z2, x3,y3,z3, x4,y4,z4);

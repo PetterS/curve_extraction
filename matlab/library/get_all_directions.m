@@ -1,6 +1,6 @@
 % Find all directions given a max distance
 % This code can be optimized.
-function [normalized_directions, directions] = get_all_directions(radius, dim)
+function [directions,normalized_directions] = get_all_directions(radius, dim)
 
 if (dim == 3)
     % Brute force

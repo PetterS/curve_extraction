@@ -6,7 +6,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
                       int& evaluations,
                       double& cost,
                       const matrix<unsigned char>& mesh_map,
-                      PieceWiseConstant& data_term,
+                      Data_cost& data_cost,
                       const matrix<int>& connectivity,
                       const InstanceSettings& settings,
                       const PointSets& start_sets,
@@ -19,7 +19,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
   // Create functor handling regularization costs
   length_cost_functor length_cost(voxel_dimensions, settings.length_penalty);
   
-  // Precalculate regularization cost for every item connectivity
+  // Pre-calculate regularization cost for every item connectivity
   std::vector<double> regularization_cache(connectivity.M);
 
   for (int k = 0; k < connectivity.M; k++)
@@ -32,7 +32,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
   }
 
   auto get_neighbors =
-    [&evaluations, &data_term, &connectivity, 
+    [&evaluations, &data_cost, &connectivity, 
       &regularization_cache, &voxel_dimensions]
     (int n, std::vector<Neighbor>* neighbors) -> void
   {
@@ -54,9 +54,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
         if (validind(x2,y2,z2))
         {
           // Unary
-          float cost = data_term.evaluate_line_integral<double>
-                      (x1,y1,z1,
-                       x2,y2,z2);
+          float cost = data_cost(x1,y1,z1,x2,y2,z2);
 
           // Length reg;
           cost += regularization_cache[k];

@@ -116,13 +116,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // Only 2 or 3d grid
   if ((mesh_map.ndim() != 2) && (mesh_map.ndim() != 3))
-      mexErrMsgTxt("Only 2d and 3d grid supported. \n");
+      mexErrMsgTxt("Only two and three-dimensional problem supported. \n");
 
   // Optional options
   MexParams params(nrhs-curarg, prhs+curarg); //Structure to hold and parse additional parameters
   InstanceSettings settings = parse_settings(params); 
-
-  int num_threads_to_use = params.get<int>("num_threads", -1);
 
   // Check input
   ASSERT(settings.voxel_dimensions.size() == 3);
@@ -226,8 +224,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   #ifdef USE_OPENMP
     int max_threads = omp_get_max_threads();
-    if (num_threads_to_use > 0) {
-      max_threads = num_threads_to_use;
+    if (settings.num_threads > 0) {
+      max_threads = settings.num_threads;
     }
     omp_set_num_threads(max_threads);
     int current_num_threads = -1;
@@ -246,7 +244,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   options.print_progress = false;
   options.maximum_queue_size = 1000 * 1000 * 1000;
 
-
+  // Output
   matrix<double>  o_visit_map( unary.M, 
                                unary.N, 
                                unary.O);
@@ -255,11 +253,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                                    unary.N, 
                                    unary.O);
 
-  PieceWiseConstant data_term(unary.data,
-                              unary.M,
-                              unary.N,
-                              unary.O,
-                              settings.voxel_dimensions);
+  Data_cost data_cost(unary, settings.voxel_dimensions);
 
   options.store_visited = settings.store_visit_time;
 
@@ -293,20 +287,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (use_pairs)
   {
     edgepair_segmentation(points, run_time, evaluations, cost,
-                          mesh_map, data_term, connectivity, settings,
+                          mesh_map, data_cost, connectivity, settings,
                           settings.voxel_dimensions, options, o_visit_map);
   }
   else if (use_edges)
   {
     edge_segmentation(  points, run_time, evaluations, cost,
-                        mesh_map, data_term, connectivity,
+                        mesh_map, data_cost, connectivity,
                         settings,
                         start_sets, end_sets, 
                         settings.voxel_dimensions, options, o_visit_map);
   } else 
   {
     node_segmentation( points, run_time, evaluations, cost,
-                       mesh_map, data_term,  connectivity,
+                       mesh_map, data_cost,  connectivity,
                        settings, start_sets, end_sets,
                        settings.voxel_dimensions, options, o_visit_map, o_shortest_path_tree);
   } 
