@@ -12,7 +12,6 @@ classdef Curve_extraction < handle
 		use_a_star = true;
 		verbose = false;
 		store_visit_time = false;
-		unary_type = 'linear_interpolation';
 		num_threads = int32(1);
 
 		unary =  [];
@@ -31,7 +30,7 @@ classdef Curve_extraction < handle
 	
 	% Stored by the solver
 	properties (SetAccess = protected)
-		
+		unary_type = '';
 		time = nan;
 		cost = nan;
 		evaluations = nan,
@@ -62,17 +61,19 @@ classdef Curve_extraction < handle
 			settings.voxel_dimensions = self.voxel_dimensions;
 			settings.num_threads = self.num_threads;
 		end
-	end
-	methods
-		% Find global solution in the mesh implicitly defined by the connectivity.
-		function self = Curve_extraction(unary, start_set, end_set, disallowed)
-			addpath([fileparts(mfilename('fullpath')) filesep 'library']);
+
+		function interpolation_constructor(self, unary, varargin)
 			
 			self.problem_size = size(unary);
-			
-			if (length(self.problem_size) ~= 2) && (length(self.problem_size) ~= 3)
-				error('Only two- and three-dimensional problems supported.');
-			end		
+			self.unary = unary;
+
+			default_radius = 4;
+			self.set_connectivity_by_radius(default_radius);
+
+			self.create_mesh_map(varargin{:});
+		end
+
+		function self = create_mesh_map(self, start_set, end_set, disallowed)
 			% Create a structure holding the start/end and allowed pixels
 			% for the algorithm to visit.
 			mesh_map = ones(self.problem_size,'uint8');
@@ -93,13 +94,30 @@ classdef Curve_extraction < handle
 			mesh_map(start_set) = 2;
 			mesh_map(end_set) = 3;
 			
-			
-			default_radius = 4;
-			self.set_connectivity_by_radius(default_radius);
-			
 			% Save
-			self.mesh_map = mesh_map;
-			self.unary = unary;
+			self.mesh_map = mesh_map;	
+		end
+
+	end
+	methods
+		% Find global solution in the mesh implicitly defined by the connectivity.
+		function self = Curve_extraction(unary_type, varargin)
+			addpath([fileparts(mfilename('fullpath')) filesep 'library']);
+			
+			self.unary_type = unary_type;
+
+			% Send the input to the correct constructor:
+			switch unary_type
+				case 'linear_interpolation'
+					self.interpolation_constructor(varargin{:});
+				case 'edge'
+					error('not yet implemented');
+			end
+
+			if (length(self.problem_size) ~= 2) && (length(self.problem_size) ~= 3)
+				error('Only two- and three-dimensional problems supported.');
+			end	
+
 		end
 		
 		% Solution cost decomposed in the different terms.
@@ -302,8 +320,14 @@ classdef Curve_extraction < handle
 		end
 		
 		function set.unary_type(self, unary_type)
-			if ~strcmp(unary_type,'linear_interpolation')
-				error('Currently only linear_interpolation data term supported.');
+
+			switch unary_type
+				case 'linear_interpolation'
+					%ok
+				case 'edge'
+					%ok
+				otherwise
+					error(sprintf('Possible unary types = {linear_interpolation, edge}'));
 			end
 			
 			self.unary_type = unary_type;

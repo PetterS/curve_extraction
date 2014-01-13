@@ -60,7 +60,8 @@ end
 unary = unary/1e3;
 
 % Setup the problem instance
-C = Curve_extraction(unary, start_set, end_set);
+unary_type = 'linear_interpolation';
+C = Curve_extraction(unary_type, unary, start_set, end_set);
 
 % Use all edges with size <= regularization radius
 C.set_connectivity_by_radius(2.5);
@@ -68,7 +69,6 @@ C.set_connectivity_by_radius(2.5);
 
 %% Define settings
 % Use all edges with size <= regularization radius
-C.regularization_radius = 2.5;
 C.verbose = true;
 
 % rho in paper

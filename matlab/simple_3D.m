@@ -26,7 +26,8 @@ end_set(:,:,end) = true;
 
 
 %% Create Curve object
-C = Curve_extraction(unary, start_set, end_set, disallowed);
+unary_type = 'linear_interpolation';
+C = Curve_extraction(unary_type, unary, start_set, end_set, disallowed);
 C.num_threads = min(feature('numThreads'),2);
 
 C.store_visit_time = true;
