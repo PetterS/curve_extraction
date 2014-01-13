@@ -204,7 +204,7 @@ classdef Curve_extraction < handle
 					cost_im = self.data;
 					cost_im(self.mesh_map ~= 1) = -1;
 					imagesc(double(cost_im))
-					colormap gray(256); hold on; axis equal; axis off;
+					colormap gray(256); axis equal; axis off;
 					axis ij;
 				end
 				
@@ -213,7 +213,7 @@ classdef Curve_extraction < handle
 				% Just display start,end,allowed set.
 				if (length(self.problem_size) == 2)
 					imagesc(3-self.mesh_map);
-					colormap(gray(4));
+					colormap(gray(4)); axis equal; axis off;
 					axis ij;
 				end
 			end
