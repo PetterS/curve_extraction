@@ -48,9 +48,14 @@ C = Curve_extraction('edge', data, connectivity, start_set, end_set);
 C.solve();
 C.display();
 
+C1 = C.curve;
+
 %%
 figure(2);
 Cl = Curve_extraction('linear_interpolation', linear_data, start_set, end_set);
 Cl.set_connectivity_by_radius(radius);
 Cl.solve();
 Cl.display();
+
+C2 = C.curve;
+assert(all(C1(:) == C2(:)));
