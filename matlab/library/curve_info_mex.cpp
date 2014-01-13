@@ -64,7 +64,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   if (settings.length_penalty > 0)
   {
-    length_cost_functor length_cost_fun(settings.voxel_dimensions, settings.length_penalty);
+    Length_cost length_cost_fun(settings.voxel_dimensions, settings.length_penalty);
 
     for (int k = 0; k < path.M-1; k++)
     {
@@ -76,7 +76,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
  	// Curvature
   if (settings.curvature_penalty > 0)
   {
-    curvature_cost_functor curvature_cost_fun(settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
+    Curvature_cost curvature_cost_fun(settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
 
    	for (int k = 0; k < path.M-2; k++)
    	{
@@ -95,7 +95,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   if (settings.torsion_penalty > 0)
   {
-    torsion_cost_functor torsion_cost_fun(settings.voxel_dimensions, settings.torsion_penalty, settings.torsion_power);
+    Torsion_cost torsion_cost_fun(settings.voxel_dimensions, settings.torsion_penalty, settings.torsion_power);
 
     // Torsion
     for (int k = 0; k < path.M-3; k++)

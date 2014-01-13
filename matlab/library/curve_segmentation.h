@@ -38,10 +38,10 @@ class Data_cost
   PieceWiseConstant data_term;
 };
 
-class length_cost_functor
+class Length_cost
 { 
   public:
-    length_cost_functor (const vector<double>& vd_, float p_) 
+    Length_cost (const vector<double>& vd_, float p_) 
       : voxel_dimensions(vd_), penalty(p_) {};
 
     float operator () (float x1,float y1,float z1, float x2, float y2, float z2)
@@ -64,10 +64,10 @@ class length_cost_functor
     float penalty;
 };
 
-class curvature_cost_functor
+class Curvature_cost
 {
   public: 
-    curvature_cost_functor (const vector<double>& vd_, double p_, double pow_) 
+    Curvature_cost (const vector<double>& vd_, double p_, double pow_) 
       : voxel_dimensions(vd_), penalty(p_), power(pow_) {};
 
   float operator () (double x1, double y1, double z1,
@@ -88,10 +88,10 @@ class curvature_cost_functor
     double power;
 };
 
-class torsion_cost_functor
+class Torsion_cost
 {
   public: 
-    torsion_cost_functor (const std::vector<double>& vd_, double p_, double pow_) 
+    Torsion_cost (const std::vector<double>& vd_, double p_, double pow_) 
       : voxel_dimensions(vd_), penalty(p_), power(pow_) {};
 
   float operator () (double x1, double y1, double z1,
