@@ -48,18 +48,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   plhs[3] = curvature_cost;
   plhs[4] = torsion_cost;
 
-  PieceWiseConstant data_term( unary_matrix.data,
-                               unary_matrix.M,
-                               unary_matrix.N,
-                               unary_matrix.O,
-                               settings.voxel_dimensions);
+  Data_cost data_cost(unary_matrix, settings.voxel_dimensions);
 
   // Unary and length
   for (int k = 0; k < path.M-1; k++)
   {
-    unary_cost(0) += data_term.evaluate_line_integral
-                          (path(k+0,0) -1, path(k+0,1) -1, path(k+0,2) -1,
-                           path(k+1,0) -1, path(k+1,1) -1, path(k+1,2) -1);
+    unary_cost(0) += data_cost( path(k+0,0) -1, path(k+0,1) -1, path(k+0,2) -1,
+                                path(k+1,0) -1, path(k+1,1) -1, path(k+1,2) -1);
   }
 
   if (settings.length_penalty > 0)
