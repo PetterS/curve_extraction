@@ -205,6 +205,7 @@ classdef Curve_extraction < handle
 					cost_im(self.mesh_map ~= 1) = -1;
 					imagesc(double(cost_im))
 					colormap gray(256); hold on; axis equal; axis off;
+					axis ij;
 				end
 				
 			elseif (strcmp(self.data_type,'edge'))
