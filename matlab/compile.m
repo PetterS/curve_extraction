@@ -8,6 +8,10 @@
 %
 function compile(base_path, base_name, sources, extra_args)
 
+% Recompiles if any file(s) have been edited.
+% This is useful during development.
+compile_on_edit = false;
+
 if nargin < 3
 	sources = {};
 end
@@ -106,12 +110,16 @@ if ~exist(mex_file_name, 'file')
     disp(mex_file_name)
         disp('Mex file not found; compiling...');
         compile_file = true;
- elseif mex_modified < cpp_modified
-         disp('C++ file modfied later than Mex file; recompiling...');
-         compile_file = true;
- elseif mex_modified < m_modified
-         disp('M-file modfied later than Mex file; recompiling...');
-         compile_file = true;
+end
+
+if (compile_on_edit)
+	if  mex_modified < cpp_modified
+		disp('C++ file modfied later than Mex file; recompiling...');
+		compile_file = true;
+	elseif mex_modified < m_modified
+		disp('M-file modfied later than Mex file; recompiling...');
+		compile_file = true;
+	end
 end
 
 %% Checking additional c++ files
