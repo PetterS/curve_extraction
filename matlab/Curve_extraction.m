@@ -39,6 +39,7 @@ classdef Curve_extraction < handle
 		% Note: For length regularization the visit map runs from end set to start set
 		% this is because the same code get lower bound for A*.
 		visit_map = [];
+		info;
 	end
 	
 	properties (Hidden)
@@ -156,7 +157,8 @@ classdef Curve_extraction < handle
 			self.cost =  cost;
 			self.evaluations = evaluations;
 			self.visit_map = visit_map;
-        end
+			self.info = self.curve_info();
+		end
         
     function  [tree] = compute_tree(self)
 			settings = gather_settings(self);
@@ -197,6 +199,12 @@ classdef Curve_extraction < handle
 		function display(self)
 			details(self);
 			clf; hold on;
+
+			msg1 = sprintf('Cost; total: %g data: %g, length: %g curvature: %g, torsion %g.', ...
+				self.info.total, self.info.data, self.info.length, self.info.curvature, self.info.torsion);
+			
+			msg2 = sprintf('Penalty; %g|length| + %g|curvature|^{%g} + %g|torsion|^{%g}.', ...
+				self.length_penalty, self.curvature_penalty, self.power_curvature, self.torsion_penalty, self.power_torsion);
 			
 			if (strcmp(self.data_type,'linear_interpolation'))
 				
@@ -215,20 +223,23 @@ classdef Curve_extraction < handle
 					imagesc(3-self.mesh_map);
 					colormap(gray(4)); axis equal; axis off;
 					axis ij;
+					title([{msg1}; {msg2}]);
 				end
 			end
 			
 			if (~isempty(self.curve))
-				msg = sprintf('Solution cost: %g \n', self.cost);
-				fprintf(msg);
-				title(msg);
+				title([{msg1}; {msg2}]);
 							
 				% Draw the stored solution.
 				if (length(self.problem_size) == 3)
 					plot3(self.curve(:,1), self.curve(:,2), self.curve(:,3),'-r');
 					fprintf('Solution cost: %g \n', self.cost);
 				else
-					plot(self.curve(:,2),self.curve(:,1),'-r' , 'linewidth',2)
+					cmap = jet(3);
+					
+					plot(self.curve(:,2),self.curve(:,1),'r-' , 'linewidth',2)
+					plot(self.curve(1,2),self.curve(1,1),'-o','color', cmap(2,:), 'MarkerSize',5);
+					plot(self.curve(end,2),self.curve(end,1),'-o','color', cmap(3,:), 'MarkerSize',5);
 				end			
 			else
 				fprintf('No solution stored, please run obj.solve() \n');
