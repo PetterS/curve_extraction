@@ -43,6 +43,7 @@ classdef Curve_extraction < handle
 	
 	properties (Hidden)
 		problem_size;
+		cached_cost;
 	end
 
 	methods (Access = protected)
@@ -181,15 +182,13 @@ classdef Curve_extraction < handle
 			settings = gather_settings(self);
 			[curve, total_cost, time] = local_optimization(self.mesh_map, self.data, self.curve, settings);
 			
-			if (cost > self.cost.total)
+			if (total_cost > self.cost.total)
 				warning('Unable to find a better local optima. Keeping the old solution.');
 				curve = self.curve;
 				cost = self.cost;
 			else
 				% Saving solution
 				self.curve = curve;
-				
-				% Updating curve inside the object calculate detailed cost info.
 				cost = self.cost;
 			end
 		end
@@ -371,9 +370,19 @@ classdef Curve_extraction < handle
 			self.reset_solution();
 		end
 		
+		% Calculate curve cost on demand
+		function cost = get.cost(self)
+			
+			if isempty(self.cached_cost)
+				self.cached_cost = self.curve_info(self.curve);
+			end
+			
+			cost = self.cached_cost;
+		end
+		
 		% Keeping the cuvre
 		function reset_solution(self)
-			self.cost = [];
+			self.cached_cost = [];
 		end
 		
 		function set.data_type(self, data_type)
@@ -431,14 +440,13 @@ classdef Curve_extraction < handle
 			end
 			
 			self.mesh_map = mesh_map;
+			self.reset_solution();
 		end
 		
 		function set.curve(self, curve)
 			assert(size(curve,2) == length(self.problem_size));
 			self.curve = curve;
-			
-			% Update cost
-			self.cost = self.curve_info(curve);
+			self.reset_solution();
 		end
 			
 	end
