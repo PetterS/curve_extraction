@@ -28,6 +28,8 @@ end_set(:,:,end) = true;
 %% Create Curve object
 data_type = 'linear_interpolation';
 C = Curve_extraction(data_type, data, start_set, end_set, disallowed);
+C.set_connectivity_by_radius(4);
+
 C.num_threads = min(feature('numThreads'),2);
 
 C.store_visit_time = true;

@@ -12,7 +12,7 @@ classdef Curve_extraction < handle
 		use_a_star = true;
 		verbose = false;
 		store_visit_time = false;
-		num_threads = int32(1);
+		num_threads = int32(min(2,feature('numThreads')));
 
 		data =  [];
 
@@ -71,7 +71,7 @@ classdef Curve_extraction < handle
 			self.problem_size = size(data);
 			self.data = data;
 
-			default_radius = 4;
+			default_radius = 3;
 			self.set_connectivity_by_radius(default_radius);
 
 			self.create_mesh_map(varargin{:});
