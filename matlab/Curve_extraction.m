@@ -227,16 +227,25 @@ classdef Curve_extraction < handle
 			
 			if (~isempty(self.curve))
 				title([{msg1}; {msg2}]);
-							
+						
+				cmap = jet(3);
+				
 				% Draw the stored solution.
 				if (length(self.problem_size) == 3)
-					plot3(self.curve(:,1), self.curve(:,2), self.curve(:,3),'-r');
+					plot3(self.curve(:,1), self.curve(:,2), self.curve(:,3),'-r', 'linewidth', 2);
+					
+					plot3(self.curve(1,1),self.curve(1,2),self.curve(1,3),'ko', 'MarkerFaceColor',cmap(2,:), 'MarkerSize',5);
+					plot3(self.curve(end,1),self.curve(end,2),self.curve(end,3),'ko','MarkerFaceColor', cmap(3,:), 'MarkerSize',5);
+					
+					legend('Curve','Start','End','Location', 'EastOutside');
+					view(3)
 				else
-					cmap = jet(3);
 					
 					plot(self.curve(:,2),self.curve(:,1),'r-' , 'linewidth',2)
-					plot(self.curve(1,2),self.curve(1,1),'-o','color', cmap(2,:), 'MarkerSize',5);
-					plot(self.curve(end,2),self.curve(end,1),'-o','color', cmap(3,:), 'MarkerSize',5);
+					plot(self.curve(1,2),self.curve(1,1),'ko','MarkerFaceColor', cmap(2,:), 'MarkerSize',5);
+					plot(self.curve(end,2),self.curve(end,1),'ko','MarkerFaceColor', cmap(3,:), 'MarkerSize',5);
+					
+					legend('Curve','Start','End','Location', 'EastOutside');
 				end			
 			else
 				fprintf('No solution stored, please run obj.solve() \n');
