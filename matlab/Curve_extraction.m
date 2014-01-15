@@ -32,14 +32,13 @@ classdef Curve_extraction < handle
 	properties (SetAccess = protected)
 		data_type = '';
 		time = nan;
-		cost = nan;
+		cost = [];
 		evaluations = nan,
 		mesh_map = [];
 		
 		% Note: For length regularization the visit map runs from end set to start set
 		% this is because the same code get lower bound for A*.
 		visit_map = [];
-		info;
 	end
 	
 	properties (Hidden)
@@ -110,6 +109,16 @@ classdef Curve_extraction < handle
 			self.mesh_map = mesh_map;	
 		end
 
+		% Solution cost decomposed in the different terms.
+		function cost = curve_info(self, curve)
+
+			if nargin < 2
+				curve = self.curve;
+			end
+
+			settings = gather_settings(self);
+			cost = curve_info(self.data, self.curve, self.connectivity, settings);
+		end
 	end
 	methods
 		% Find global solution in the mesh implicitly defined by the connectivity.
@@ -131,33 +140,22 @@ classdef Curve_extraction < handle
 			end	
 
 		end
-		
-		% Solution cost decomposed in the different terms.
-		function cost = curve_info(self)
-
-			if ~strcmp(self.data_type,'linear_interpolation')
-				error('curve_info is only supported linear_interpolation data costs _At the moment_');
-			end
-
-			settings = gather_settings(self);
-			cost = curve_info(self.data, self.curve, self.connectivity, settings);
-		end
-		
-				
+					
 		function  [curve, cost, time, evaluations, visit_map ] = solve(self)
-		
 			settings = gather_settings(self);
 						
-			[curve, cost, time, evaluations, visit_map] = ...
+			[curve, total_cost, time, evaluations, visit_map] = ...
 			 		 curve_segmentation(self.mesh_map, self.data, self.connectivity, settings);
 			
 			% Saving solution
 			self.curve = curve;
 			self.time = time;
-			self.cost =  cost;
 			self.evaluations = evaluations;
 			self.visit_map = visit_map;
-			self.info = self.curve_info();
+
+			% When self.curve is set the cost is automatically updated 
+			% with detailed info
+			cost = self.cost;
 		end
         
     function  [tree] = compute_tree(self)
@@ -179,19 +177,20 @@ classdef Curve_extraction < handle
 				fprintf('No curve stored, running the solver \n');
 				self.solve()
 			end
-			
-			
+						
 			settings = gather_settings(self);
-			[curve, cost, time] = local_optimization(self.mesh_map, self.data, self.curve, settings);
+			[curve, total_cost, time] = local_optimization(self.mesh_map, self.data, self.curve, settings);
 			
-			if (cost > self.cost)
-				warning('Unable to find a better local optima');
+			if (cost > self.cost.total)
+				warning('Unable to find a better local optima. Keeping the old solution.');
 				curve = self.curve;
 				cost = self.cost;
 			else
 				% Saving solution
 				self.curve = curve;
-				self.cost = cost;
+				
+				% Updating curve inside the object calculate detailed cost info.
+				cost = self.cost;
 			end
 		end
 		
@@ -200,11 +199,11 @@ classdef Curve_extraction < handle
 			details(self);
 			clf; hold on;
 				
-			if isempty(self.info)
+			if isempty(self.cost)
 				msg1 = '';
 			else	
 				msg1 = sprintf('Cost; total: %g data: %g, length: %g curvature: %g, torsion %g.', ...
-					self.info.total, self.info.data, self.info.length, self.info.curvature, self.info.torsion);
+					self.cost.total, self.cost.data, self.cost.length, self.cost.curvature, self.cost.torsion);
 			end
 			
 			msg2 = sprintf('Penalty; %g|length| + %g|curvature|^{%g} + %g|torsion|^{%g}.', ...
@@ -237,7 +236,6 @@ classdef Curve_extraction < handle
 				% Draw the stored solution.
 				if (length(self.problem_size) == 3)
 					plot3(self.curve(:,1), self.curve(:,2), self.curve(:,3),'-r');
-					fprintf('Solution cost: %g \n', self.cost);
 				else
 					cmap = jet(3);
 					
@@ -267,7 +265,7 @@ classdef Curve_extraction < handle
 
 			self.connectivity = connectivity;
 		end
-
+		
 		function set.num_threads(self, num_threads)
 			assert(num_threads > 0);
 			self.num_threads = int32(num_threads);
@@ -375,7 +373,7 @@ classdef Curve_extraction < handle
 		
 		% Keeping the cuvre
 		function reset_solution(self)
-			self.cost = nan;
+			self.cost = [];
 		end
 		
 		function set.data_type(self, data_type)
@@ -436,9 +434,11 @@ classdef Curve_extraction < handle
 		end
 		
 		function set.curve(self, curve)
-			
 			assert(size(curve,2) == length(self.problem_size));
 			self.curve = curve;
+			
+			% Update cost
+			self.cost = self.curve_info(curve);
 		end
 			
 	end
