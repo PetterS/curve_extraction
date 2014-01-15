@@ -24,8 +24,12 @@ classdef Curve_extraction < handle
 		descent_method = 'lbfgs';
 		
 		voxel_dimensions = [1 1 1];
-		
 		curve = [];
+		
+		% "Virtual"
+		start_set;
+		end_set;
+		disallowed_set;
 	end
 	
 	% Stored by the solver
@@ -34,7 +38,6 @@ classdef Curve_extraction < handle
 		time = nan;
 		cost = [];
 		evaluations = nan,
-		mesh_map = [];
 		
 		% Note: For length regularization the visit map runs from end set to start set
 		% this is because the same code get lower bound for A*.
@@ -44,6 +47,7 @@ classdef Curve_extraction < handle
 	properties (Hidden)
 		problem_size;
 		cached_cost;
+		mesh_map = [];
 	end
 
 	methods (Access = protected)
@@ -425,33 +429,39 @@ classdef Curve_extraction < handle
 		end
 		
 		% Interface the start,end and disallowed set
-		function allowed = get_disallowed_set(self)
+		function allowed = get.disallowed_set(self)
 			allowed = self.mesh_map == 0;
 		end
 		
-		function set_disallowed_set(self, disallowed)
+		function set.disallowed_set(self, disallowed)
 			assert(all(self.problem_size == size(disallowed)));
 			
-			self.mesh_map(~disallowed & self.mesh_map==0) = 1;
+			self.mesh_map(self.mesh_map == 0) = 1;
 			self.mesh_map(disallowed) = 0;
 		end
 		
-		function start_set = get_start_set(self)
+		function start_set = get.start_set(self)
 			start_set = self.mesh_map == 2;
 		end
 	
-		function set_start_set(self, start_set)
+		function set.start_set(self, start_set)
 			assert(all(self.problem_size == size(start_set)));
+			
+			remove = (self.mesh_map == 2) & ~start_set;
 			self.mesh_map(start_set) = 2;
+			self.mesh_map(remove) = 1;
 		end
 		
-		function end_set = get_end_set(self)
+		function end_set = get.end_set(self)
 			end_set = self.mesh_map == 3;
 		end
 		
-		function set_end_set(self, end_set)
+		function set.end_set(self, end_set)
 			assert(all(self.problem_size == size(end_set)));
+			
+			remove = (self.mesh_map == 3) & ~end_set;
 			self.mesh_map(end_set) = 3;
+			self.mesh_map(remove) = 1;
 		end
 		
 		function set.mesh_map(self, mesh_map)
