@@ -7,8 +7,8 @@ classdef Curve_extraction < handle
 		length_penalty = 0;
 		curvature_penalty = 0,
 		torsion_penalty = 0,
-		power_curvature = 2.0;
-		power_torsion = 2.0;
+		curvature_power = 2.0;
+		torsion_power = 2.0;
 		use_a_star = true;
 		verbose = false;
 		store_visit_time = false;
@@ -52,7 +52,7 @@ classdef Curve_extraction < handle
 			settings.length_penalty = self.length_penalty;
 			settings.curvature_penalty = self.curvature_penalty;
 			settings.torsion_penalty = self.torsion_penalty;
-			settings.power_curvature = self.power_curvature;
+			settings.curvature_power = self.curvature_power;
 			settings.use_a_star = self.use_a_star;
 			settings.verbose = self.verbose;
 			settings.data_type = self.data_type;
@@ -202,7 +202,7 @@ classdef Curve_extraction < handle
 				self.cost.total, self.cost.data, self.cost.length, self.cost.curvature, self.cost.torsion);
 
 			msg2 = sprintf('Penalty; %g|length| + %g|curvature|^{%g} + %g|torsion|^{%g}.', ...
-				self.length_penalty, self.curvature_penalty, self.power_curvature, self.torsion_penalty, self.power_torsion);
+				self.length_penalty, self.curvature_penalty, self.curvature_power, self.torsion_penalty, self.torsion_power);
 			
 			if (strcmp(self.data_type,'linear_interpolation'))
 				
@@ -275,7 +275,9 @@ classdef Curve_extraction < handle
 			end
 			
 			self.voxel_dimensions = voxel_dimensions;
+			self.reset_solution();
 		end
+		
 		
 		function set.descent_method(self, method)
 				switch method
@@ -330,6 +332,24 @@ classdef Curve_extraction < handle
 			end
 			
 			self.curvature_penalty = curvature_penalty;
+			self.reset_solution();
+		end
+		
+		function set.torsion_power(self, torsion_power)
+			if (torsion_power  < 0)
+				error('Torsion power must non-negative');
+			end
+			
+			self.torsion_power = torsion_power;
+			self.reset_solution();
+		end
+		
+		function set.curvature_power(self, curvature_power)
+			if (curvature_power  < 0)
+				error('Torsion power must non-negative');
+			end
+			
+			self.curvature_power = curvature_power;
 			self.reset_solution();
 		end
 		
