@@ -198,13 +198,9 @@ classdef Curve_extraction < handle
 			details(self);
 			clf; hold on;
 				
-			if isempty(self.cost)
-				msg1 = '';
-			else	
-				msg1 = sprintf('Cost; total: %g data: %g, length: %g curvature: %g, torsion %g.', ...
-					self.cost.total, self.cost.data, self.cost.length, self.cost.curvature, self.cost.torsion);
-			end
-			
+			msg1 = sprintf('Cost; total: %g data: %g, length: %g curvature: %g, torsion %g.', ...
+				self.cost.total, self.cost.data, self.cost.length, self.cost.curvature, self.cost.torsion);
+
 			msg2 = sprintf('Penalty; %g|length| + %g|curvature|^{%g} + %g|torsion|^{%g}.', ...
 				self.length_penalty, self.curvature_penalty, self.power_curvature, self.torsion_penalty, self.power_torsion);
 			

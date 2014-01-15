@@ -1,6 +1,17 @@
 % Wrapper for mex function.
 function cost = curve_info(data, path, connectivity, settings)
 
+if (isempty(path))
+	cost.total = nan;
+	cost.curvature = nan;
+	cost.data = nan;
+	cost.length = nan;
+	cost.torsion = nan;
+	
+	return;
+end
+
+
 % Check file modification dates and recompile mex file
 my_name = mfilename('fullpath');
 [base_path, base_name, ~] = fileparts(my_name);
