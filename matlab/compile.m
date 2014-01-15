@@ -10,7 +10,7 @@ function compile(base_path, base_name, sources, extra_args)
 
 % Recompiles if any file(s) have been edited.
 % This is useful during development.
-compile_on_edit = true;
+compile_on_edit = false;
 
 if nargin < 3
 	sources = {};
