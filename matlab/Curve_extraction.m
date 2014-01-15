@@ -199,9 +199,13 @@ classdef Curve_extraction < handle
 		function display(self)
 			details(self);
 			clf; hold on;
-
-			msg1 = sprintf('Cost; total: %g data: %g, length: %g curvature: %g, torsion %g.', ...
-				self.info.total, self.info.data, self.info.length, self.info.curvature, self.info.torsion);
+				
+			if isempty(self.info)
+				msg1 = '';
+			else	
+				msg1 = sprintf('Cost; total: %g data: %g, length: %g curvature: %g, torsion %g.', ...
+					self.info.total, self.info.data, self.info.length, self.info.curvature, self.info.torsion);
+			end
 			
 			msg2 = sprintf('Penalty; %g|length| + %g|curvature|^{%g} + %g|torsion|^{%g}.', ...
 				self.length_penalty, self.curvature_penalty, self.power_curvature, self.torsion_penalty, self.power_torsion);
