@@ -76,7 +76,7 @@ TEST_CASE("compute_torsion/helix", "")
 											 x2,y2,z2,
 											 x3,y3,z3,
 											 x4,y4,z4,
-											 1.0, n_points);
+											 1.0, true, n_points);
 		EXPECT_NEAR(t1_int_pair, 0.026620592104080, 1e-6);
 	}
 
@@ -86,7 +86,7 @@ TEST_CASE("compute_torsion/helix", "")
 											 x2,y2,z2,
 											 x3,y3,z3,
 											 x4,y4,z4,
-											 2.0, n_points);
+											 2.0, true, n_points);
 		EXPECT_NEAR(t2_int_pair, 0.001522684996624, 1e-6);
 	}
 }

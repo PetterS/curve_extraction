@@ -211,7 +211,7 @@ R curve_extraction::compute_torsion(R x1, R y1, R z1,
                                     R x2, R y2, R z2,
                                     R x3, R y3, R z3,
                                     R x4, R y4, R z4,
-                                    R p, int n)
+                                    R p, bool writable_cache, int n)
 {
 	using std::pow;
 	using std::sqrt;
@@ -296,7 +296,7 @@ R curve_extraction::compute_torsion(R x1, R y1, R z1,
 
 	if (use_cache<R>::value) {
 		// Set the cache and return.
-		if (torsion_cache.size() < max_cache_size) {
+		if (writable_cache && torsion_cache.size() < max_cache_size) {
 			torsion_cache[entry] = sum;
 		}
 	}
@@ -312,7 +312,7 @@ INSTANTIATE_CURVATURE(float);
 
 #define INSTANTIATE_TORSION(R) \
 	template           \
-	R curve_extraction::compute_torsion(R, R, R, R, R, R, R, R, R, R, R, R, R, int);
+	R curve_extraction::compute_torsion(R, R, R, R, R, R, R, R, R, R, R, R, R, bool, int);
 INSTANTIATE_TORSION(double);
 INSTANTIATE_TORSION(float);
 
