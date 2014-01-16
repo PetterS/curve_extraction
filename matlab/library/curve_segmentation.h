@@ -140,7 +140,7 @@ struct InstanceSettings
   double function_improvement_tolerance;
   double argument_improvement_tolerance;
   int num_threads;
-  double maxiter;
+  int maxiter;
 
   Descent_method descent_method;
   string descent_method_str;
