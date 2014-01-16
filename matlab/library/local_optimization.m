@@ -1,6 +1,8 @@
 % Wrapper for mex function.
 function [optimized_path, solution_cost, solve_time] = local_optimization(mesh_map, data, input_path, settings)
 
+settings = parse_settings(settings);
+
 problem_size = size(data);
 
 % Check file modification dates and recompile mex file

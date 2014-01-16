@@ -173,7 +173,7 @@ InstanceSettings parse_settings(MexParams params)
   settings.function_improvement_tolerance = params.get<double>("function_improvement_tolerance", 1e-12);
   settings.argument_improvement_tolerance = params.get<double>("argument_improvement_tolerance", 1e-12);
   settings.num_threads = params.get<int>("num_threads", -1);
-  settings.maxiter = params.get<double>("maxiter", 1000);
+  settings.maxiter = params.get<int>("maxiter", 1000);
 
   settings.descent_method_str = params.get<string>("descent_method","lbfgs");
 
