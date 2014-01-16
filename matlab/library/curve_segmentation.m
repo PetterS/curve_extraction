@@ -2,6 +2,8 @@
 function [curve, cost, time, evaluations, visit_map, shortest_path_tree] ...
  = curve_segmentation(mesh_map, data, dirs, settings)
 
+settings = parse_settings(settings);
+
 if (~isa(mesh_map, 'uint8'))
     warning('mesh_map is not unsigned char (uint8) convering.')
     mesh_map = uint8(mesh_map);

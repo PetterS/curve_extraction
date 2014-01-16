@@ -1,6 +1,8 @@
 % Wrapper for mex function.
 function cost = curve_info(data, path, connectivity, settings)
 
+settings = parse_settings(settings);
+
 if (isempty(path))
 	cost.total = nan;
 	cost.curvature = nan;
