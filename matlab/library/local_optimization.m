@@ -1,5 +1,5 @@
 % Wrapper for mex function.
-function [optimized_path, solution_cost, solve_time] = local_optimization(mesh_map, data, input_path, settings)
+function [optimized_path, solution_cost, solve_time, success] = local_optimization(mesh_map, data, input_path, settings)
 
 settings = parse_settings(settings);
 
@@ -19,7 +19,7 @@ data(mesh_map == 0) = inf;
    input_path = [input_path ones(size(input_path,1),1)]; 
 end
 
-[optimized_path, solution_cost, solve_time] = local_optimization_mex(data, input_path, settings);
+[optimized_path, solution_cost, solve_time, success] = local_optimization_mex(data, input_path, settings);
 
 % Check that the solution fulfills constraints
 assert( size(optimized_path,2) == size(input_path, 2) );

@@ -184,10 +184,13 @@ classdef Curve_extraction < handle
 			end
 						
 			settings = gather_settings(self);
-			[curve, total_cost, time] = local_optimization(self.mesh_map, self.data, self.curve, settings);
+			[curve, ~, ~, success] = local_optimization(self.mesh_map, self.data, self.curve, settings);
 			
-			if (total_cost > self.cost.total)
-				warning('Unable to find a better local optima. Keeping the old solution.');
+			if (~success)
+				if (self.verbose)
+					warning('Unable to find a better local optima. Keeping the old solution.');
+				end
+				
 				curve = self.curve;
 				cost = self.cost;
 			else

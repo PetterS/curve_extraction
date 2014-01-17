@@ -150,6 +150,7 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 
 	using namespace std;
 	ASSERT(nrhs == 3);
+	ASSERT(nlhs == 4)
 
 	const matrix<double> data_matrix(prhs[0]);
 	const matrix<double> path(prhs[1]);
@@ -260,8 +261,6 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 			f.add_term(torsion, args);
 		}
 	}
-	if (settings.verbose)
-		mexPrintf("Initial function value: %.3e\n", f.evaluate());
 
 	std::unique_ptr<Solver> solver;
 
@@ -276,7 +275,8 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 		solver->log_function = mex_log_function;
 	else
 		solver->log_function = nullptr;
-	
+
+	double intial_function_value  = f.evaluate();
 
 	solver->maximum_iterations = settings.maxiter;
 	solver->function_improvement_tolerance = settings.function_improvement_tolerance;
@@ -287,15 +287,26 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 
 	solver->solve(f, &results);
 
+	double optimized_function_value = f.evaluate();
+
+	bool decreased_function_value = (optimized_function_value < intial_function_value)?true:false;
+
 	if (settings.verbose)
 	{
 		std::stringstream sout;
 		sout << results << endl;
 		f.print_timing_information(sout);
 		mexPrintf("%s\n", sout.str().c_str());
-		mexPrintf("Final function value:   %.3e\n", f.evaluate());
-	}
 
+		if (decreased_function_value)
+			mexPrintf("Local optimization successfully decreased the function value. \n");
+		else
+			mexPrintf("Local optimization unable to decrease the function value. \n");
+
+		
+		mexPrintf("Initial function value: %e\n", intial_function_value);
+		mexPrintf("Final function value:   %e\n", optimized_function_value);	
+	}
 
 	matrix<double> resulting_path(points.size(), dim);
 	for (int i = 0; i <n; i++)
@@ -310,15 +321,18 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 	// Info from solver
 	matrix<double> o_time(1);
 	matrix<double> o_cost(1);
+	matrix<bool> o_successful(1);
 
 	double end_time = ::get_wtime();
 
-	o_cost(0) = f.evaluate();
+	o_cost(0) = optimized_function_value;
 	o_time(0) = end_time - start_time;
+	o_successful(0) = decreased_function_value;
 
 	// Solution info
 	plhs[1] = o_cost;
 	plhs[2] = o_time;
+	plhs[3] = o_successful;
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
