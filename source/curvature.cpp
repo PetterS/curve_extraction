@@ -113,7 +113,7 @@ R compute_curvature_internal(R x1, R y1, R z1,
 		diff_angle = std::min(diff_angle, 2*pi - diff_angle);
 
 		// This prevents bad pairs.
-		if (diff_angle >= pi - 0.001) {
+		if (diff_angle >= pi - 1e-10) {
 			return std::numeric_limits<float>::infinity();
 		}
 	}
