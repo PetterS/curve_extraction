@@ -86,8 +86,8 @@ TEST_CASE("Interpolate/Unary", "")
 	test_unary(data_term, 4,4,2,	0,-4,0,		256);
 
 	// Infinity tests
- 	M = 4; N = 4; O = 0;
- 	std::vector<double> un_inf(M*N);
+ 	M = 4; N = 4; O = 1;
+ 	std::vector<double> un_inf(M*N*O);
 
  	id = 0;
 	un_inf[id++] =  0.435994902142004;
