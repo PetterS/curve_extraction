@@ -16,10 +16,8 @@ All tests pass with the following compilers:
 
 Earlier compilers might not work.
 
-You can check .travis.yml for the commands used to build the library and run all tests on Ubuntu.
+### Linux ###
 
-Linux
----
 
 * Spii
 ```
@@ -45,7 +43,26 @@ sudo make install
 
 Matlab
 ------
-Compile the curve_extraction library using CMake before compiling with MATLAB.
+
+Paths can be changed in compile.m.
+
+### Linux ###
+1. Install curve_extraction and spii using instruction above.
+2. Install Eigen3 in /usr/local/include/eigen3.
+
+You can now run /matlab/simple_3D.m all files compiles on demand.
+
+### Windows ###
+1. Use CMake to build SPII and curve_extraction.
+2. Copy spii\include to C:\Program Files\SPII\include
+3. Copy \<spii-build-path\>\bin\spii.dll to C:\Program Files\SPII\lib
+4. Copy \<spii-build-path\>\lib\Release\\* to C:\Program Files\SPII\lib
+5. Copy curve_extraction\include\ to  C:\Program Files\curve_extraction\include
+6. Copy \<curve_extraction-build-path\>\lib\ to C:\Program Files\curve_extraction\lib
+7. Download and put all [Eigen 3](http://eigen.tuxfamily.org/) headers in C:\Program Files\Eigen
+8. If your version of MATLAB does not support Visual Studio 2013 follow the instructions [http://www.mathworks.com/matlabcentral/fileexchange/44408-matlab-mex-support-for-visual-studio-2013-and-mbuild](http://www.mathworks.com/matlabcentral/fileexchange/44408-matlab-mex-support-for-visual-studio-2013-and-mbuild).
+
+You can now run /matlab/simple_3D.m all files compiles on demand.
 
 Video
 ====
