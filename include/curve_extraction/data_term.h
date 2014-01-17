@@ -21,6 +21,7 @@ public:
 	                         R x2, R y2, R z2);
 private:
 	int xyz_to_ind(double x, double y, double z);
+	template<typename R> 	bool inside_volume(R x, R y, R s);
 	int M, N, O;
 	const double* unary;
 	const std::vector<double> voxeldimensions;

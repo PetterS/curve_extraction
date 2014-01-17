@@ -75,11 +75,37 @@ R fractional_part(R x)
 }
 
 template<typename R>
+bool PieceWiseConstant::inside_volume(R x, R y, R z)
+{
+	if (to_double(x) < -0.5)
+		return false;
+	if (to_double(y) < -0.5)
+		return false;
+	if (to_double(z) < -0.5)
+		return false;
+
+	if (to_double(x) > M-0.5)
+		return false;
+	if (to_double(y) > N-0.5)
+		return false;
+	if (to_double(z) > O-0.5)
+		return false;
+
+	return true;
+}
+
+template<typename R>
 R PieceWiseConstant::evaluate_line_integral(R sx, R sy, R sz,
                                             R ex, R ey, R ez)
 {
 	using std::sqrt;
 	using std::abs;
+
+	if (!inside_volume(sx,sy,sz))
+		return R(std::numeric_limits<double>::infinity());
+
+	if (!inside_volume(ex,ey,ez))
+		return R(std::numeric_limits<double>::infinity());
 
 	R dx = (ex - sx)*voxeldimensions[0];
 	R dy = (ey - sy)*voxeldimensions[1];
