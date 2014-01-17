@@ -63,11 +63,17 @@ class Curvature_cost
                       double x2, double y2, double z2,
                       double x3, double y3, double z3) 
   {
-    return penalty* compute_curvature<float>
-        (x1*voxel_dimensions[0],y1*voxel_dimensions[1],z1*voxel_dimensions[2],
-         x2*voxel_dimensions[0],y2*voxel_dimensions[1],z2*voxel_dimensions[2],
-         x3*voxel_dimensions[0],y3*voxel_dimensions[1],z3*voxel_dimensions[2],
-         power, true);
+    if (penalty == 0)
+    {
+       return 0;
+    } else
+    { 
+      return penalty* compute_curvature<float>
+          (x1*voxel_dimensions[0],y1*voxel_dimensions[1],z1*voxel_dimensions[2],
+           x2*voxel_dimensions[0],y2*voxel_dimensions[1],z2*voxel_dimensions[2],
+           x3*voxel_dimensions[0],y3*voxel_dimensions[1],z3*voxel_dimensions[2],
+           power, true);
+    }
   }
 
   private:
