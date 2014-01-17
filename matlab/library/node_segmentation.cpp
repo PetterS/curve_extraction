@@ -54,7 +54,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
         if (validind(x2,y2,z2))
         {
           // Unary
-          float cost = data_cost(x1,y1,z1,x2,y2,z2);
+          double cost = data_cost(x1,y1,z1,x2,y2,z2);
 
           // Length reg;
           cost += regularization_cache[k];

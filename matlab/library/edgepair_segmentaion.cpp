@@ -185,7 +185,7 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
         tie(x3,y3,z3) = ind2sub(q2);
         tie(x4,y4,z4) = ind2sub(q3);
 
-        float cost = data_cost(x2, y2, z2, x3, y3, z3);
+        double cost = data_cost(x2, y2, z2, x3, y3, z3);
               cost += data_cost(x3, y3, z3, x4, y4, z4);
 
         cost += curvature_cost(x2,y2,z2, x3,y3,z3, x4,y4,z4);
@@ -231,7 +231,7 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
         y4 = y3 + connectivity(e3,1),
         z4 = z3 + connectivity(e3,2);
 
-        float cost;
+        double cost;
         if (!validind(x4,y4,z4))
           continue;
 

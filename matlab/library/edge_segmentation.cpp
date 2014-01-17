@@ -2,7 +2,7 @@
 
 // The indexing:
 // Assume we have M neighbors in connectivity.
-// Then a edge (e) starting in node i 
+// Then a edge (e) starting in node i
 // have index i*M + e
 // The edge numbering is defined in the connectivity matrix.
 
@@ -240,14 +240,14 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
         int x1,y1,z1,
             x2,y2,z2;
 
-        tie(x1,y1,z1) = ind2sub(root); 
+        tie(x1,y1,z1) = ind2sub(root);
 
         x2 = x1 + connectivity(k,0);
         y2 = y1 + connectivity(k,1);
         z2 = z1 + connectivity(k,2);
 
-        float cost = data_cost(x1, y1, z1, x2, y2, z2);
-        cost += length_cost(x1,y1,z1,x2,y2,z2);              
+        double cost = data_cost(x1, y1, z1, x2, y2, z2);
+        cost += length_cost(x1,y1,z1,x2,y2,z2);
 
         neighbors->push_back(Neighbor(*itr, cost));
       }
@@ -281,11 +281,11 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
 
            // Id of destination, (element_number*num_points_per_element + edge_id)
           int dest = sub2ind(x2,y2,z2)*num_points_per_element + edge_id_2;
-          float cost;
+          double cost;
 
           if (validind(x3,y3,z3))
           {
-            // Adjacency id  
+            // Adjacency id
             cost = data_cost(x2, y2, z2, x3, y3, z3);
 
             // Lookup id
@@ -294,7 +294,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
           }
 
           else {
-            cost = std::numeric_limits<float>::infinity();
+            cost = std::numeric_limits<double>::infinity();
           }
 
           (*neighbors)[edge_id_2] = Neighbor(dest, cost);
@@ -383,12 +383,12 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
   }
 
   // Store visit time
-  if (options.store_visited) 
+  if (options.store_visited)
   {
     // Initialize.
-    for (int i = 0; i < visit_time.numel(); ++i) 
-        visit_time(i) = -1; 
- 
+    for (int i = 0; i < visit_time.numel(); ++i)
+        visit_time(i) = -1;
+
     // Go through each each edge stored in visit time
     // if it has been visited then it's != -1
     std::vector<Mesh::Point> point_vector(2, make_point(0));
@@ -407,7 +407,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
 
         double visit_value = visit_time(p.x, p.y, p.z);
 
-        if ( (visit_value == -1) || 
+        if ( (visit_value == -1) ||
             ( (visit_value >= 0) && (visit_value > options.visit_time[i]) ) )
         {
           visit_time(p.x, p.y, p.z) = options.visit_time[i];

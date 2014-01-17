@@ -28,21 +28,21 @@ extern bool verbose;
 
 
 class Length_cost
-{ 
+{
   public:
-    Length_cost (const vector<double>& vd_, float p_) 
+    Length_cost (const vector<double>& vd_, double p_)
       : voxel_dimensions(vd_), penalty(p_) {};
 
-    float operator () (float x1,float y1,float z1, float x2, float y2, float z2)
+    double operator () (double x1,double y1,double z1, double x2, double y2, double z2)
     {
       if (penalty == 0)
       {
         return 0;
       } else
       {
-        float dx = voxel_dimensions[0]*(x2-x1);
-        float dy = voxel_dimensions[1]*(y2-y1);
-        float dz = voxel_dimensions[2]*(z2-z1);
+        double dx = voxel_dimensions[0]*(x2-x1);
+        double dy = voxel_dimensions[1]*(y2-y1);
+        double dz = voxel_dimensions[2]*(z2-z1);
 
         return penalty*std::sqrt( dx*dx + dy*dy + dz*dz );
       }
@@ -50,25 +50,25 @@ class Length_cost
 
   private:
     vector<double> voxel_dimensions;
-    float penalty;
+    double penalty;
 };
 
 class Curvature_cost
 {
-  public: 
-    Curvature_cost (const vector<double>& vd_, double p_, double pow_) 
+  public:
+    Curvature_cost (const vector<double>& vd_, double p_, double pow_)
       : voxel_dimensions(vd_), penalty(p_), power(pow_) {};
 
-  float operator () (double x1, double y1, double z1,
+  double operator () (double x1, double y1, double z1,
                       double x2, double y2, double z2,
-                      double x3, double y3, double z3) 
+                      double x3, double y3, double z3)
   {
     if (penalty == 0)
     {
        return 0;
     } else
-    { 
-      return penalty* compute_curvature<float>
+    {
+      return penalty* compute_curvature<double>
           (x1*voxel_dimensions[0],y1*voxel_dimensions[1],z1*voxel_dimensions[2],
            x2*voxel_dimensions[0],y2*voxel_dimensions[1],z2*voxel_dimensions[2],
            x3*voxel_dimensions[0],y3*voxel_dimensions[1],z3*voxel_dimensions[2],
@@ -85,21 +85,21 @@ class Curvature_cost
 
 class Torsion_cost
 {
-  public: 
-    Torsion_cost (const std::vector<double>& vd_, double p_, double pow_) 
+  public:
+    Torsion_cost (const std::vector<double>& vd_, double p_, double pow_)
       : voxel_dimensions(vd_), penalty(p_), power(pow_) {};
 
-  float operator () (double x1, double y1, double z1,
+  double operator () (double x1, double y1, double z1,
                       double x2, double y2, double z2,
                       double x3, double y3, double z3,
-                      double x4, double y4, double z4) 
+                      double x4, double y4, double z4)
   {
     if (penalty == 0)
     {
       return 0;
     } else
     {
-      return penalty* compute_torsion<float>(
+      return penalty* compute_torsion<double>(
           x1*voxel_dimensions[0], y1*voxel_dimensions[1], z1*voxel_dimensions[2],
           x2*voxel_dimensions[0], y2*voxel_dimensions[1], z2*voxel_dimensions[2],
           x3*voxel_dimensions[0], y3*voxel_dimensions[1], z3*voxel_dimensions[2],
@@ -120,7 +120,7 @@ enum Unary_type {linear_interpolation, edge};
 
 struct InstanceSettings
 {
-  InstanceSettings() 
+  InstanceSettings()
   { }
 
   double length_penalty;
@@ -228,13 +228,13 @@ points_in_a_edgepair(int edgepair_num, const matrix<int>& connectivity);
 std::vector<Mesh::Point>  
 edgepath_to_points(const std::vector<int>& path, const matrix<int>& connectivity);
 
-float distance_between_points(float x1,float y1,float z1, float x2, float y2, float z2, const std::vector<double>& voxel_dimensions);
+double distance_between_points(double x1,double y1,double z1, double x2, double y2, double z2, const std::vector<double>& voxel_dimensions);
 
 // Pure virtual class used as base for all Data costs
 class Data_cost_base 
 {
 public:
-  virtual float operator ()  (float x1,float y1,float z1, float x2, float y2, float z2) = 0;
+  virtual double operator ()  (double x1,double y1,double z1, double x2, double y2, double z2) = 0;
 };
 
 class Linear_interpolation_data_cost : public Data_cost_base
@@ -246,7 +246,7 @@ class Linear_interpolation_data_cost : public Data_cost_base
           data_term(data.data, data.M, data.N, data.O, voxel_dimensions)
   {};
 
-  float operator () (float x1,float y1,float z1, float x2, float y2, float z2) 
+  double operator () (double x1,double y1,double z1, double x2, double y2, double z2) 
   {
     return data_term.evaluate_line_integral<double>(x1,y1,z1, x2,y2,z2);
   }
@@ -280,20 +280,20 @@ public:
     }
   };
 
-  float operator () (float x1,float y1,float z1, float x2, float y2, float z2) 
+  double operator () (double x1,double y1,double z1, double x2, double y2, double z2)
   {
     int dx,dy,dz;
 
     dx = (int) x2 - x1;
     dy = (int) y2 - y1;
-    
+
     if (dims == 3)
-    { 
+    {
       dz = (int) z2 - z1;
       int index = lookup[std::tuple<int, int, int>(dx,dy,dz)];
       return data(x1,y1,z1, index);
     }
-    else 
+    else
     {
       dz = 0;
       int index = lookup[std::tuple<int, int, int>(dx,dy,dz)];
@@ -318,8 +318,8 @@ public:
     delete ptr;
   }
 
-  Data_cost(matrix<double> data, 
-            matrix<int> connectivity, 
+  Data_cost(matrix<double> data,
+            matrix<int> connectivity,
             InstanceSettings settings)
   {
     if (settings.data_type == linear_interpolation)
@@ -328,11 +328,11 @@ public:
       ptr = new Edge_data_cost(data, connectivity);
   }
 
-  float operator ()  (float x1,float y1,float z1, float x2, float y2, float z2)
+  double operator ()  (double x1,double y1,double z1, double x2, double y2, double z2)
   {
     return ptr->operator() (x1,y1,z1, x2, y2, z2);
   }
- 
+
 private:
   Data_cost_base * ptr;
 };
