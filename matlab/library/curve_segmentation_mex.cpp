@@ -298,7 +298,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     node_segmentation( points, run_time, evaluations, cost,
                        mesh_map, data_cost,  connectivity,
                        settings, start_sets, end_sets,
-                       settings.voxel_dimensions, options, o_visit_map, o_shortest_path_tree);
+                       settings.voxel_dimensions, options, 
+                       o_visit_map, o_shortest_path_tree);
   } 
 
   matrix<double>  o_path(points.size(),3);

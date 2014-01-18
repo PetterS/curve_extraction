@@ -88,7 +88,7 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
                               InstanceSettings& settings,
                               const std::vector<double>& voxel_dimensions,
                               const ShortestPathOptions& options,
-                              matrix<double>& visit_time
+                              matrix<int>& visit_time
                              )
 {  
    // Create functor handling regularization costs

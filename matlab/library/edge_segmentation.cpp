@@ -72,7 +72,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
                         const PointSets& end_sets,
                         const std::vector<double>& voxel_dimensions,
                         const ShortestPathOptions& options,
-                        matrix<double>& visit_time)
+                        matrix<int>& visit_time)
 {
   // Create functor handling regularization costs
   Length_cost length_cost(voxel_dimensions, settings.length_penalty);

@@ -350,7 +350,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
                         const PointSets& end_sets,
                         const std::vector<double>& voxel_dimensions,
                         const ShortestPathOptions& options,
-                        matrix<double>& visit_time);
+                        matrix<int>& visit_time);
 
 void  edgepair_segmentation( std::vector<Mesh::Point>& points,
                               double& run_time,
@@ -362,7 +362,7 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
                               InstanceSettings& settings,
                               const std::vector<double>& voxel_dimensions,
                               const ShortestPathOptions& options,
-                              matrix<double>& visit_time
+                              matrix<int>& visit_time
                              );
 
 void node_segmentation(std::vector<Mesh::Point>& points,
@@ -377,7 +377,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
                       const PointSets& end_sets,
                       const std::vector<double>& voxel_dimensions,
                       const ShortestPathOptions& options,
-                      matrix<double>& visit_time,
+                      matrix<int>& visit_time,
                       matrix<int>& shortest_path_tree
                       );
 

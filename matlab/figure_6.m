@@ -138,11 +138,11 @@ C.store_visit_time = true;
 
 C.use_a_star = false;
 C.solve();
-without_astar = C.visit_map;
+without_astar = double(C.visit_map);
 
 C.use_a_star = true;
 C.solve();
-with_astar = C.visit_map;
+with_astar = double(C.visit_map);
 
 %% Display
 figure(1);
