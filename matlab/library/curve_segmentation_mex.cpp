@@ -240,19 +240,37 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   options.print_progress = false;
   options.maximum_queue_size = 1000 * 1000 * 1000;
 
-  // Output
-  matrix<double>  o_visit_map( mesh_map.M, 
-                               mesh_map.N, 
-                               mesh_map.O);
-
-  matrix<int> o_shortest_path_tree(mesh_map.M, 
-                                   mesh_map.N, 
-                                   mesh_map.O);
-
-  Data_cost data_cost(data, connectivity, settings);
-
   options.store_visited = settings.store_visit_time;
   options.store_parents = settings.store_parents;
+
+  // Empty matrices if visit order or parents are not calculated.
+  std::vector<int> empty_dimensions(3,0);
+  std::vector<int> real_dimensions(3);
+  std::vector<int> dimensions(3);
+
+  real_dimensions[0] = mesh_map.M;
+  real_dimensions[1] = mesh_map.N;
+  real_dimensions[2] = mesh_map.O;
+
+  if (options.store_visited)
+    dimensions = real_dimensions;
+  else
+    dimensions = empty_dimensions;
+
+  matrix<int>  o_visit_map   ( dimensions[0],
+                               dimensions[1],
+                               dimensions[2]);
+
+  if (options.store_parents)
+    dimensions = real_dimensions;
+  else
+    dimensions = empty_dimensions;
+  
+  matrix<int> o_shortest_path_tree( dimensions[0],
+                                    dimensions[1],
+                                    dimensions[2]);
+
+  Data_cost data_cost(data, connectivity, settings);
 
   if (options.store_parents)
   {
