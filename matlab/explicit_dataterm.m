@@ -1,3 +1,5 @@
+% This script shown an example where the cost for each edge
+% is explicitly given instead of interpolated from an image/volume.
 addpath([fileparts(mfilename('fullpath')) filesep 'library']);
 
 rng(0);
@@ -47,10 +49,10 @@ figure(1);
 C = Curve_extraction('edge', data, connectivity, start_set, end_set);
 C.solve();
 C.display();
-
 C1 = C.curve;
 
-%%
+%% The connectivity is choosen such that the edge cost will be exactly the same
+% as the explicitly given datacosts.
 figure(2);
 Cl = Curve_extraction('linear_interpolation', linear_data, start_set, end_set);
 Cl.set_connectivity_by_radius(radius);
