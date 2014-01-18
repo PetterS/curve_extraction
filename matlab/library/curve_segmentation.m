@@ -16,7 +16,10 @@ if (~isa(mesh_map, 'uint8'))
     mesh_map = uint8(mesh_map);
 end
 
-assert(isa(data,'double'));
+if (~isa(data,'double'));
+	disp('Data-term must be a double, converting.');
+	data = double(data);
+end
 
 if (~any(mesh_map(:) == 1))
     error('Atleast one pixel needs to be a normal visitable pixel.');

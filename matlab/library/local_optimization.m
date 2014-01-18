@@ -15,6 +15,11 @@ compile(base_path, base_name)
 % Checks for disallowed pixels
 data(mesh_map == 0) = inf;
 
+if (~isa(data,'double'));
+	disp('Data-term must be a double, converting.');
+	data = double(data);
+end
+
  if length(problem_size) == 2
    input_path = [input_path ones(size(input_path,1),1)]; 
 end

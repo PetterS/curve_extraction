@@ -13,6 +13,10 @@ if (isempty(path))
 	return;
 end
 
+if (~isa(data,'double'));
+	disp('Data-term must be a double, converting.');
+	data = double(data);
+end
 
 % Check file modification dates and recompile mex file
 my_name = mfilename('fullpath');

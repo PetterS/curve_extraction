@@ -321,7 +321,13 @@ classdef Curve_extraction < handle
 		end
 
 		function set.data(self, data)
-			self.data = data;
+			if (~isa(data,'double'));
+				disp('Data-term must be a double, converting.');
+				self.data = double(data);
+			else
+				self.data = data;
+			end
+			
 			self.reset_solution();
 		end
 		
