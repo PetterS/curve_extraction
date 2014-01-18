@@ -163,12 +163,17 @@ classdef Curve_extraction < handle
 			cost = self.cost;
 		end
         
-    function  [tree] = compute_tree(self)
+    function  [tree, curve] = compute_tree(self)
 			settings = gather_settings(self);
       settings.store_parents = true;
 			
-			[~, ~, ~, ~, ~, tree] = ...
+			[curve, ~, ~, ~, ~, tree] = ...
 			 		 curve_segmentation(self.mesh_map, self.data, self.connectivity, settings);
+
+			% If no curve is store this
+			if isempty(self.curve)
+				self.curve = curve;
+			end
 		end
 		
 		% Move away from discretized solution and find a local optimum.
