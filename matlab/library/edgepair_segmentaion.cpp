@@ -87,8 +87,9 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
                               const matrix<int>& connectivity,
                               InstanceSettings& settings,
                               const std::vector<double>& voxel_dimensions,
-                              const ShortestPathOptions& options,
-                              matrix<int>& visit_time
+                              ShortestPathOptions& options,
+                              matrix<int>& visit_time,
+                              matrix<int>& shortest_path_tree
                              )
 {  
    // Create functor handling regularization costs
@@ -259,6 +260,10 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
   evaluations = 0;
   std::vector<int> path_pairs;
 
+  if (options.store_parents)
+    options.store_visited = true;
+  options.store_parents = false;
+
   if (verbose)
     mexPrintf("Computing shortest distance ...");
 
@@ -270,6 +275,9 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
                         &path_pairs,
                         0,
                         options);
+
+  // Code clarity
+  options.store_parents = settings.store_parents;
 
   double end_time = ::get_wtime();
   run_time = end_time - start_time;
@@ -325,4 +333,48 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
       }
     }
   }  
+
+    // Store parents
+  // Conflicts are resolved by first visit.
+  if (options.store_parents)
+  {
+    ASSERT(options.store_visited);
+
+    // Initialize.
+    for (int i = 0; i < shortest_path_tree.numel(); ++i)
+        shortest_path_tree(i) = -1;
+
+    // Go through each each edge stored in visit time
+    // if it has been visited then it's != -1
+    int p0,p1,p2;
+    std::vector<Mesh::Point> point_vector(3, make_point(0));
+    for (int i = 0; i < options.visit_time.size(); i++)
+    {
+      tie(p0,p1,p2) = points_in_a_edgepair(i, connectivity);
+      point_vector[0] = make_point(p0);
+      point_vector[1] = make_point(p1);
+      point_vector[2] = make_point(p2);
+
+      if (!validind(point_vector[0]))
+        continue;
+
+      if (!validind(point_vector[1]))
+        continue;
+
+      if (!validind(point_vector[2]))
+        continue;
+
+      int time = visit_time(point_vector[2].x,
+                            point_vector[2].y,
+                            point_vector[2].z);
+
+      // Is this the edge which was here first?
+      if (time == options.visit_time[i])
+      {
+        shortest_path_tree(point_vector[2].x,
+                           point_vector[2].y,
+                           point_vector[2].z) = sub2ind(point_vector[1]);
+      }
+    }
+  }
 }

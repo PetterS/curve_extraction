@@ -58,8 +58,6 @@ std::vector<Mesh::Point>  edgepath_to_points(const std::vector<int>& path, const
   return point_vector;
 }
 
-
-
 void edge_segmentation( std::vector<Mesh::Point>& points,
                         double& run_time,
                         int& evaluations,
@@ -71,8 +69,9 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
                         const PointSets& start_sets,
                         const PointSets& end_sets,
                         const std::vector<double>& voxel_dimensions,
-                        const ShortestPathOptions& options,
-                        matrix<int>& visit_time)
+                        ShortestPathOptions& options,
+                        matrix<int>& visit_time,
+                        matrix<int>& shortest_path_tree)
 {
   // Create functor handling regularization costs
   Length_cost length_cost(voxel_dimensions, settings.length_penalty);
@@ -318,20 +317,17 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
 
   std::function<double(int)>* lower_bound_pointer = nullptr;
 
-  if (settings.use_a_star) {
+  if (settings.use_a_star && !options.store_parents) {
     // Call node_segmentation. It solves the same problem, but without
     // the curvature term.
     // We tell it to compute all distances, and we will get a
     // vector of the distance from any node to the end set.
     // (node_segmentation switches the start and end sets.)
+    // If all parents are to be stored A* will not help.
     double heuristic_runtime = 0;
     int heuristic_evaluations = 0;
     double heuristic_cost = 0;
-
-    // Currently, computing the shortest path tree
-    // is not supported in this function.
     matrix<int> empty_matrix;
-    ASSERT(!options.store_parents);
 
     node_segmentation(points,
                       heuristic_runtime,
@@ -358,6 +354,14 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
   double start_time = ::get_wtime();
   evaluations = 0;
 
+  // This can be a bit confusing: when we use line-graphs
+  // the parent is built into the edge so we do need to store them
+  // we DO however need to store the visit order in order to resolve conflicts.
+  if (options.store_parents)
+    options.store_visited = true;
+
+  options.store_parents = false;
+
   cost = shortest_path(num_edges+1,
                        super_edge,
                        end_set,
@@ -366,6 +370,8 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
                        lower_bound_pointer,
                        options);
 
+  // Code clarity
+  options.store_parents = settings.store_parents;
 
   double end_time = ::get_wtime();
   run_time = end_time - start_time;
@@ -415,4 +421,40 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
       }
     }
   }
- }
+
+  // Store parents
+  // Conflicts are resolved by first visit.
+  if (options.store_parents)
+  {
+    ASSERT(options.store_visited);
+
+    // Initialize.
+    for (int i = 0; i < shortest_path_tree.numel(); ++i)
+        shortest_path_tree(i) = -1;
+
+    // Go through each edge stored in visit time
+    std::vector<Mesh::Point> point_vector(2, make_point(0));
+    for (int i = 0; i < options.visit_time.size(); i++)
+    {
+      point_vector[0] = tail_of_edge(i, connectivity);
+      if (!validind(point_vector[0]))
+        continue;
+
+      point_vector[1] = head_of_edge(i, connectivity);
+      if (!validind(point_vector[1]))
+        continue;
+
+      int time = visit_time(point_vector[1].x,
+                            point_vector[1].y,
+                            point_vector[1].z);
+
+      // Is this the edge which was here first?
+      if (time == options.visit_time[i])
+      {
+        shortest_path_tree(point_vector[1].x,
+                           point_vector[1].y,
+                           point_vector[1].z) = sub2ind(point_vector[0]);
+      }
+    }
+  }
+}

@@ -244,6 +244,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   options.store_parents = settings.store_parents;
 
   // Empty matrices if visit order or parents are not calculated.
+  // For edge and edge pair type graphs the visit map is needed
+  // to resolve conflicts when shortest_path tree is to be calculated.
+
   std::vector<int> empty_dimensions(3,0);
   std::vector<int> real_dimensions(3);
   std::vector<int> dimensions(3);
@@ -252,7 +255,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   real_dimensions[1] = mesh_map.N;
   real_dimensions[2] = mesh_map.O;
 
-  if (options.store_visited)
+  if (options.store_visited || 
+      (use_edges && options.store_parents) || 
+      (use_pairs && options.store_parents)
+     )
     dimensions = real_dimensions;
   else
     dimensions = empty_dimensions;
@@ -302,7 +308,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   {
     edgepair_segmentation(points, run_time, evaluations, cost,
                           mesh_map, data_cost, connectivity, settings,
-                          settings.voxel_dimensions, options, o_visit_map);
+                          settings.voxel_dimensions, options, 
+                          o_visit_map, o_shortest_path_tree);
   }
   else if (use_edges)
   {
@@ -310,7 +317,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                         mesh_map, data_cost, connectivity,
                         settings,
                         start_sets, end_sets, 
-                        settings.voxel_dimensions, options, o_visit_map);
+                        settings.voxel_dimensions, options, 
+                        o_visit_map, o_shortest_path_tree);
   } else 
   {
     node_segmentation( points, run_time, evaluations, cost,
