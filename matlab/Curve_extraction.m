@@ -495,7 +495,7 @@ classdef Curve_extraction < handle
 			end
 			
 			settings = gather_settings(self);
-			cost = curve_info(self.data, self.curve, self.connectivity, settings);
+			cost = curve_info(self.data, curve, self.connectivity, settings);
 		end
 	end
 end
