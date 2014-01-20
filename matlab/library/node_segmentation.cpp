@@ -127,12 +127,8 @@ void node_segmentation(std::vector<Mesh::Point>& points,
   run_time = end_time - start_time;
 
   // Convert from inds to points
-  for (auto itr = path_nodes.begin();
-       itr != path_nodes.end();
-       itr++)
-  {
-    points.push_back( make_point(*itr) );
-  }
+  for (auto id : path_nodes)
+    points.push_back( make_point(id) );
 
   if (verbose)
   {
