@@ -113,17 +113,6 @@ classdef Curve_extraction < handle
 			% Save
 			self.mesh_map = mesh_map;	
 		end
-
-		% Solution cost decomposed in the different terms.
-		function cost = curve_info(self, curve)
-
-			if nargin < 2
-				curve = self.curve;
-			end
-
-			settings = gather_settings(self);
-			cost = curve_info(self.data, self.curve, self.connectivity, settings);
-		end
 	end
 	methods
 		% Find global solution in the mesh implicitly defined by the connectivity.
@@ -497,6 +486,16 @@ classdef Curve_extraction < handle
 			self.curve = curve;
 			self.reset_solution();
 		end
+		
+		% Solution cost decomposed in the different terms.
+		function cost = curve_info(self, curve)
 			
+			if nargin < 2
+				curve = self.curve;
+			end
+			
+			settings = gather_settings(self);
+			cost = curve_info(self.data, self.curve, self.connectivity, settings);
+		end
 	end
 end
