@@ -147,6 +147,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     use_edges = true;
   }
 
+  // No line graph needed hence A* will not be used.
+  if (!use_edges && !use_pairs)
+    settings.use_a_star = false;
+
   if (verbose)
     mexPrintf("Connectivity size is %d. \n", connectivity.M);
 

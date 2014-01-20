@@ -70,15 +70,15 @@ void node_segmentation(std::vector<Mesh::Point>& points,
     mexPrintf("Creating start/end sets without mesh...");
 
   // start and end set
-  std::set<int> start_set, end_set;
+  std::set<int> end_set, start_set;
 
   for (int i = 0; i < mesh_map.numel(); i++)
   {
       if ( mesh_map(i) == 3 )
-          start_set.insert(i);
+          end_set.insert(i);
 
       if ( mesh_map(i) == 2 )
-          end_set.insert(i);
+          start_set.insert(i);
   }
 
   // Extra start sets.
@@ -87,7 +87,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
     for (int j = 0; j < points.size(); ++j) {
 
       int p = sub2ind(points[j]);
-      end_set.insert(p);
+      start_set.insert(p);
     }
   }
 
@@ -96,7 +96,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
     const auto& points = end_sets[i];
     for (int j = 0; j < points.size(); ++j) {
       int p = sub2ind(points[j]);
-      start_set.insert(p);
+      end_set.insert(p);
     }
   }
 
@@ -107,21 +107,34 @@ void node_segmentation(std::vector<Mesh::Point>& points,
   double start_time = ::get_wtime();
   evaluations = 0;
 
-  //
-  // NOTE!
-  //
-  // Length-based shortest path switches the start and end sets.
-  // The code below is not a typo! It is equivalent for the best
-  // path, but not for the distance map to the end set.
-  //
-  cost = shortest_path( mesh_map.numel(),
-                        start_set,
-                        end_set,
-                        get_neighbors,
-                        &path_nodes,
-                        0,
-                        options);
-  std::reverse(path_nodes.begin(), path_nodes.end());
+  if (settings.use_a_star)
+  {
+    //
+    // NOTE!
+    //
+    // Switching the start and end sets.
+    // The code below is not a typo! It is equivalent for the best
+    // path, but not for the distance map to the end set.
+    //
+    cost = shortest_path( mesh_map.numel(),
+                          end_set,
+                          start_set, 
+                          get_neighbors,
+                          &path_nodes,
+                          0,
+                          options);
+
+    std::reverse(path_nodes.begin(), path_nodes.end());
+  } else
+  {
+    cost = shortest_path( mesh_map.numel(),
+                          start_set,
+                          end_set, 
+                          get_neighbors,
+                          &path_nodes,
+                          0,
+                          options);
+  }
 
   double end_time = ::get_wtime();
   run_time = end_time - start_time;
