@@ -23,16 +23,8 @@ I = imread('../data/irrawaday-delta-sevcik.jpg');
 I = I(40:end,:,:);
 I = imresize(I,0.25);
 
-% mesh_map defining allowed pixels
-% Encoded as
-% 0: Disallowed
-% 1: Allowed
-% 2: Start set
-% 3: End set.
-[w,h,c] = size(I);
-mesh_map = ones([size(I,1) size(I,2)], 'int32');
-
 % Define start/end set.
+[w,h,c] = size(I);
 start_set = false([size(I,1) size(I,2)]);
 end_set = false([size(I,1) size(I,2)]);
 
