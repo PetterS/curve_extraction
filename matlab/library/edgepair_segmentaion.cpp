@@ -364,9 +364,23 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
       if (!validind(point_vector[2]))
         continue;
 
-      int time = visit_time(point_vector[2].x,
-                            point_vector[2].y,
-                            point_vector[2].z);
+      // First edge
+      int time = visit_time(point_vector[1].x,
+                            point_vector[1].y,
+                            point_vector[1].z);
+
+      // Is this the edge which was here first?
+      if (time == options.visit_time[i])
+      {
+        shortest_path_tree(point_vector[1].x,
+                           point_vector[1].y,
+                           point_vector[1].z) = sub2ind(point_vector[0]);
+      }
+
+      // Second edge
+      time = visit_time(point_vector[2].x,
+                        point_vector[2].y,
+                        point_vector[2].z);
 
       // Is this the edge which was here first?
       if (time == options.visit_time[i])
