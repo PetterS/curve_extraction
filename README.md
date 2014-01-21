@@ -61,6 +61,7 @@ You can now run /matlab/simple_3D.m all files compiles on demand.
 6. Copy \<curve_extraction-build-path\>\lib\ to C:\Program Files\curve_extraction\lib
 7. Download and put all [Eigen 3](http://eigen.tuxfamily.org/) headers in C:\Program Files\Eigen
 8. If your version of MATLAB does not support Visual Studio 2013 follow the instructions [http://www.mathworks.com/matlabcentral/fileexchange/44408-matlab-mex-support-for-visual-studio-2013-and-mbuild](http://www.mathworks.com/matlabcentral/fileexchange/44408-matlab-mex-support-for-visual-studio-2013-and-mbuild).
+9. Add C:\Program Files\SPII\lib to your system path.
 
 You can now run /matlab/simple_3D.m all files compiles on demand.
 
