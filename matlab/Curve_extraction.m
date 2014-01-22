@@ -302,13 +302,25 @@ classdef Curve_extraction < handle
 				self.descent_method = method;
 		end
 		
+		% Connectivity
+		% Each row defines offset from a voxel,
+		% e.g: For 2D data connectivity = [1 0; 0 1; -1 0; 0 -1],
+		% defines standard 4-connectivity.
 		function set.connectivity(self, connectivity)
+
+			assert((size(connectivity,2) ~= 3) ||  (size(connectivity,2) ~= 2))
 
 			% Padding
 			if (size(connectivity,2) == 2)
 				connectivity = [connectivity zeros(size(connectivity,1),1)];
 			end
 			
+			% No duplicates
+			if (numel(unique(connectivity,'rows')) ~= numel(connectivity))
+				error('Duplicate entries in the given connectivity');
+			end
+			
+
 			assert(size(connectivity,2) == 3);
 
 			self.connectivity = connectivity;
