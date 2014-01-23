@@ -2,7 +2,6 @@
 % is explicitly given instead of interpolated from an image/volume.
 addpath([fileparts(mfilename('fullpath')) filesep 'library']);
 
-rng(0);
 linear_data = rand(50,50);
 
 % Define local connectivity
@@ -33,9 +32,6 @@ for x = 1:size(data,1);
 		end
 	end
 end
-
-% inf not implemented yet
-data(data > 1e10) = 1e10;
 
 %
 start_set = false(problem_size);
