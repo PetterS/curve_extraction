@@ -36,7 +36,8 @@ classdef Curve_extraction < handle
 	properties (SetAccess = protected)
 		data_type = '';
 		time = nan;
-		cost = [];
+		cost;
+		info;
 		evaluations = nan,
 
 		% Note: For length regularization the visit map runs from end set to start set
@@ -47,6 +48,7 @@ classdef Curve_extraction < handle
 	properties (Hidden)
 		problem_size;
 		cached_cost;
+		cached_info;
 		mesh_map = [];
 	end
 
@@ -416,14 +418,21 @@ classdef Curve_extraction < handle
 
 		% Calculate curve cost on demand
 		function cost = get.cost(self)
-
 			if isempty(self.cached_cost)
-				self.cached_cost = self.curve_info(self.curve);
+				[self.cached_cost,self.cached_info] = self.curve_info(self.curve);
 			end
 
 			cost = self.cached_cost;
 		end
+		
+		function info = get.info(self)
+			if isempty(self.cached_cost)
+				[self.cached_cost,self.cached_info] = self.curve_info(self.curve);
+			end
 
+			info = self.cached_info;
+		end
+		
 		% Keeping the cuvre
 		function reset_solution(self)
 			self.cached_cost = [];
