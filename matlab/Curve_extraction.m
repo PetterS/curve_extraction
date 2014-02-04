@@ -518,9 +518,14 @@ classdef Curve_extraction < handle
 			if nargin < 2
 				curve = self.curve;
 			end
-
-			settings = gather_settings(self);
-			[cost,info] = curve_info(self.data, curve, self.connectivity, settings);
+			
+			if ~isempty(curve)			
+				settings = gather_settings(self);
+				[cost,info] = curve_info(self.data, curve, self.connectivity, settings);
+			else
+				cost = [];
+				info = [];
+			end
 		end
 	end
 end
