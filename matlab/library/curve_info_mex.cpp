@@ -38,6 +38,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   matrix<double> total_length_cost(1);
   matrix<double> total_curvature_cost(1);
   matrix<double> total_torsion_cost(1);
+  
 
   matrix<double> curve_length(1);
   matrix<double> curve_curvature(1);

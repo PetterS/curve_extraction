@@ -37,7 +37,6 @@ classdef Curve_extraction < handle
 		data_type = '';
 		time = nan;
 		cost = [];
-		info = [];
 		evaluations = nan,
 
 		% Note: For length regularization the visit map runs from end set to start set
@@ -48,7 +47,6 @@ classdef Curve_extraction < handle
 	properties (Hidden)
 		problem_size;
 		cached_cost;
-		cached_info;
 		mesh_map = [];
 	end
 
@@ -86,6 +84,7 @@ classdef Curve_extraction < handle
 
 			sz = size(data);
 			self.problem_size = sz(1:end-1);
+
 			self.create_mesh_map(varargin{:});
 		end
 
@@ -320,6 +319,7 @@ classdef Curve_extraction < handle
 			if (numel(unique(connectivity,'rows')) ~= numel(connectivity))
 				error('Duplicate entries in the given connectivity');
 			end
+			
 
 			assert(size(connectivity,2) == 3);
 
@@ -416,26 +416,17 @@ classdef Curve_extraction < handle
 
 		% Calculate curve cost on demand
 		function cost = get.cost(self)
+
 			if isempty(self.cached_cost)
-				[self.cached_cost,self.cached_info] = self.curve_info(self.curve);
+				self.cached_cost = self.curve_info(self.curve);
 			end
 
 			cost = self.cached_cost;
 		end
 
-		% Calculate curve cost on demand
-		function info = get.info(self)
-			if isempty(self.cached_cost)
-				[self.cached_cost,self.cached_info] = self.curve_info(self.curve);
-			end
-
-			info = self.cached_info;
-		end
-
-		% Keeping the curve
+		% Keeping the cuvre
 		function reset_solution(self)
 			self.cached_cost = [];
-			self.cached_info = [];
 		end
 
 		function set.data_type(self, data_type)
