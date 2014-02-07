@@ -201,11 +201,15 @@ classdef Curve_extraction < handle
 			details(self);
 			clf; hold on;
 
-			msg1 = sprintf('Cost; total: %g data: %g, length: %g curvature: %g, torsion %g.', ...
-				self.cost.total, self.cost.data, self.cost.length, self.cost.curvature, self.cost.torsion);
-
-			msg2 = sprintf('Penalty; %g|length| + %g|curvature|^{%g} + %g|torsion|^{%g}.', ...
-				self.length_penalty, self.curvature_penalty, self.curvature_power, self.torsion_penalty, self.torsion_power);
+			msgs = {};
+			
+			if (~isempty(self.curve))
+				msgs{end+1} = sprintf('Cost; total: %g data: %g, length: %g curvature: %g, torsion %g.', ...
+					self.cost.total, self.cost.data, self.cost.length, self.cost.curvature, self.cost.torsion);
+			end
+			
+			msgs{end+1} = sprintf('Penalty; %g|length| + %g|curvature|^{%g} + %g|torsion|^{%g}.', ...
+					self.length_penalty, self.curvature_penalty, self.curvature_power, self.torsion_penalty, self.torsion_power);
 
 			if (strcmp(self.data_type,'linear_interpolation'))
 
@@ -224,12 +228,12 @@ classdef Curve_extraction < handle
 					imagesc(3-self.mesh_map);
 					colormap(gray(4)); axis equal; axis off;
 					axis ij;
-					title([{msg1}; {msg2}]);
+					title({msgs{:}});
 				end
 			end
 
 			if (~isempty(self.curve))
-				title([{msg1}; {msg2}]);
+				title({msgs{:}});
 
 				cmap = jet(3);
 
