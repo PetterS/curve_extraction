@@ -84,11 +84,6 @@ C.torsion_penalty = 0;
 C.use_a_star = false;
 
 %% 
-m = [0.0384 0.1112 0.2790;
-    0.6650 0.1675 0.1675;
-    0.3726 0.9210 0.1350];
-
-
 
 hold on;
 xlim([sigma1 sigma2]);
@@ -96,43 +91,30 @@ xlabel('\sigma')
 ylabel('Dual function value.')
 drawnow;
 
-C.curvature_penalty = sigma1;
-[~, E1] = C.solve();
-C1 = E1.curvature / sigma1; % Integrated curvature.
-g1 = C1 - curvature_limit;  % Supergradient.
-d1 = E1.total - sigma1*curvature_limit; % Dual function value.
-
-C.curvature_penalty = sigma2;
-[~, E2] = C.solve();
-C2 = E2.curvature / sigma2; % Integrated curvature.
-g2 = C2 - curvature_limit;  % Supergradient.
-d2 = E2.total - sigma2*curvature_limit; % Dual function value.
-
-plot(sigma1, d1, 'k.');
-plot(sigma2, d2, 'k.');
-draw_line(sigma1, d1, g1, sigma1, sigma2, 'k-');
-draw_line(sigma2, d2, g2, sigma1, sigma2, 'k-');
-drawnow;
-
-%% 
-assert(g1 > 0 && g2 < 0);
-
 c = [-1; 0];
-A = [1 -g1;
-     1 -g2];
-b = [d1 - g1*sigma1;
-     d2 - g2*sigma2];
-gap = 0;
+% A = [1 -g1;
+%      1 -g2];
+% b = [d1 - g1*sigma1;
+%      d2 - g2*sigma2];
+A = zeros(0, 2);
+b = zeros(0, 1);
+lb = [-inf; sigma1];
+ub = [inf;  sigma2];
 
 for iter = 1:20
-	[x, fval, exitflag] = linprog(c, A, b);
-	assert(exitflag == 1);
-
-	projected_energy = x(1);
-	sigma            = x(2);
-	plot(sigma, projected_energy, 'k*')
 	if iter == 1
-		ylim([0 1.1*projected_energy]);
+		sigma = mean([sigma1 sigma2]);
+		projected_energy = nan;
+	else
+		[x, fval, exitflag] = linprog(c, A, b, [], [], lb, ub);
+		assert(exitflag == 1);
+
+		projected_energy = x(1);
+		sigma            = x(2);
+		plot(sigma, projected_energy, 'k*')
+		if iter == 2
+			ylim([0 1.1*projected_energy]);
+		end
 	end
 
 	C.curvature_penalty = sigma;
@@ -162,9 +144,9 @@ fprintf('Final curvature: %g\n', Cnew);
 figure;
 imagesc(rgb2gray(I)); 
 colormap gray(256); hold on; axis equal; hold on; axis off;
-plot(Curve(:,2), Curve(:,1),'color', m(1,:) , 'linewidth',5)
-plot(Curve(:,2), Curve(:,1),'color', m(2,:) , 'linewidth',5)
-plot(Curve(:,2), Curve(:,1),'color', m(3,:) , 'linewidth',5)
+plot(Curve(:,2), Curve(:,1),'color', 'red', 'linewidth',5)
+plot(Curve(:,2), Curve(:,1),'color', 'red', 'linewidth',5)
+plot(Curve(:,2), Curve(:,1),'color', 'red', 'linewidth',5)
 title('Length regularization with curvature constraint.');
 
 
