@@ -90,6 +90,11 @@ include(EnableCPP11.cmake)
 IF (CMAKE_COMPILER_IS_GNUCXX)
   # GCC is not strict enough by default, so enable most of the warnings.
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpic -Wall -Wextra -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused -Wno-unused-parameter")
+
+  IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    MESSAGE("-- Debug mode enabled for Gcc; adding support for Gcov.")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
+  ENDIF (CMAKE_BUILD_TYPE STREQUAL "Debug")
 ENDIF (CMAKE_COMPILER_IS_GNUCXX)
 
 #
