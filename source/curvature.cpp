@@ -97,27 +97,6 @@ R compute_curvature_internal(R x1, R y1, R z1,
 	using std::atan2;
 	using std::abs;
 
-	{
-		static const double pi = atan(1.0)*4;
-
-		const double d1x = spii::to_double(x2) - spii::to_double(x1);
-		const double d1y = spii::to_double(y2) - spii::to_double(y1);
-
-		const double d2x = spii::to_double(x3) - spii::to_double(x2);
-		const double d2y = spii::to_double(y3) - spii::to_double(y2);
-
-		const double angle1 = atan2(d1y,d1x);
-		const double angle2 = atan2(d2y,d2x);
-
-		double diff_angle = abs(angle2-angle1);
-		diff_angle = std::min(diff_angle, 2*pi - diff_angle);
-
-		// This prevents bad pairs.
-		if (diff_angle >= pi - 1e-10) {
-			return std::numeric_limits<float>::infinity();
-		}
-	}
-
 	const R a = x1 - 2*x2 + x3;
 	const R b = y1 - 2*y2 + y3;
 	const R c = z1 - 2*z2 + z3;
