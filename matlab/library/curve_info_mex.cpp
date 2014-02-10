@@ -68,7 +68,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Data_cost data_cost(data_matrix, connectivity, settings);
 
   // Data cost
-  for (int k = 0; k < path.M-1; k++)
+  for (int k = 0; k < (int)path.M-1; k++)
   {
     total_data_cost(0) += data_cost( path(k+0,0) -1, path(k+0,1) -1, path(k+0,2) -1,
                                 path(k+1,0) -1, path(k+1,1) -1, path(k+1,2) -1);
@@ -76,7 +76,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // Length
   Length_cost length_fun(settings.voxel_dimensions, 1);
-  for (int k = 0; k < path.M-1; k++)
+  for (int k = 0; k < (int)path.M-1; k++)
   {
     curve_length(0) += length_fun(path(k+0,0) -1, path(k+0,1) -1, path(k+0,2) -1,
                                   path(k+1,0) -1, path(k+1,1) -1, path(k+1,2) -1);
@@ -85,7 +85,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
  	// Curvature
   Curvature_cost curvature_fun(settings.voxel_dimensions, 1, settings.curvature_power);
- 	for (int k = 0; k < path.M-2; k++)
+ 	for (int k = 0; k < (int)path.M-2; k++)
  	{
      curve_curvature(0) +=
      curvature_fun((path(k+0,0)-1),
@@ -101,7 +101,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // Torsion
   Torsion_cost torsion_fun(settings.voxel_dimensions, 1, settings.torsion_power);
-  for (int k = 0; k < path.M-3; k++)
+  for (int k = 0; k < (int)path.M-3; k++)
   {
     curve_torsion(0) +=
     torsion_fun((path(k+0,0)-1),
