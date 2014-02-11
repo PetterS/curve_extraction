@@ -17,13 +17,14 @@ double get_wtime()
 }
 #endif
 
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+template<typename Data_cost, typename Length_cost, typename Curvature_cost, typename Torsion_cost>
+void curve_info(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
 	ASSERT(nlhs == 8);
-	ASSERT(nrhs == 4 || nrhs == 3);
+	ASSERT(nrhs == 4 || nrhs == 5);
 
 	// Parse data
-	int curarg = 0;
+	int curarg = 1;
 	const matrix<double> data_matrix(prhs[curarg++]);
 	const matrix<double> path(prhs[curarg++]);
   const matrix<int> connectivity(prhs[curarg++]);
@@ -65,7 +66,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   plhs[6] = curve_curvature;
   plhs[7] = curve_torsion;
 
-  Data_cost data_cost(data_matrix, connectivity, settings);
+  Data_cost data_cost(data_matrix, connectivity, settings.voxel_dimensions);
 
   // Data cost
   for (int k = 0; k < (int)path.M-1; k++)
@@ -75,7 +76,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   // Length
-  Length_cost length_fun(settings.voxel_dimensions, 1);
+  Length_cost length_fun(data_matrix, settings.voxel_dimensions, 1);
   for (int k = 0; k < (int)path.M-1; k++)
   {
     curve_length(0) += length_fun(path(k+0,0) -1, path(k+0,1) -1, path(k+0,2) -1,
@@ -84,7 +85,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 
  	// Curvature
-  Curvature_cost curvature_fun(settings.voxel_dimensions, 1, settings.curvature_power);
+  Curvature_cost curvature_fun(data_matrix, settings.voxel_dimensions, 1, settings.curvature_power);
  	for (int k = 0; k < (int)path.M-2; k++)
  	{
      curve_curvature(0) +=
@@ -100,7 +101,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
  	}
 
   // Torsion
-  Torsion_cost torsion_fun(settings.voxel_dimensions, 1, settings.torsion_power);
+  Torsion_cost torsion_fun(data_matrix, settings.voxel_dimensions, 1, settings.torsion_power);
   for (int k = 0; k < (int)path.M-3; k++)
   {
     curve_torsion(0) +=
@@ -137,4 +138,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     total_torsion_cost(0) = 0;
 
   total_cost(0) = total_data_cost(0) + total_length_cost(0) + total_curvature_cost(0) + total_torsion_cost(0);
+}
+
+void mexFunction(int            nlhs,     /* number of expected outputs */
+                 mxArray        *plhs[],  /* mxArray output pointer array */
+                 int            nrhs,     /* number of inputs */
+                 const mxArray  *prhs[]   /* mxArray input pointer array */)
+{
+ int buff_size = 1024;
+ char problem_type[buff_size];
+ if (mxGetString(prhs[0], problem_type, buff_size)) 
+   throw runtime_error("First argument must be a string.");
+
+  if (!strcmp(problem_type,"linear_interpolation"))
+    curve_info<Linear_data_cost, Normal_length_cost, Normal_curvature_cost, Normal_torsion_cost>(nlhs, plhs, nrhs, prhs);
+  else if (!strcmp(problem_type,"edge"))
+    curve_info<Edge_data_cost, Normal_length_cost, Normal_curvature_cost, Normal_torsion_cost>(nlhs, plhs, nrhs, prhs);
+  else
+    throw runtime_error("Unknown data type");
 }

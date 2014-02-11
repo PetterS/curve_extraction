@@ -1,6 +1,6 @@
 % Wrapper for mex function.
 function [curve, cost, time, evaluations, visit_map, shortest_path_tree] ...
- = curve_segmentation(mesh_map, data, dirs, settings)
+ = curve_segmentation(problem_type, mesh_map, data, dirs, settings)
 
 settings = parse_settings(settings);
 
@@ -38,17 +38,13 @@ assert(min(data(:)) >= 0);
 % Check file modification dates and recompile mex file
 my_name = mfilename('fullpath');
 [base_path, base_name, ~] = fileparts(my_name);
-
 extra_args{1} = ['-I' base_path];
-
-sources{1} = 'node_segmentation.cpp'; % Length
-sources{2} = 'edge_segmentation.cpp'; % Curvature
-sources{3} = 'edgepair_segmentaion.cpp'; % Torsion
+sources = {};
 
 compile(base_path, base_name, sources, extra_args)
 
 [curve, cost, time, evaluations, visit_map, shortest_path_tree] ...
- = curve_segmentation_mex(mesh_map, data, dirs, settings);
+ = curve_segmentation_mex(problem_type,  mesh_map, data, dirs, settings);
 
 %% Post process
 % Remove third dim for 2 images

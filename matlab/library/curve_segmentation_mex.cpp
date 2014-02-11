@@ -1,5 +1,11 @@
 // Johannes Ulén and Petter Strandmark 2013
 #include "curve_segmentation.h"
+
+// Avoid explicit instantiation.
+#include "node_segmentation.cpp"
+#include "edge_segmentation.cpp"
+#include "edgepair_segmentaion.cpp"
+
 bool verbose;
 double timer;
 
@@ -87,13 +93,14 @@ double endTime(const char* message)
   return t;
 }
 
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+template<typename Data_cost, typename Length_cost, typename Curvature_cost, typename Torsion_cost>
+void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   startTime();
 
   // Check input and outputs
   ASSERT(nlhs == 6);
-  ASSERT(nrhs == 3 || nrhs == 4); 
+  ASSERT(nrhs == 4 || nrhs == 5); 
 	
   // Mesh defining allowed pixels
   // Encoded as
@@ -101,7 +108,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // 1: Allowed
   // 2: Start set
   // 3: End set.
-  int curarg =0;
+  int curarg =1;
   const matrix<unsigned char> mesh_map(prhs[curarg++]);
   const matrix<double> data(prhs[curarg++]);
   const matrix<int> connectivity(prhs[curarg++]);
@@ -215,8 +222,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                                     dimensions[1],
                                     dimensions[2]);
 
-  Data_cost data_cost(data, connectivity, settings);
-
   if (options.store_parents)
   {
   	// We want the entire tree.
@@ -245,11 +250,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // Curvature and Length can be calculated on Pair of Edges but this is overkill.
   // Same goes for Length on edges.
   if (use_pairs)
-    edgepair_segmentation (mesh_map, data_cost, connectivity, settings, options, output);
+  {
+    edgepair_segmentation<Linear_data_cost,Normal_length_cost,Normal_curvature_cost, Normal_torsion_cost>
+    (data, mesh_map, connectivity, settings, options, output);
+  }
   else if (use_edges)
-    edge_segmentation     (mesh_map, data_cost, connectivity, settings, options, output);
+  {
+    edge_segmentation<Linear_data_cost,Normal_length_cost,Normal_curvature_cost>
+    (data, mesh_map, connectivity, settings, options, output);
+  }
   else 
-    node_segmentation     (mesh_map, data_cost, connectivity, settings, options, output);
+  {
+    node_segmentation<Linear_data_cost,Normal_length_cost>
+    (data, mesh_map, connectivity, settings, options, output);
+  }
+
 
   matrix<double>  o_path(points.size(),3);
   matrix<double>  o_time(1);
@@ -276,4 +291,23 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   plhs[3] = o_eval;
   plhs[4] = o_visit_map;
   plhs[5] = o_shortest_path_tree;  
+}
+
+// Wrapper data from MATLAB.
+void mexFunction(int            nlhs,     /* number of expected outputs */
+                 mxArray        *plhs[],  /* mxArray output pointer array */
+                 int            nrhs,     /* number of inputs */
+                 const mxArray  *prhs[]   /* mxArray input pointer array */)
+{
+ int buff_size = 1024;
+ char problem_type[buff_size];
+ if (mxGetString(prhs[0], problem_type, buff_size)) 
+   throw runtime_error("First argument must be a string.");
+
+  if (!strcmp(problem_type,"linear_interpolation"))
+    curve_segmentation<Linear_data_cost, Normal_length_cost, Normal_curvature_cost, Normal_torsion_cost>(nlhs, plhs, nrhs, prhs);
+  else if (!strcmp(problem_type,"edge"))
+    curve_segmentation<Edge_data_cost, Normal_length_cost, Normal_curvature_cost, Normal_torsion_cost>(nlhs, plhs, nrhs, prhs);
+  else
+    throw runtime_error("Unknown data type");
 }

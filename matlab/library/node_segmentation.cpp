@@ -1,16 +1,18 @@
 #include "curve_segmentation.h"
+#define NODE_SEGMENTATION
 
 // Main nodes (start and end set flipped to accommodate for A*)
-void node_segmentation(const matrix<unsigned char>& mesh_map,
-                      Data_cost& data_cost,
-                      const matrix<int>& connectivity,
-                      const InstanceSettings& settings,
-                      const ShortestPathOptions& options,
-                      SegmentationOutput& output
+template<typename Data_cost, typename Length_cost>
+void node_segmentation( const matrix<double>& data,
+                        const matrix<unsigned char>& mesh_map,
+                        const matrix<int>& connectivity,
+                        InstanceSettings& settings,
+                        ShortestPathOptions& options,
+                        SegmentationOutput& output
                       )
 {
-  // Create functor handling regularization costs
-  Length_cost length_cost(settings.voxel_dimensions, settings.length_penalty);
+  Data_cost data_cost(data, connectivity, settings.voxel_dimensions);
+  Length_cost length_cost(data, settings.voxel_dimensions, settings.length_penalty);
   
   // Pre-calculate regularization cost for every item connectivity
   std::vector<double> regularization_cache(connectivity.M);

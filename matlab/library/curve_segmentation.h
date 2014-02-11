@@ -11,6 +11,7 @@
 #include <tuple>
 #include <map>
 #include <memory>
+#include <string.h>
 
 using std::ignore;
 using std::tie;
@@ -25,95 +26,6 @@ typedef std::vector<std::vector<Mesh::Point>> PointSets;
 extern double timer;
 extern int M,N,O;
 extern bool verbose;
-
-
-class Length_cost
-{
-  public:
-    Length_cost (const vector<double>& vd_, double p_)
-      : voxel_dimensions(vd_), penalty(p_) {};
-
-    double operator () (double x1,double y1,double z1, double x2, double y2, double z2)
-    {
-      if (penalty == 0)
-      {
-        return 0;
-      } else
-      {
-        double dx = voxel_dimensions[0]*(x2-x1);
-        double dy = voxel_dimensions[1]*(y2-y1);
-        double dz = voxel_dimensions[2]*(z2-z1);
-
-        return penalty*std::sqrt( dx*dx + dy*dy + dz*dz );
-      }
-    }
-
-  private:
-    vector<double> voxel_dimensions;
-    double penalty;
-};
-
-class Curvature_cost
-{
-  public:
-    Curvature_cost (const vector<double>& vd_, double p_, double pow_)
-      : voxel_dimensions(vd_), penalty(p_), power(pow_) {};
-
-  double operator () (double x1, double y1, double z1,
-                      double x2, double y2, double z2,
-                      double x3, double y3, double z3)
-  {
-    if (penalty == 0)
-    {
-       return 0;
-    } else
-    {
-      return penalty* compute_curvature<double>
-          (x1*voxel_dimensions[0],y1*voxel_dimensions[1],z1*voxel_dimensions[2],
-           x2*voxel_dimensions[0],y2*voxel_dimensions[1],z2*voxel_dimensions[2],
-           x3*voxel_dimensions[0],y3*voxel_dimensions[1],z3*voxel_dimensions[2],
-           power, true);
-    }
-  }
-
-  private:
-    // Voxel dimensions
-    const vector<double> voxel_dimensions;
-    double penalty;
-    double power;
-};
-
-class Torsion_cost
-{
-  public:
-    Torsion_cost (const std::vector<double>& vd_, double p_, double pow_)
-      : voxel_dimensions(vd_), penalty(p_), power(pow_) {};
-
-  double operator () (double x1, double y1, double z1,
-                      double x2, double y2, double z2,
-                      double x3, double y3, double z3,
-                      double x4, double y4, double z4)
-  {
-    if (penalty == 0)
-    {
-      return 0;
-    } else
-    {
-      return penalty* compute_torsion<double>(
-          x1*voxel_dimensions[0], y1*voxel_dimensions[1], z1*voxel_dimensions[2],
-          x2*voxel_dimensions[0], y2*voxel_dimensions[1], z2*voxel_dimensions[2],
-          x3*voxel_dimensions[0], y3*voxel_dimensions[1], z3*voxel_dimensions[2],
-          x4*voxel_dimensions[0], y4*voxel_dimensions[1], z4*voxel_dimensions[2],
-          power, true);
-    }
-  }
-
-  private:
-    // Voxel dimensions
-    const std::vector<double> voxel_dimensions;
-    double penalty;
-    double power;
-};
 
 enum Descent_method {lbfgs, nelder_mead};
 enum Unary_type {linear_interpolation, edge};
@@ -134,7 +46,7 @@ struct InstanceSettings
 
   bool use_a_star;
   bool verbose;
-  
+
   bool store_visit_time;
   bool store_parents;
 
@@ -191,7 +103,7 @@ InstanceSettings parse_settings(MexParams params)
     throw runtime_error("Unknown descent_method");
 
   settings.data_type_str = params.get<string>("data_type", "linear_interpolation");
-  
+
   if (settings.data_type_str == "linear_interpolation")
     settings.data_type = linear_interpolation;
   else if (settings.data_type_str == "edge")
@@ -221,121 +133,11 @@ int sub2ind(Mesh::Point p);
 std::tuple<int,int,int> ind2sub(int n);
 Mesh::Point make_point(int n);
 
-std::tuple<int, int, int> 
+std::tuple<int, int, int>
 points_in_a_edgepair(int edgepair_num, const matrix<int>& connectivity);
-
-
-std::vector<Mesh::Point>  
+std::vector<Mesh::Point>
 edgepath_to_points(const std::vector<int>& path, const matrix<int>& connectivity);
-
 double distance_between_points(double x1,double y1,double z1, double x2, double y2, double z2, const std::vector<double>& voxel_dimensions);
-
-// Pure virtual class used as base for all Data costs
-class Data_cost_base 
-{
-public:
-  virtual double operator ()  (double x1,double y1,double z1, double x2, double y2, double z2) = 0;
-};
-
-class Linear_interpolation_data_cost : public Data_cost_base
-{
-  public: 
-    Linear_interpolation_data_cost(
-          const matrix<double>& data, 
-          const std::vector<double>& voxel_dimensions) :
-          data_term(data.data, data.M, data.N, data.O, voxel_dimensions)
-  {};
-
-  double operator () (double x1,double y1,double z1, double x2, double y2, double z2) 
-  {
-    return data_term.evaluate_line_integral<double>(x1,y1,z1, x2,y2,z2);
-  }
-
-  PieceWiseConstant data_term;
-};
-
-class Edge_data_cost : public Data_cost_base
-{
-public:
-  Edge_data_cost(
-    const matrix<double>& data,
-    const matrix<int>& connectivity
-  ) : data(data), connectivity(connectivity)
-  {
-    dims = data.ndim() -1;
-
-    // Create fast table from (dx,dy,dz) to index in connectivity.
-    for (int i = 0; i < connectivity.M; i++)
-    {
-      int dx,dy,dz;
-      dx = connectivity(i,0);
-      dy = connectivity(i,1);
-
-      if (dims == 3)
-        dz = connectivity(i,2);
-      else
-        dz = 0;
-
-      lookup[ std::tuple<int, int, int>(dx,dy,dz) ] = i;
-    }
-  };
-
-  double operator () (double x1,double y1,double z1, double x2, double y2, double z2)
-  {
-    int dx,dy,dz;
-
-    dx = (int) x2 - x1;
-    dy = (int) y2 - y1;
-
-    if (dims == 3)
-    {
-      dz = (int) z2 - z1;
-      int index = lookup[std::tuple<int, int, int>(dx,dy,dz)];
-      return data(x1,y1,z1, index);
-    }
-    else
-    {
-      dz = 0;
-      int index = lookup[std::tuple<int, int, int>(dx,dy,dz)];
-      return data(x1,y1, index);
-    }
-  }
-
-private:
-  std::map<std::tuple<int, int, int>, int> lookup;
-  const matrix<double> data;
-  const matrix<int> connectivity;
-  unsigned char dims;
-};
-
-// This wrapper class is introduced so that the data_cost can be
-// passed as reference and initialized even though it's a pure virtual.
-class Data_cost
-{
-public:
-  ~Data_cost()
-  {
-    delete ptr;
-  }
-
-  Data_cost(matrix<double> data,
-            matrix<int> connectivity,
-            InstanceSettings settings)
-  {
-    if (settings.data_type == linear_interpolation)
-      ptr = new Linear_interpolation_data_cost(data, settings.voxel_dimensions);
-    else if (settings.data_type == edge)
-      ptr = new Edge_data_cost(data, connectivity);
-  }
-
-  double operator ()  (double x1,double y1,double z1, double x2, double y2, double z2)
-  {
-    return ptr->operator() (x1,y1,z1, x2, y2, z2);
-  }
-
-private:
-  Data_cost_base * ptr;
-};
 
 struct SegmentationOutput
 {
@@ -357,27 +159,32 @@ struct SegmentationOutput
   matrix<int>& shortest_path_tree;
 };
 
-void edge_segmentation( const matrix<unsigned char>& mesh_map,
-                        Data_cost& data_cost,
+template<typename Data_cost, typename Length_cost>
+void node_segmentation( const matrix<double>& data,
+                        const matrix<unsigned char>& mesh_map,
                         const matrix<int>& connectivity,
-                        const InstanceSettings& settings,
+                        InstanceSettings& settings,
                         ShortestPathOptions& options,
-                        SegmentationOutput& output);
+                        SegmentationOutput& output
+                        );
 
-void  edgepair_segmentation(  const matrix<unsigned char>& mesh_map,
-                              Data_cost& data_cost,
+template<typename Data_cost, typename Length_cost, typename Curvature_cost>
+void edge_segmentation( const matrix<double>& data,
+                        const matrix<unsigned char>& mesh_map,
+                        const matrix<int>& connectivity,
+                        InstanceSettings& settings,
+                        ShortestPathOptions& options,
+                        SegmentationOutput& output
+                        );
+
+template<typename Data_cost, typename Length_cost, typename Curvature_cost, typename Torsion_cost>
+void  edgepair_segmentation(  const matrix<double>& data,
+                              const matrix<unsigned char>& mesh_map,
                               const matrix<int>& connectivity,
                               InstanceSettings& settings,
                               ShortestPathOptions& options,
                               SegmentationOutput& output
                              );
 
-void node_segmentation(const matrix<unsigned char>& mesh_map,
-                      Data_cost& data_cost,
-                      const matrix<int>& connectivity,
-                      const InstanceSettings& settings,
-                      const ShortestPathOptions& options,
-                      SegmentationOutput& output
-                      );
-
+#include "instances/instances.h"
 #endif

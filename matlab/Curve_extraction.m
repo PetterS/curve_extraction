@@ -141,7 +141,7 @@ classdef Curve_extraction < handle
 			settings = gather_settings(self);
 
 			[curve, total_cost, time, evaluations, visit_map] = ...
-			 		 curve_segmentation(self.mesh_map, self.data, self.connectivity, settings);
+			 		 curve_segmentation(self.data_type, self.mesh_map, self.data, self.connectivity, settings);
 
 			% Saving solution
 			self.curve = curve;
@@ -525,7 +525,7 @@ classdef Curve_extraction < handle
 			
 			if ~isempty(curve)			
 				settings = gather_settings(self);
-				[cost,info] = curve_info(self.data, curve, self.connectivity, settings);
+				[cost,info] = curve_info(self.data_type, self.data, curve, self.connectivity, settings);
 			else
 				cost = [];
 				info = [];

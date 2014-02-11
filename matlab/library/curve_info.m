@@ -1,5 +1,5 @@
 % Wrapper for mex function.
-function [cost, info] = curve_info(data, path, connectivity, settings)
+function [cost, info] = curve_info(problem_type, data, path, connectivity, settings)
 
 settings = parse_settings(settings);
 
@@ -31,5 +31,5 @@ end
 
 [cost.total, cost.data, cost.length, cost.curvature, cost.torsion, ...
  info.length, info.curvature, info.torsion] ...
-	= curve_info_mex(data, path, connectivity, settings);
+	= curve_info_mex(problem_type, data, path, connectivity, settings);
 info.data = cost.data;

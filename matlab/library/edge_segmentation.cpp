@@ -1,4 +1,5 @@
 #include "curve_segmentation.h"
+#define EDGE_SEGMENTATION
 
 // The indexing:
 // Assume we have M neighbors in connectivity.
@@ -58,16 +59,17 @@ std::vector<Mesh::Point>  edgepath_to_points(const std::vector<int>& path, const
   return point_vector;
 }
 
-void edge_segmentation( const matrix<unsigned char>& mesh_map,
-                        Data_cost& data_cost,
+template<typename Data_cost, typename Length_cost, typename Curvature_cost>
+void edge_segmentation( const matrix<double>& data,
+                        const matrix<unsigned char>& mesh_map,
                         const matrix<int>& connectivity,
-                        const InstanceSettings& settings,
+                        InstanceSettings& settings,
                         ShortestPathOptions& options,
                         SegmentationOutput& output)
 {
-  // Create functor handling regularization costs
-  Length_cost length_cost(settings.voxel_dimensions, settings.length_penalty);
-  Curvature_cost curvature_cost(settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
+  Data_cost data_cost(data, connectivity, settings.voxel_dimensions);
+  Length_cost length_cost(data, settings.voxel_dimensions, settings.length_penalty);
+  Curvature_cost curvature_cost(data, settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
 
   // Some notation for the edge graph
   // Elements corresponds to points in the original graph
@@ -272,8 +274,9 @@ void edge_segmentation( const matrix<unsigned char>& mesh_map,
     SegmentationOutput heuristic_output
     (output.points, heuristic_runtime, heuristic_evaluations, heuristic_cost, output.visit_time, empty_matrix);
 
-    node_segmentation(mesh_map,
-                      data_cost,
+    node_segmentation<Data_cost, Length_cost>
+                     (data,
+                      mesh_map,
                       connectivity,
                       settings,
                       heuristic_options,
