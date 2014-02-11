@@ -337,29 +337,6 @@ private:
   Data_cost_base * ptr;
 };
 
-// Same structure for all solvers
-struct SegmentationInput
-{
-  SegmentationInput(Data_cost& data_cost,
-                    const matrix<unsigned char>& mesh_map,
-                    const matrix<int>& connectivity,
-                    const InstanceSettings& settings,
-                    const PointSets& start_sets,
-                    const PointSets& end_sets,
-                    ShortestPathOptions& options) :
-    data_cost(data_cost), mesh_map(mesh_map), connectivity(connectivity),
-    settings(settings), start_sets(start_sets), end_sets(end_sets),  options(options)
-  {};
-
-  Data_cost& data_cost;
-  const matrix<unsigned char>& mesh_map;
-  const matrix<int>& connectivity;
-  const InstanceSettings& settings;
-  const PointSets& start_sets;
-  const PointSets& end_sets;
-  ShortestPathOptions& options;
-};
-
 struct SegmentationOutput
 {
   SegmentationOutput( std::vector<Mesh::Point>& points,
@@ -384,9 +361,6 @@ void edge_segmentation( const matrix<unsigned char>& mesh_map,
                         Data_cost& data_cost,
                         const matrix<int>& connectivity,
                         const InstanceSettings& settings,
-                        const PointSets& start_sets,
-                        const PointSets& end_sets,
-                        const std::vector<double>& voxel_dimensions,
                         ShortestPathOptions& options,
                         SegmentationOutput& output);
 
@@ -394,7 +368,6 @@ void  edgepair_segmentation(  const matrix<unsigned char>& mesh_map,
                               Data_cost& data_cost,
                               const matrix<int>& connectivity,
                               InstanceSettings& settings,
-                              const std::vector<double>& voxel_dimensions,
                               ShortestPathOptions& options,
                               SegmentationOutput& output
                              );
@@ -403,9 +376,6 @@ void node_segmentation(const matrix<unsigned char>& mesh_map,
                       Data_cost& data_cost,
                       const matrix<int>& connectivity,
                       const InstanceSettings& settings,
-                      const PointSets& start_sets,
-                      const PointSets& end_sets,
-                      const std::vector<double>& voxel_dimensions,
                       const ShortestPathOptions& options,
                       SegmentationOutput& output
                       );

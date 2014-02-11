@@ -62,15 +62,12 @@ void edge_segmentation( const matrix<unsigned char>& mesh_map,
                         Data_cost& data_cost,
                         const matrix<int>& connectivity,
                         const InstanceSettings& settings,
-                        const PointSets& start_sets,
-                        const PointSets& end_sets,
-                        const std::vector<double>& voxel_dimensions,
                         ShortestPathOptions& options,
                         SegmentationOutput& output)
 {
   // Create functor handling regularization costs
-  Length_cost length_cost(voxel_dimensions, settings.length_penalty);
-  Curvature_cost curvature_cost(voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
+  Length_cost length_cost(settings.voxel_dimensions, settings.length_penalty);
+  Curvature_cost curvature_cost(settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
 
   // Some notation for the edge graph
   // Elements corresponds to points in the original graph
@@ -153,59 +150,6 @@ void edge_segmentation( const matrix<unsigned char>& mesh_map,
       }
   }
   }
-  }
-
-  // Extra start sets.
-  for (int i = 0; i < start_sets.size(); ++i) {
-    const auto points = start_sets[i];
-    for (int j = 0; j < points.size() - 1; ++j)
-    {
-      int element_number = sub2ind(points[j]);
-
-      int dx = points[j+1].x - points[j].x;
-      int dy = points[j+1].y - points[j].y;
-      int dz = points[j+1].z - points[j].z;
-
-      int k;
-      for (k = 0; k < connectivity.M; k++)
-      {
-        if (  (std::abs(dx - connectivity(k,0)) < 1e-6) &&
-              (std::abs(dy - connectivity(k,1)) < 1e-6) &&
-              (std::abs(dz - connectivity(k,2)) < 1e-6) )
-          break;
-      }
-
-      if (k == connectivity.M)
-        mexErrMsgTxt("Unable to find edge \n");
-
-      start_set.insert(element_number*num_points_per_element + k);
-    }
-  }
-
-  // Extra end sets.
-  for (int i = 0; i < end_sets.size(); ++i) {
-    const auto points = end_sets[i];
-    for (int j = 0; j < points.size() - 1; ++j) {
-      int element_number = sub2ind(points[j]);
-
-      int dx = points[j+1].x - points[j].x;
-      int dy = points[j+1].y - points[j].y;
-      int dz = points[j+1].z - points[j].z;
-
-      int k;
-      for (k = 0; k < connectivity.M; k++)
-      {
-        if (  (std::abs(dx - connectivity(k,0)) < 1e-6) &&
-              (std::abs(dy - connectivity(k,1)) < 1e-6) &&
-              (std::abs(dz - connectivity(k,2)) < 1e-6) )
-          break;
-      }
-
-      if (k == connectivity.M)
-        mexErrMsgTxt("Unable to find edge \n");
-
-      end_set.insert(element_number*num_points_per_element + k);
-    }
   }
 
   int e_super = num_edges;
@@ -332,9 +276,6 @@ void edge_segmentation( const matrix<unsigned char>& mesh_map,
                       data_cost,
                       connectivity,
                       settings,
-                      start_sets,
-                      end_sets,
-                      voxel_dimensions,
                       heuristic_options,
                       heuristic_output);
 

@@ -82,15 +82,14 @@ void  edgepair_segmentation(  const matrix<unsigned char>& mesh_map,
                               Data_cost& data_cost,
                               const matrix<int>& connectivity,
                               InstanceSettings& settings,
-                              const std::vector<double>& voxel_dimensions,
                               ShortestPathOptions& options,
                               SegmentationOutput& output
                              )
 {  
    // Create functor handling regularization costs
-  Length_cost length_cost(voxel_dimensions, settings.length_penalty);
-  Curvature_cost curvature_cost(voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
-  Torsion_cost torsion_cost(voxel_dimensions, settings.torsion_penalty, settings.torsion_power);
+  Length_cost length_cost(settings.voxel_dimensions, settings.length_penalty);
+  Curvature_cost curvature_cost(settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
+  Torsion_cost torsion_cost(settings.voxel_dimensions, settings.torsion_penalty, settings.torsion_power);
 
   // Some notation for the edge graph
   // Elements corresponds to points in the original graph

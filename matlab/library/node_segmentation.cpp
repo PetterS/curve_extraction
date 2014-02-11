@@ -5,15 +5,12 @@ void node_segmentation(const matrix<unsigned char>& mesh_map,
                       Data_cost& data_cost,
                       const matrix<int>& connectivity,
                       const InstanceSettings& settings,
-                      const PointSets& start_sets,
-                      const PointSets& end_sets,
-                      const std::vector<double>& voxel_dimensions,
                       const ShortestPathOptions& options,
                       SegmentationOutput& output
                       )
 {
   // Create functor handling regularization costs
-  Length_cost length_cost(voxel_dimensions, settings.length_penalty);
+  Length_cost length_cost(settings.voxel_dimensions, settings.length_penalty);
   
   // Pre-calculate regularization cost for every item connectivity
   std::vector<double> regularization_cache(connectivity.M);
@@ -76,25 +73,6 @@ void node_segmentation(const matrix<unsigned char>& mesh_map,
 
       if ( mesh_map(i) == 2 )
           start_set.insert(i);
-  }
-
-  // Extra start sets.
-  for (int i = 0; i < start_sets.size(); ++i) {
-    const auto& points = start_sets[i];
-    for (int j = 0; j < points.size(); ++j) {
-
-      int p = sub2ind(points[j]);
-      start_set.insert(p);
-    }
-  }
-
-  // Extra end sets.
-  for (int i = 0; i < end_sets.size(); ++i) {
-    const auto& points = end_sets[i];
-    for (int j = 0; j < points.size(); ++j) {
-      int p = sub2ind(points[j]);
-      end_set.insert(p);
-    }
   }
 
   if (verbose)

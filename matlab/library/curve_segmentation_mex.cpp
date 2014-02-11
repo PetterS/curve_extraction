@@ -154,71 +154,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (verbose)
     mexPrintf("Connectivity size is %d. \n", connectivity.M);
 
-  // Extra start and end sets. Cell arrays of points.
-  const mxArray* start_sets_cell = params.get<const mxArray*>("start_sets", 0);
-  const mxArray* end_sets_cell = params.get<const mxArray*>("end_sets", 0);
-  PointSets start_sets, end_sets;
-  if (start_sets_cell) {
-    ASSERT(mxIsCell(start_sets_cell));
-    auto cell_size = mxGetNumberOfElements(start_sets_cell);
-
-    for (int i = 0; i < cell_size; ++i) {
-      auto element = mxGetCell(start_sets_cell, i);
-      matrix<double> points_matrix(element);
-
-      start_sets.push_back(std::vector<Mesh::Point>());
-      auto& points = start_sets.back();
-
-      if (points_matrix.N == 3)
-      {
-        for (int j = 0; j < points_matrix.M; ++j) {
-          points.push_back(Mesh::Point(points_matrix(j, 0),
-                                       points_matrix(j, 1),
-                                       points_matrix(j, 2)));
-        }
-      } else if (points_matrix.N == 2)
-      {
-        for (int j = 0; j < points_matrix.M; ++j) {
-          points.push_back(Mesh::Point(points_matrix(j, 0),
-                                       points_matrix(j, 1),
-                                       0));
-        }
-      }
-      else {
-        mexErrMsgTxt("Error in defined start sets.");
-      }
-    }
-  }
-  if (end_sets_cell) {
-    ASSERT(mxIsCell(end_sets_cell));
-    auto cell_size = mxGetNumberOfElements(end_sets_cell);
-    for (int i = 0; i < cell_size; ++i) {
-      auto element = mxGetCell(end_sets_cell, i);
-      end_sets.push_back(std::vector<Mesh::Point>());
-      auto& points = end_sets.back();
-      matrix<double> points_matrix(element);
-
-      if (points_matrix.N == 3)
-      {
-        for (int j = 0; j < points_matrix.M; ++j) {
-          points.push_back(Mesh::Point(points_matrix(j, 0),
-                                       points_matrix(j, 1),
-                                       points_matrix(j, 2)));
-        }
-      } else if (points_matrix.N == 2)
-      {
-        for (int j = 0; j < points_matrix.M; ++j) {
-          points.push_back(Mesh::Point(points_matrix(j, 0),
-                                       points_matrix(j, 1),
-                                       0));
-        }
-      }
-      else {
-        mexErrMsgTxt("Error in defined end sets.");
-      }
-    }
-  }
-
   if (verbose)
     endTime("Reading data");
 
@@ -305,29 +240,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // Torsion: Pair of edges.
   // Curvature: Edges.
   // Length: Nodes.
-  SegmentationInput input(data_cost,mesh_map, connectivity,settings,start_sets,end_sets, options);
   SegmentationOutput output(points, run_time, evaluations, cost, o_visit_map, o_shortest_path_tree);
 
   // Curvature and Length can be calculated on Pair of Edges but this is overkill.
   // Same goes for Length on edges.
   if (use_pairs)
-  {
-    edgepair_segmentation(mesh_map, data_cost, connectivity, settings,
-                          settings.voxel_dimensions, options, output);
-  }
+    edgepair_segmentation (mesh_map, data_cost, connectivity, settings, options, output);
   else if (use_edges)
-  {
-    edge_segmentation(  mesh_map, data_cost, connectivity,
-                        settings, start_sets, end_sets, 
-                        settings.voxel_dimensions, options, 
-                        output);
-  } else 
-  {
-    node_segmentation( mesh_map, data_cost,  connectivity,
-                       settings, start_sets, end_sets,
-                       settings.voxel_dimensions, options, 
-                       output);
-  } 
+    edge_segmentation     (mesh_map, data_cost, connectivity, settings, options, output);
+  else 
+    node_segmentation     (mesh_map, data_cost, connectivity, settings, options, output);
 
   matrix<double>  o_path(points.size(),3);
   matrix<double>  o_time(1);
@@ -343,9 +265,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       n_line++;
   }
 
-  o_time(0) = run_time;
-  o_eval(0) = evaluations;
-  o_cost(0) = cost;
+  o_time(0) = output.run_time;
+  o_eval(0) = output.evaluations;
+  o_cost(0) = output.cost;
 
   // Write to MatLab
   plhs[0] = o_path;
