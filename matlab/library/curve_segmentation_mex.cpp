@@ -93,6 +93,10 @@ double endTime(const char* message)
   return t;
 }
 
+// Data_cost: Any function of two points.
+// Legnth_cost any function of two points.
+// Curvature_cost any function of three points.
+// Torsion_ocst any function of four points.
 template<typename Data_cost, typename Length_cost, typename Curvature_cost, typename Torsion_cost>
 void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
@@ -100,8 +104,8 @@ void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
 
   // Check input and outputs
   ASSERT(nlhs == 6);
-  ASSERT(nrhs == 4 || nrhs == 5); 
-	
+  ASSERT(nrhs == 4 || nrhs == 5);
+
   // Mesh defining allowed pixels
   // Encoded as
   // 0: Disallowed
@@ -127,7 +131,7 @@ void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
 
   // Optional options
   MexParams params(nrhs-curarg, prhs+curarg); //Structure to hold and parse additional parameters
-  InstanceSettings settings = parse_settings(params); 
+  InstanceSettings settings = parse_settings(params);
 
   // Check input
   ASSERT(settings.voxel_dimensions.size() == 3);
@@ -185,14 +189,12 @@ void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
   ShortestPathOptions options;
   options.print_progress = false;
   options.maximum_queue_size = 1000 * 1000 * 1000;
-
   options.store_visited = settings.store_visit_time;
   options.store_parents = settings.store_parents;
 
   // Empty matrices if visit order or parents are not calculated.
   // For edge and edge pair type graphs the visit map is needed
   // to resolve conflicts when shortest_path tree is to be calculated.
-
   std::vector<int> empty_dimensions(3,0);
   std::vector<int> real_dimensions(3);
   std::vector<int> dimensions(3);
@@ -201,8 +203,8 @@ void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
   real_dimensions[1] = mesh_map.N;
   real_dimensions[2] = mesh_map.O;
 
-  if (options.store_visited || 
-      (use_edges && options.store_parents) || 
+  if (options.store_visited ||
+      (use_edges && options.store_parents) ||
       (use_pairs && options.store_parents)
      )
     dimensions = real_dimensions;
@@ -217,7 +219,7 @@ void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
     dimensions = real_dimensions;
   else
     dimensions = empty_dimensions;
-  
+
   matrix<int> o_shortest_path_tree( dimensions[0],
                                     dimensions[1],
                                     dimensions[2]);
@@ -259,12 +261,11 @@ void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
     edge_segmentation<Linear_data_cost,Normal_length_cost,Normal_curvature_cost>
     (data, mesh_map, connectivity, settings, options, output);
   }
-  else 
+  else
   {
     node_segmentation<Linear_data_cost,Normal_length_cost>
     (data, mesh_map, connectivity, settings, options, output);
   }
-
 
   matrix<double>  o_path(points.size(),3);
   matrix<double>  o_time(1);
@@ -290,7 +291,7 @@ void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
   plhs[2] = o_time;
   plhs[3] = o_eval;
   plhs[4] = o_visit_map;
-  plhs[5] = o_shortest_path_tree;  
+  plhs[5] = o_shortest_path_tree;
 }
 
 // Wrapper data from MATLAB.
@@ -301,7 +302,7 @@ void mexFunction(int            nlhs,     /* number of expected outputs */
 {
  int buff_size = 1024;
  char problem_type[buff_size];
- if (mxGetString(prhs[0], problem_type, buff_size)) 
+ if (mxGetString(prhs[0], problem_type, buff_size))
    throw runtime_error("First argument must be a string.");
 
   if (!strcmp(problem_type,"linear_interpolation"))
