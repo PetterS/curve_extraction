@@ -1,5 +1,4 @@
 #include "curve_segmentation.h"
-#define NODE_SEGMENTATION
 
 // Main nodes (start and end set flipped to accommodate for A*)
 template<typename Data_cost, typename Length_cost>
@@ -14,25 +13,26 @@ void node_segmentation( const matrix<double>& data,
   Data_cost data_cost(data, connectivity, settings.voxel_dimensions);
   Length_cost length_cost(data, settings.voxel_dimensions, settings.length_penalty);
   
-  if (length_cost.data_depdent) 
-    mexErrMsgTxt("Cannot cache regularization.");
-  
-  // Pre-calculate regularization cost for every item connectivity
+  bool cacheable =  !length_cost.data_depdent;
   std::vector<double> regularization_cache(connectivity.M);
 
-  for (int k = 0; k < connectivity.M; k++)
+   // Pre-calculate regularization cost for every item connectivity
+  if (cacheable) 
   {
-    int x = connectivity(k,0);
-    int y = connectivity(k,1);
-    int z = connectivity(k,2);
+    for (int k = 0; k < connectivity.M; k++)
+    {
+      int x = connectivity(k,0);
+      int y = connectivity(k,1);
+      int z = connectivity(k,2);
 
-    regularization_cache[k] = length_cost(0,0,0,x,y,z);
+      regularization_cache[k] = length_cost(0,0,0,x,y,z);
+    }
   }
 
   int evaluations = 0;
   auto get_neighbors =
     [&evaluations, &data_cost, &connectivity, 
-      &regularization_cache]
+      &regularization_cache, &cacheable, &length_cost]
     (int n, std::vector<Neighbor>* neighbors) -> void
   {
     evaluations++;
@@ -56,7 +56,11 @@ void node_segmentation( const matrix<double>& data,
           double cost = data_cost(x1,y1,z1,x2,y2,z2);
 
           // Length reg;
-          cost += regularization_cache[k];
+          if (cacheable)
+            cost += regularization_cache[k];
+          else
+            cost += length_cost(x1,y1,z1,x2,y2,z2);
+
           int dest = sub2ind(x2, y2, z2);
 
           neighbors->push_back(Neighbor(dest, cost));

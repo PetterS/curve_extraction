@@ -154,6 +154,8 @@ void mexFunction(int            nlhs,     /* number of expected outputs */
     curve_info<Linear_data_cost, Normal_length_cost, Normal_curvature_cost, Normal_torsion_cost>(nlhs, plhs, nrhs, prhs);
   else if (!strcmp(problem_type,"edge"))
     curve_info<Edge_data_cost, Normal_length_cost, Normal_curvature_cost, Normal_torsion_cost>(nlhs, plhs, nrhs, prhs);
+  else if (!strcmp(problem_type,"geodesic"))
+    curve_info<Zero_data_cost, Geodesic_length_cost, Geodesic_curvature_cost, Zero_torsion_cost>(nlhs, plhs, nrhs, prhs);
   else
     throw runtime_error("Unknown data type");
 }

@@ -129,6 +129,8 @@ classdef Curve_extraction < handle
 					self.interpolation_constructor(varargin{:});
 				case 'edge'
 					self.edge_constructor(varargin{:});
+				case 'geodesic'
+					self.interpolation_constructor(varargin{:});
 			end
 
 			if (length(self.problem_size) ~= 2) && (length(self.problem_size) ~= 3)
@@ -211,7 +213,7 @@ classdef Curve_extraction < handle
 			msgs{end+1} = sprintf('Penalty; %g|length| + %g|curvature|^{%g} + %g|torsion|^{%g}.', ...
 					self.length_penalty, self.curvature_penalty, self.curvature_power, self.torsion_penalty, self.torsion_power);
 
-			if (strcmp(self.data_type,'linear_interpolation'))
+			if (strcmp(self.data_type,'linear_interpolation') || strcmp(self.data_type,'geodesic'))
 
 				if (length(self.problem_size) == 2)
 					cost_im = self.data;
@@ -449,8 +451,10 @@ classdef Curve_extraction < handle
 					%ok
 				case 'edge'
 					%ok
+				case 'geodesic'
+					%ok
 				otherwise
-					error(sprintf('Possible data types = {linear_interpolation, edge}'));
+					error(sprintf('Possible data types = {linear_interpolation, edge, geodesic}'));
 			end
 
 			self.data_type = data_type;

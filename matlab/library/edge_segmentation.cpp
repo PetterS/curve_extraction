@@ -1,5 +1,4 @@
 #include "curve_segmentation.h"
-#define EDGE_SEGMENTATION
 
 // The indexing:
 // Assume we have M neighbors in connectivity.
@@ -71,8 +70,9 @@ void edge_segmentation( const matrix<double>& data,
   Length_cost length_cost(data, settings.voxel_dimensions, settings.length_penalty);
   Curvature_cost curvature_cost(data, settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
 
+  bool cacheable = true;
   if (length_cost.data_depdent || curvature_cost.data_depdent) 
-    mexErrMsgTxt("Cannot cache regularization.");
+    cacheable = false;
 
   // Some notation for the edge graph
   // Elements corresponds to points in the original graph
@@ -91,23 +91,25 @@ void edge_segmentation( const matrix<double>& data,
 
   int x,y,z, x2,y2,z2,x3,y3,z3, element_number, element_number_2;
 
-  for (int i = 0; i < connectivity.M; i++) {
-    x2 = connectivity(i,0);
-    y2 = connectivity(i,1);
-    z2 = connectivity(i,2);
+  if (cacheable)
+  {
+    for (int i = 0; i < connectivity.M; i++) {
+      x2 = connectivity(i,0);
+      y2 = connectivity(i,1);
+      z2 = connectivity(i,2);
 
-  for (int j = 0; j < connectivity.M; j++) {
-    x3 = x2 + connectivity(j,0);
-    y3 = y2 + connectivity(j,1);
-    z3 = z2 + connectivity(j,2);
+    for (int j = 0; j < connectivity.M; j++) {
+      x3 = x2 + connectivity(j,0);
+      y3 = y2 + connectivity(j,1);
+      z3 = z2 + connectivity(j,2);
 
-    int n = i*num_points_per_element +j;
+      int n = i*num_points_per_element +j;
 
-     regularization_cache[n] = curvature_cost(0,0,0,x2,y2,z2,x3,y3,z3)
-                            + length_cost(x2,y2,z2,x3,y3,z3);
+       regularization_cache[n] = curvature_cost(0,0,0,x2,y2,z2,x3,y3,z3)
+                              + length_cost(x2,y2,z2,x3,y3,z3);
+    }
+    }
   }
-  }
-
   if (verbose)
     mexPrintf("Creating start/end sets...");
 
@@ -167,7 +169,7 @@ void edge_segmentation( const matrix<double>& data,
   int evaluations = 0;
   auto get_neighbors =
     [ &evaluations, &data_cost, &num_points_per_element, &regularization_cache,
-      &e_super, &start_set, &connectivity, &length_cost]
+      &e_super, &start_set, &connectivity, &length_cost, &cacheable, &curvature_cost]
     (int e, std::vector<Neighbor>* neighbors) -> void
   {
     evaluations++;
@@ -232,9 +234,16 @@ void edge_segmentation( const matrix<double>& data,
             // Adjacency id
             cost = data_cost(x2, y2, z2, x3, y3, z3);
 
-            // Lookup id
-            int edge_type =  edge_id_1*num_points_per_element + edge_id_2;
-            cost += regularization_cache[edge_type];
+            if (cacheable)
+            {
+              // Lookup id
+              int edge_type =  edge_id_1*num_points_per_element + edge_id_2;
+              cost += regularization_cache[edge_type];
+            } else
+            {
+              cost += curvature_cost(x1,y1,z1,x2,y2,z2,x3,y3,z3);
+              cost += length_cost(x2,y2,z2,x3,y3,z3);
+            }
           }
 
           else {

@@ -1,5 +1,4 @@
 #include "curve_segmentation.h"
-#define EDGEPAIR_SEGMENTATION
 
 // The indexing:
 // Assume we have M neighbors in connectivity.
@@ -93,9 +92,6 @@ void  edgepair_segmentation(  const matrix<double>& data,
   Curvature_cost curvature_cost(data, settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
   Torsion_cost torsion_cost(data, settings.voxel_dimensions, settings.torsion_penalty, settings.torsion_power);
 
-  if (length_cost.data_depdent || curvature_cost.data_depdent || torsion_cost.data_depdent) 
-    mexErrMsgTxt("Cannot cache regularization.");
-
   // Some notation for the edge graph
   // Elements corresponds to points in the original graph
   // Points corresponds to edge pairs  in the original graph
@@ -151,7 +147,6 @@ void  edgepair_segmentation(  const matrix<double>& data,
       }
     }
   }
-
 
   // Super_edge which all edges goes out from. This is needed
   // because otherwise the first edge will have 0 regularization

@@ -308,7 +308,9 @@ void mexFunction(int            nlhs,     /* number of expected outputs */
   if (!strcmp(problem_type,"linear_interpolation"))
     curve_segmentation<Linear_data_cost, Normal_length_cost, Normal_curvature_cost, Normal_torsion_cost>(nlhs, plhs, nrhs, prhs);
   else if (!strcmp(problem_type,"edge"))
-    curve_segmentation<Edge_data_cost, Normal_length_cost, Normal_curvature_cost, Normal_torsion_cost>(nlhs, plhs, nrhs, prhs);
+    curve_segmentation<Edge_data_cost, Normal_length_cost, Normal_curvature_cost, Normal_torsion_cost>(nlhs, plhs, nrhs, prhs); 
+  else if (!strcmp(problem_type,"geodesic"))
+    curve_segmentation<Zero_data_cost, Geodesic_length_cost, Geodesic_curvature_cost, Zero_torsion_cost>(nlhs, plhs, nrhs, prhs);
   else
     throw runtime_error("Unknown data type");
 }
