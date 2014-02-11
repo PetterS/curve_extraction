@@ -58,11 +58,7 @@ std::vector<Mesh::Point>  edgepath_to_points(const std::vector<int>& path, const
   return point_vector;
 }
 
-void edge_segmentation( std::vector<Mesh::Point>& points,
-                        double& run_time,
-                        int& evaluations,
-                        double& cost,
-                        const matrix<unsigned char>& mesh_map,
+void edge_segmentation( const matrix<unsigned char>& mesh_map,
                         Data_cost& data_cost,
                         const matrix<int>& connectivity,
                         const InstanceSettings& settings,
@@ -70,8 +66,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
                         const PointSets& end_sets,
                         const std::vector<double>& voxel_dimensions,
                         ShortestPathOptions& options,
-                        matrix<int>& visit_time,
-                        matrix<int>& shortest_path_tree)
+                        SegmentationOutput& output)
 {
   // Create functor handling regularization costs
   Length_cost length_cost(voxel_dimensions, settings.length_penalty);
@@ -220,6 +215,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
   if (verbose)
     mexPrintf("done.\n");
 
+  int evaluations = 0;
   auto get_neighbors =
     [ &evaluations, &data_cost, &num_points_per_element, &regularization_cache,
       &e_super, &start_set, &connectivity, &length_cost]
@@ -329,11 +325,10 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
     double heuristic_cost = 0;
     matrix<int> empty_matrix;
 
-    node_segmentation(points,
-                      heuristic_runtime,
-                      heuristic_evaluations,
-                      heuristic_cost,
-                      mesh_map,
+    SegmentationOutput heuristic_output
+    (output.points, heuristic_runtime, heuristic_evaluations, heuristic_cost, output.visit_time, empty_matrix);
+
+    node_segmentation(mesh_map,
                       data_cost,
                       connectivity,
                       settings,
@@ -341,8 +336,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
                       end_sets,
                       voxel_dimensions,
                       heuristic_options,
-                      visit_time,
-                      empty_matrix);
+                      heuristic_output);
 
     lower_bound_pointer = &lower_bound;
   }
@@ -362,7 +356,7 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
 
   options.store_parents = false;
 
-  cost = shortest_path(num_edges+1,
+  output.cost = shortest_path(num_edges+1,
                        super_edge,
                        end_set,
                        get_neighbors,
@@ -374,26 +368,27 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
   options.store_parents = settings.store_parents;
 
   double end_time = ::get_wtime();
-  run_time = end_time - start_time;
+  output.run_time = end_time - start_time;
 
   path_edges.erase(path_edges.begin());  // Remove super edge
-  points = edgepath_to_points(path_edges, connectivity);
+  output.points = edgepath_to_points(path_edges, connectivity);
 
+  output.evaluations = evaluations;
   if (verbose)
   {
     mexPrintf("done.\n");
-    mexPrintf("Running time:  %g (s), ", run_time);
-    mexPrintf("Evaluations: %d, ", evaluations);
+    mexPrintf("Running time:  %g (s), ", output.run_time);
+    mexPrintf("Evaluations: %d, ", output.evaluations);
     mexPrintf("Path length: %d, ", path_edges.size() );
-    mexPrintf("Cost:    %g. \n", cost);
+    mexPrintf("Cost:    %g. \n", output.cost);
   }
 
   // Store visit time
   if (options.store_visited)
   {
     // Initialize.
-    for (int i = 0; i < visit_time.numel(); ++i)
-        visit_time(i) = -1;
+    for (int i = 0; i < output.visit_time.numel(); ++i)
+        output.visit_time(i) = -1;
 
     // Go through each each edge stored in visit time
     // if it has been visited then it's != -1
@@ -411,12 +406,12 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
         if (!validind(p))
           continue;
 
-        double visit_value = visit_time(p.x, p.y, p.z);
+        double visit_value = output.visit_time(p.x, p.y, p.z);
 
         if ( (visit_value == -1) ||
             ( (visit_value >= 0) && (visit_value > options.visit_time[i]) ) )
         {
-          visit_time(p.x, p.y, p.z) = options.visit_time[i];
+          output.visit_time(p.x, p.y, p.z) = options.visit_time[i];
         }
       }
     }
@@ -429,8 +424,8 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
     ASSERT(options.store_visited);
 
     // Initialize.
-    for (int i = 0; i < shortest_path_tree.numel(); ++i)
-        shortest_path_tree(i) = -1;
+    for (int i = 0; i < output.shortest_path_tree.numel(); ++i)
+        output.shortest_path_tree(i) = -1;
 
     // Go through each edge stored in visit time
     std::vector<Mesh::Point> point_vector(2, make_point(0));
@@ -444,14 +439,14 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
       if (!validind(point_vector[1]))
         continue;
 
-      int time = visit_time(point_vector[1].x,
+      int time = output.visit_time(point_vector[1].x,
                             point_vector[1].y,
                             point_vector[1].z);
 
       // Is this the edge which was here first?
       if (time == options.visit_time[i])
       {
-        shortest_path_tree(point_vector[1].x,
+        output.shortest_path_tree(point_vector[1].x,
                            point_vector[1].y,
                            point_vector[1].z) = sub2ind(point_vector[0]);
       }

@@ -1,11 +1,7 @@
 #include "curve_segmentation.h"
 
 // Main nodes (start and end set flipped to accommodate for A*)
-void node_segmentation(std::vector<Mesh::Point>& points,
-                      double& run_time,
-                      int& evaluations,
-                      double& cost,
-                      const matrix<unsigned char>& mesh_map,
+void node_segmentation(const matrix<unsigned char>& mesh_map,
                       Data_cost& data_cost,
                       const matrix<int>& connectivity,
                       const InstanceSettings& settings,
@@ -13,8 +9,8 @@ void node_segmentation(std::vector<Mesh::Point>& points,
                       const PointSets& end_sets,
                       const std::vector<double>& voxel_dimensions,
                       const ShortestPathOptions& options,
-                      matrix<int>& visit_time,
-                      matrix<int>& shortest_path_tree)
+                      SegmentationOutput& output
+                      )
 {
   // Create functor handling regularization costs
   Length_cost length_cost(voxel_dimensions, settings.length_penalty);
@@ -31,9 +27,10 @@ void node_segmentation(std::vector<Mesh::Point>& points,
     regularization_cache[k] = length_cost(0,0,0,x,y,z);
   }
 
+  int evaluations = 0;
   auto get_neighbors =
     [&evaluations, &data_cost, &connectivity, 
-      &regularization_cache, &voxel_dimensions]
+      &regularization_cache]
     (int n, std::vector<Neighbor>* neighbors) -> void
   {
     evaluations++;
@@ -116,7 +113,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
     // The code below is not a typo! It is equivalent for the best
     // path, but not for the distance map to the end set.
     //
-    cost = shortest_path( mesh_map.numel(),
+    output.cost = shortest_path( mesh_map.numel(),
                           end_set,
                           start_set, 
                           get_neighbors,
@@ -127,7 +124,7 @@ void node_segmentation(std::vector<Mesh::Point>& points,
     std::reverse(path_nodes.begin(), path_nodes.end());
   } else
   {
-    cost = shortest_path( mesh_map.numel(),
+    output.cost = shortest_path( mesh_map.numel(),
                           start_set,
                           end_set, 
                           get_neighbors,
@@ -137,34 +134,36 @@ void node_segmentation(std::vector<Mesh::Point>& points,
   }
 
   double end_time = ::get_wtime();
-  run_time = end_time - start_time;
+  output.run_time = end_time - start_time;
 
   // Convert from inds to points
   for (auto id : path_nodes)
-    points.push_back( make_point(id) );
+    output.points.push_back( make_point(id) );
+
+  output.evaluations = evaluations;
 
   if (verbose)
   {
     mexPrintf("done. \n");
-    mexPrintf("Running time:  %g (s), ", run_time);
-    mexPrintf("Evaluations: %d, ", evaluations);
+    mexPrintf("Running time:  %g (s), ", output.run_time);
+    mexPrintf("Evaluations: %d, ", output.evaluations);
     mexPrintf("Path length: %d, ", path_nodes.size() );
-    mexPrintf("Cost:    %g. \n", cost);
+    mexPrintf("Cost:    %g. \n", output.cost);
   }
 
   if (options.store_visited) 
   {
-    ASSERT(visit_time.numel() == options.visit_time.size());
+    ASSERT(output.visit_time.numel() == options.visit_time.size());
     
-    for (int i = 0; i < visit_time.numel(); i++)
-      visit_time(i) = options.visit_time[i];
+    for (int i = 0; i < output.visit_time.numel(); i++)
+      output.visit_time(i) = options.visit_time[i];
   }
 
   if (options.store_parents)
   {
-    ASSERT(shortest_path_tree.numel() == options.parents.size());
+    ASSERT(output.shortest_path_tree.numel() == options.parents.size());
 
-    for (int i = 0; i < shortest_path_tree.numel(); i++)
-      shortest_path_tree(i) = options.parents[i];
-  }
+    for (int i = 0; i < output.shortest_path_tree.numel(); i++)
+      output.shortest_path_tree(i) = options.parents[i];
+  }  
 }

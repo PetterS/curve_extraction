@@ -78,18 +78,13 @@ std::vector<Mesh::Point> pairpath_to_points(const std::vector<int>& path, const 
   return point_vector;
 }
 
-void  edgepair_segmentation( std::vector<Mesh::Point>& points,
-                              double& run_time,
-                              int& evaluations,
-                              double& cost,
-                              const matrix<unsigned char>& mesh_map,
+void  edgepair_segmentation(  const matrix<unsigned char>& mesh_map,
                               Data_cost& data_cost,
                               const matrix<int>& connectivity,
                               InstanceSettings& settings,
                               const std::vector<double>& voxel_dimensions,
                               ShortestPathOptions& options,
-                              matrix<int>& visit_time,
-                              matrix<int>& shortest_path_tree
+                              SegmentationOutput& output
                              )
 {  
    // Create functor handling regularization costs
@@ -160,6 +155,7 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
   std::set<int> super_edge;
   super_edge.insert(e_super);
 
+  int evaluations = 0;
  auto get_neighbors_torsion =
     [&evaluations, &data_cost,
      &e_super, &connectivity, &start_set_pairs,
@@ -268,7 +264,7 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
     mexPrintf("Computing shortest distance ...");
 
   double start_time = ::get_wtime();
-  cost = shortest_path( num_edges+1,
+  output.cost = shortest_path( num_edges+1,
                         super_edge,
                         end_set_pairs,
                         get_neighbors_torsion,
@@ -280,25 +276,26 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
   options.store_parents = settings.store_parents;
 
   double end_time = ::get_wtime();
-  run_time = end_time - start_time;
+  output.run_time = end_time - start_time;
   path_pairs.erase(path_pairs.begin()); // Remove super edge
-  points = pairpath_to_points(path_pairs, connectivity);
+  output.points = pairpath_to_points(path_pairs, connectivity);
 
+  output.evaluations = evaluations;
   if (verbose)
   {
     mexPrintf("done. \n");
-    mexPrintf("Running time:  %g seconds,", run_time);
-    mexPrintf("Evaluations: %d,", evaluations);
+    mexPrintf("Running time:  %g seconds,", output.run_time);
+    mexPrintf("Evaluations: %d,", output.evaluations);
     mexPrintf("Path length: %d,", path_pairs.size() );
-    mexPrintf("Cost:    %g. \n", cost);
+    mexPrintf("Cost:    %g. \n", output.cost);
   }
 
   // Store visit time
   if (options.store_visited) 
   {
     // Initialize.
-    for (int i = 0; i < visit_time.numel(); ++i) 
-        visit_time(i) = -1; 
+    for (int i = 0; i < output.visit_time.numel(); ++i) 
+        output.visit_time(i) = -1; 
  
     // Go through each each edge stored in visit time
     // if it has been visited then it's != -1
@@ -323,12 +320,12 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
         if (!validind(p))
           continue;
 
-        double visit_value = visit_time(p.x, p.y, p.z);
+        double visit_value = output.visit_time(p.x, p.y, p.z);
 
         if ( (visit_value == -1) || 
             ( (visit_value >= 0) && (visit_value > options.visit_time[i]) ) )
         {
-          visit_time(p.x, p.y, p.z) = options.visit_time[i];
+          output.visit_time(p.x, p.y, p.z) = options.visit_time[i];
         }
       }
     }
@@ -341,8 +338,8 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
     ASSERT(options.store_visited);
 
     // Initialize.
-    for (int i = 0; i < shortest_path_tree.numel(); ++i)
-        shortest_path_tree(i) = -1;
+    for (int i = 0; i < output.shortest_path_tree.numel(); ++i)
+        output.shortest_path_tree(i) = -1;
 
     // Go through each each edge stored in visit time
     // if it has been visited then it's != -1
@@ -365,27 +362,27 @@ void  edgepair_segmentation( std::vector<Mesh::Point>& points,
         continue;
 
       // First edge
-      int time = visit_time(point_vector[1].x,
+      int time = output.visit_time(point_vector[1].x,
                             point_vector[1].y,
                             point_vector[1].z);
 
       // Is this the edge which was here first?
       if (time == options.visit_time[i])
       {
-        shortest_path_tree(point_vector[1].x,
+        output.shortest_path_tree(point_vector[1].x,
                            point_vector[1].y,
                            point_vector[1].z) = sub2ind(point_vector[0]);
       }
 
       // Second edge
-      time = visit_time(point_vector[2].x,
+      time = output.visit_time(point_vector[2].x,
                         point_vector[2].y,
                         point_vector[2].z);
 
       // Is this the edge which was here first?
       if (time == options.visit_time[i])
       {
-        shortest_path_tree(point_vector[2].x,
+        output.shortest_path_tree(point_vector[2].x,
                            point_vector[2].y,
                            point_vector[2].z) = sub2ind(point_vector[1]);
       }

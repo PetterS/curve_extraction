@@ -305,31 +305,28 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // Torsion: Pair of edges.
   // Curvature: Edges.
   // Length: Nodes.
+  SegmentationInput input(data_cost,mesh_map, connectivity,settings,start_sets,end_sets, options);
+  SegmentationOutput output(points, run_time, evaluations, cost, o_visit_map, o_shortest_path_tree);
 
   // Curvature and Length can be calculated on Pair of Edges but this is overkill.
   // Same goes for Length on edges.
   if (use_pairs)
   {
-    edgepair_segmentation(points, run_time, evaluations, cost,
-                          mesh_map, data_cost, connectivity, settings,
-                          settings.voxel_dimensions, options, 
-                          o_visit_map, o_shortest_path_tree);
+    edgepair_segmentation(mesh_map, data_cost, connectivity, settings,
+                          settings.voxel_dimensions, options, output);
   }
   else if (use_edges)
   {
-    edge_segmentation(  points, run_time, evaluations, cost,
-                        mesh_map, data_cost, connectivity,
-                        settings,
-                        start_sets, end_sets, 
+    edge_segmentation(  mesh_map, data_cost, connectivity,
+                        settings, start_sets, end_sets, 
                         settings.voxel_dimensions, options, 
-                        o_visit_map, o_shortest_path_tree);
+                        output);
   } else 
   {
-    node_segmentation( points, run_time, evaluations, cost,
-                       mesh_map, data_cost,  connectivity,
+    node_segmentation( mesh_map, data_cost,  connectivity,
                        settings, start_sets, end_sets,
                        settings.voxel_dimensions, options, 
-                       o_visit_map, o_shortest_path_tree);
+                       output);
   } 
 
   matrix<double>  o_path(points.size(),3);
