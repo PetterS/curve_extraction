@@ -253,17 +253,17 @@ void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
   // Same goes for Length on edges.
   if (use_pairs)
   {
-    edgepair_segmentation<Linear_data_cost,Normal_length_cost,Normal_curvature_cost, Normal_torsion_cost>
+    edgepair_segmentation<Data_cost, Length_cost, Curvature_cost, Torsion_cost>
     (data, mesh_map, connectivity, settings, options, output);
   }
   else if (use_edges)
   {
-    edge_segmentation<Linear_data_cost,Normal_length_cost,Normal_curvature_cost>
+    edge_segmentation<Data_cost, Length_cost, Curvature_cost>
     (data, mesh_map, connectivity, settings, options, output);
   }
   else
   {
-    node_segmentation<Linear_data_cost,Normal_length_cost>
+    node_segmentation<Data_cost, Length_cost>
     (data, mesh_map, connectivity, settings, options, output);
   }
 
