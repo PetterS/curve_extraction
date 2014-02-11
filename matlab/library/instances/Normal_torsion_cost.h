@@ -3,10 +3,13 @@ class Normal_torsion_cost
   public:
     Normal_torsion_cost (
       const matrix<double>& data, 
-      const std::vector<double>& vd_, 
-      double p_, 
-      double pow_)
-      : voxel_dimensions(vd_), penalty(p_), power(pow_) {};
+      const std::vector<double>& voxel_dimensions, 
+      double penalty, 
+      double power)
+      : voxel_dimensions(voxel_dimensions), 
+        penalty(penalty), 
+        power(power),
+        data_depdent(false) {};
 
   double operator () (double x1, double y1, double z1,
                       double x2, double y2, double z2,
@@ -27,8 +30,8 @@ class Normal_torsion_cost
     }
   }
 
-  protected:
-    const std::vector<double> voxel_dimensions;
-    double penalty;
-    double power;
+  bool data_depdent;     // Can we cache this cost or not?
+  const std::vector<double> voxel_dimensions;
+  double penalty;
+  double power;
 };

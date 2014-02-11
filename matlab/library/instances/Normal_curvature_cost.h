@@ -3,10 +3,14 @@ class Normal_curvature_cost
   public:
     Normal_curvature_cost (
       const matrix<double>& data, 
-      const vector<double>& vd_, 
-      double p_, 
-      double pow_)
-      : voxel_dimensions(vd_), penalty(p_), power(pow_) {};
+      const vector<double>& voxel_dimensions, 
+      double penalty, 
+      double power)
+      : voxel_dimensions(voxel_dimensions), 
+        penalty(penalty), 
+        power(power),
+        data_depdent(false) 
+  {};
 
   double operator () (double x1, double y1, double z1,
                       double x2, double y2, double z2,
@@ -25,8 +29,8 @@ class Normal_curvature_cost
     }
   }
 
-  protected:
-    const vector<double> voxel_dimensions;
-    double penalty;
-    double power;
+  bool data_depdent;  
+  const vector<double> voxel_dimensions;
+  double penalty;
+  double power;
 };

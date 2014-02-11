@@ -71,6 +71,9 @@ void edge_segmentation( const matrix<double>& data,
   Length_cost length_cost(data, settings.voxel_dimensions, settings.length_penalty);
   Curvature_cost curvature_cost(data, settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
 
+  if (length_cost.data_depdent || curvature_cost.data_depdent) 
+    mexErrMsgTxt("Cannot cache regularization.");
+
   // Some notation for the edge graph
   // Elements corresponds to points in the original graph
   // Points corresponds to edges in the original graph

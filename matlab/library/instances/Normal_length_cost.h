@@ -3,9 +3,12 @@ class Normal_length_cost
   public:
     Normal_length_cost (
       const matrix<double>& data, 
-      const vector<double>& vd_, 
-      double p_)
-      : voxel_dimensions(vd_), penalty(p_) {};
+      const vector<double>& voxel_dimensions, 
+      double penalty)
+      : voxel_dimensions(voxel_dimensions), 
+        penalty(penalty),
+        data_depdent(false)
+   {};
 
     double operator () (double x1,double y1,double z1, double x2, double y2, double z2)
     {
@@ -22,7 +25,7 @@ class Normal_length_cost
       }
     }
 
-  protected:
+    bool data_depdent;     // Can we cache this cost or not?
     vector<double> voxel_dimensions;
     double penalty;
 };
