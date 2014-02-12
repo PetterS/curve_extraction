@@ -1,7 +1,7 @@
-class Zero_length_cost
+class Zero_length
 {
   public:
-    Zero_length_cost (
+    Zero_length (
       const matrix<double>& data, 
       const vector<double>& voxel_dimensions, 
       double penalty)

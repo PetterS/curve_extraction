@@ -9,20 +9,6 @@
 bool verbose;
 double timer;
 
-#ifdef USE_OPENMP
-#include <omp.h>
-double get_wtime()
-{
-  return ::omp_get_wtime();
-}
-#else
-#include <ctime>
-double get_wtime()
-{
-  return std::time(0);
-}
-#endif
-
 int M = 1;
 int N = 1;
 int O = 1;
@@ -94,7 +80,7 @@ double endTime(const char* message)
 }
 
 // Data_cost: Any function of two points.
-// Legnth_cost any function of two points.
+// Length_cost any function of two points.
 // Curvature_cost any function of three points.
 // Torsion_ocst any function of four points.
 template<typename Data_cost, typename Length_cost, typename Curvature_cost, typename Torsion_cost>
@@ -306,11 +292,11 @@ void mexFunction(int            nlhs,     /* number of expected outputs */
    throw runtime_error("First argument must be a string.");
 
   if (!strcmp(problem_type,"linear_interpolation"))
-    curve_segmentation<Linear_data_cost, Normal_length_cost, Normal_curvature_cost, Normal_torsion_cost>(nlhs, plhs, nrhs, prhs);
+    curve_segmentation<Linear_data_cost, Euclidean_length, Euclidean_curvature, Euclidean_torsion>(nlhs, plhs, nrhs, prhs);
   else if (!strcmp(problem_type,"edge"))
-    curve_segmentation<Edge_data_cost, Normal_length_cost, Normal_curvature_cost, Normal_torsion_cost>(nlhs, plhs, nrhs, prhs); 
+    curve_segmentation<Edge_data_cost, Euclidean_length, Euclidean_curvature, Euclidean_torsion>(nlhs, plhs, nrhs, prhs); 
   else if (!strcmp(problem_type,"geodesic"))
-    curve_segmentation<Zero_data_cost, Geodesic_length_cost, Geodesic_curvature_cost, Zero_torsion_cost>(nlhs, plhs, nrhs, prhs);
+    curve_segmentation<Zero_data_cost, Geodesic_length, Geodesic_curvature, Zero_torsion>(nlhs, plhs, nrhs, prhs);
   else
     throw runtime_error("Unknown data type");
 }

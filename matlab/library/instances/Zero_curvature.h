@@ -1,7 +1,7 @@
-class Zero_curvature_cost
+class Zero_curvature
 {
   public:
-    Zero_curvature_cost (
+    Zero_curvature (
       const matrix<double>& data, 
       const vector<double>& voxel_dimensions, 
       double penalty, 

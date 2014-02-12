@@ -1,6 +1,20 @@
 #ifndef CURVE_SEGMENTATION_H
 #define CURVE_SEGMENTATION_H
 
+#ifdef USE_OPENMP
+#include <omp.h>
+double get_wtime()
+{
+  return ::omp_get_wtime();
+}
+#else
+#include <ctime>
+double get_wtime()
+{
+  return std::time(0);
+}
+#endif
+
 #include "mexutils.h"
 #include "cppmatrix.h"
 
@@ -28,7 +42,6 @@ extern int M,N,O;
 extern bool verbose;
 
 enum Descent_method {lbfgs, nelder_mead};
-enum Unary_type {linear_interpolation, edge};
 
 struct InstanceSettings
 {
@@ -50,7 +63,6 @@ struct InstanceSettings
   bool store_visit_time;
   bool store_parents;
 
-  Unary_type data_type;
   string data_type_str;
 
   vector<double> voxel_dimensions;
@@ -103,14 +115,6 @@ InstanceSettings parse_settings(MexParams params)
     throw runtime_error("Unknown descent_method");
 
   settings.data_type_str = params.get<string>("data_type", "linear_interpolation");
-
-  if (settings.data_type_str == "linear_interpolation")
-    settings.data_type = linear_interpolation;
-  else if (settings.data_type_str == "edge")
-    settings.data_type = edge;
-  else
-    throw runtime_error("Unknown data type");
-
   settings.voxel_dimensions = params.get< vector<double> >("voxel_dimensions");
 
   if (settings.voxel_dimensions.empty())

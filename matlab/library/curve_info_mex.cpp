@@ -1,21 +1,7 @@
-// This function both calcaultes the cost of a curve decomposed into
+// This function both calculates the cost of a curve decomposed into
 // data, length, curvature and torsion parts.
 // It also return the length, curvature and torsion of the curve itself.
 #include "curve_segmentation.h"
-
-#ifdef USE_OPENMP
-#include <omp.h>
-double get_wtime()
-{
-  return ::omp_get_wtime();
-}
-#else
-#include <ctime>
-double get_wtime()
-{
-  return std::time(0);
-}
-#endif
 
 template<typename Data_cost, typename Length_cost, typename Curvature_cost, typename Torsion_cost>
 void curve_info(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
@@ -151,11 +137,11 @@ void mexFunction(int            nlhs,     /* number of expected outputs */
    throw runtime_error("First argument must be a string.");
 
   if (!strcmp(problem_type,"linear_interpolation"))
-    curve_info<Linear_data_cost, Normal_length_cost, Normal_curvature_cost, Normal_torsion_cost>(nlhs, plhs, nrhs, prhs);
+    curve_info<Linear_data_cost, Euclidean_length, Euclidean_curvature, Euclidean_torsion>(nlhs, plhs, nrhs, prhs);
   else if (!strcmp(problem_type,"edge"))
-    curve_info<Edge_data_cost, Normal_length_cost, Normal_curvature_cost, Normal_torsion_cost>(nlhs, plhs, nrhs, prhs);
+    curve_info<Edge_data_cost, Euclidean_length, Euclidean_curvature, Euclidean_torsion>(nlhs, plhs, nrhs, prhs);
   else if (!strcmp(problem_type,"geodesic"))
-    curve_info<Zero_data_cost, Geodesic_length_cost, Geodesic_curvature_cost, Zero_torsion_cost>(nlhs, plhs, nrhs, prhs);
+    curve_info<Zero_data_cost, Geodesic_length, Geodesic_curvature, Zero_torsion>(nlhs, plhs, nrhs, prhs);
   else
     throw runtime_error("Unknown data type");
 }

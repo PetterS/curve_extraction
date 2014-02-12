@@ -1,7 +1,7 @@
-class Normal_curvature_cost
+class Euclidean_curvature
 {
   public:
-    Normal_curvature_cost (
+    Euclidean_curvature (
       const matrix<double>& data, 
       const vector<double>& voxel_dimensions, 
       double penalty, 

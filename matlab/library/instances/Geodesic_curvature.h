@@ -1,7 +1,7 @@
-class Geodesic_curvature_cost
+class Geodesic_curvature
 {
   public:
-    Geodesic_curvature_cost (
+    Geodesic_curvature (
       const matrix<double>& data, 
       const vector<double>& voxel_dimensions, 
       double penalty, 

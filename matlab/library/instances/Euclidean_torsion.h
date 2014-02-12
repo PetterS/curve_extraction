@@ -1,7 +1,7 @@
-class Normal_torsion_cost
+class Euclidean_torsion
 {
   public:
-    Normal_torsion_cost (
+    Euclidean_torsion (
       const matrix<double>& data, 
       const std::vector<double>& voxel_dimensions, 
       double penalty, 

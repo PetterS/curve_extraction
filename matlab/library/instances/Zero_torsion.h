@@ -1,7 +1,7 @@
-class Zero_torsion_cost
+class Zero_torsion
 {
   public:
-    Zero_torsion_cost (
+    Zero_torsion (
       const matrix<double>& data, 
       const std::vector<double>& voxel_dimensions, 
       double penalty, 

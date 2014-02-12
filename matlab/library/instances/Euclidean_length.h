@@ -1,7 +1,7 @@
-class Normal_length_cost
+class Euclidean_length
 {
   public:
-    Normal_length_cost (
+    Euclidean_length (
       const matrix<double>& data, 
       const vector<double>& voxel_dimensions, 
       double penalty)

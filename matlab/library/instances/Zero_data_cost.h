@@ -1,4 +1,4 @@
-class Zero_data_cost 
+class Zero_data_cost
 {
 public:
   Zero_data_cost(
