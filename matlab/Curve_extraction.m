@@ -69,6 +69,18 @@ classdef Curve_extraction < handle
 			settings.num_threads = self.num_threads;
 		end
 
+		function geodesic_constructor(self, data, varargin)
+	
+			% Default length penalty is ~= 0 for this data type
+			self.length_penalty = 1;
+
+			if ~ismatrix(data)
+				error('Only 2D dimensional data supported by geodesic shortest path');
+			end
+			
+			self.interpolation_constructor(data, varargin{:});
+		end
+		
 		function interpolation_constructor(self, data, varargin)
 			self.problem_size = size(data);
 			self.data = data;
@@ -130,7 +142,7 @@ classdef Curve_extraction < handle
 				case 'edge'
 					self.edge_constructor(varargin{:});
 				case 'geodesic'
-					self.interpolation_constructor(varargin{:});
+					self.geodesic_constructor(varargin{:});
 			end
 
 			if (length(self.problem_size) ~= 2) && (length(self.problem_size) ~= 3)
