@@ -1,5 +1,5 @@
 % Wrapper for mex function.
-function [curve, cost, time, evaluations, visit_map, shortest_path_tree] ...
+function [curve, cost, time, evaluations, visit_map, shortest_path_tree, distances] ...
  = curve_segmentation(problem_type, mesh_map, data, dirs, settings)
 
 settings = parse_settings(settings);
@@ -29,10 +29,6 @@ if ~any(mesh_map(:) == 2) && ~isfield(settings, 'start_sets')
     error('No start set');
 end
 
-if (~any(mesh_map(:) == 3)) && ~isfield(settings, 'end_sets')
-    error('No end set');
-end
-
 assert(min(data(:)) >= 0);
 
 % Check file modification dates and recompile mex file
@@ -43,7 +39,7 @@ sources = {};
 
 compile(base_path, base_name, sources, extra_args)
 
-[curve, cost, time, evaluations, visit_map, shortest_path_tree] ...
+[curve, cost, time, evaluations, visit_map, shortest_path_tree, distances] ...
  = curve_segmentation_mex(problem_type,  mesh_map, data, dirs, settings);
 
 %% Post process

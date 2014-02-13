@@ -58,6 +58,44 @@ std::vector<Mesh::Point>  edgepath_to_points(const std::vector<int>& path, const
   return point_vector;
 }
 
+template<typename nodeT, typename edgeT>
+void store_results_edge(matrix<nodeT>& node_container, std::vector<edgeT>& edge_container, const matrix<int>& connectivity)
+{
+  // Initialize.
+  for (int i = 0; i < node_container.numel(); ++i)
+      node_container(i) = -1;
+
+  // Go through each each edge stored in visit time
+  // if it has been visited then it's != -1
+  std::vector<Mesh::Point> point_vector(2, make_point(0));
+  for (int i = 0; i < edge_container.size(); i++)
+  {
+    if (edge_container[i] == -1)
+      continue;
+
+    point_vector[0] = tail_of_edge(i, connectivity);
+    point_vector[1] = head_of_edge(i, connectivity);
+
+    for (Mesh::Point p : point_vector)
+    {
+      if (!validind(p))
+        continue;
+
+      nodeT visit_value = node_container(p.x, p.y, p.z);
+
+      if ( (visit_value == -1) ||
+          ( (visit_value >= 0) && (visit_value > edge_container[i]) ) )
+      {
+        node_container(p.x, p.y, p.z) = edge_container[i];
+      }
+    }
+  }
+
+  return;
+}
+
+
+
 template<typename Data_cost, typename Length_cost, typename Curvature_cost>
 void edge_segmentation( const matrix<double>& data,
                         const matrix<unsigned char>& mesh_map,
@@ -282,9 +320,10 @@ void edge_segmentation( const matrix<double>& data,
     int heuristic_evaluations = 0;
     double heuristic_cost = 0;
     matrix<int> empty_matrix;
+    matrix<double> empty_double_matrix;
 
     SegmentationOutput heuristic_output
-    (output.points, heuristic_runtime, heuristic_evaluations, heuristic_cost, output.visit_time, empty_matrix);
+    (output.points, heuristic_runtime, heuristic_evaluations, heuristic_cost, output.visit_time, empty_matrix, empty_double_matrix);
 
     node_segmentation<Data_cost, Length_cost>
                      (data,
@@ -339,40 +378,13 @@ void edge_segmentation( const matrix<double>& data,
     mexPrintf("Cost:    %g. \n", output.cost);
   }
 
+  if (settings.store_distances)
+    store_results_edge<double,float>(output.distances, options.distance, connectivity);
+
   // Store visit time
   if (options.store_visited)
-  {
-    // Initialize.
-    for (int i = 0; i < output.visit_time.numel(); ++i)
-        output.visit_time(i) = -1;
-
-    // Go through each each edge stored in visit time
-    // if it has been visited then it's != -1
-    std::vector<Mesh::Point> point_vector(2, make_point(0));
-    for (int i = 0; i < options.visit_time.size(); i++)
-    {
-      if (options.visit_time[i] == -1)
-        continue;
-
-      point_vector[0] = tail_of_edge(i, connectivity);
-      point_vector[1] = head_of_edge(i, connectivity);
-
-      for (Mesh::Point p : point_vector)
-      {
-        if (!validind(p))
-          continue;
-
-        double visit_value = output.visit_time(p.x, p.y, p.z);
-
-        if ( (visit_value == -1) ||
-            ( (visit_value >= 0) && (visit_value > options.visit_time[i]) ) )
-        {
-          output.visit_time(p.x, p.y, p.z) = options.visit_time[i];
-        }
-      }
-    }
-  }
-
+    store_results_edge<int,int>(output.visit_time, options.visit_time, connectivity);
+ 
   // Store parents
   // Conflicts are resolved by first visit.
   if (options.store_parents)

@@ -138,18 +138,20 @@ void node_segmentation( const matrix<double>& data,
     mexPrintf("Cost:    %g. \n", output.cost);
   }
 
+  if (settings.store_distances)
+  {
+    for (int i = 0; i < output.distances.numel(); i++)
+      output.distances(i) = options.distance[i];
+  }
+
   if (options.store_visited) 
   {
-    ASSERT(output.visit_time.numel() == options.visit_time.size());
-    
     for (int i = 0; i < output.visit_time.numel(); i++)
       output.visit_time(i) = options.visit_time[i];
   }
 
   if (options.store_parents)
   {
-    ASSERT(output.shortest_path_tree.numel() == options.parents.size());
-
     for (int i = 0; i < output.shortest_path_tree.numel(); i++)
       output.shortest_path_tree(i) = options.parents[i];
   }  

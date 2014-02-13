@@ -62,6 +62,9 @@ struct InstanceSettings
 
   bool store_visit_time;
   bool store_parents;
+  bool store_distances;
+
+  bool compute_all_distances;
 
   string data_type_str;
 
@@ -95,9 +98,17 @@ InstanceSettings parse_settings(MexParams params)
   // Whether A* should be used for curvature.
   settings.use_a_star = params.get<bool>("use_a_star", false);
 
-  // Whether the time of visits should be stored.
+  // Store visit time for each node.
   settings.store_visit_time = params.get<bool>("store_visit_time", false);
+
+  // Store the parent to each node.
   settings.store_parents = params.get<bool>("store_parents", false);
+
+  // Store distance to each node.
+  settings.store_distances = params.get<bool>("store_distances", false);
+
+  // Visit the full graph
+  settings.compute_all_distances = params.get<bool>("compute_all_distances", false);
 
   // Used by local optimization
   settings.function_improvement_tolerance = params.get<double>("function_improvement_tolerance", 1e-12);
@@ -150,9 +161,11 @@ struct SegmentationOutput
                       int& evaluations,
                       double& cost,
                       matrix<int>& visit_time,
-                      matrix<int>& shortest_path_tree) :
+                      matrix<int>& shortest_path_tree,
+                      matrix<double>& distances) :
     points(points), run_time(run_time), evaluations(evaluations),
-    cost(cost), visit_time(visit_time), shortest_path_tree(shortest_path_tree)
+    cost(cost), visit_time(visit_time), shortest_path_tree(shortest_path_tree),
+    distances(distances)
   {};
 
   std::vector<Mesh::Point>& points;
@@ -161,6 +174,7 @@ struct SegmentationOutput
   double& cost;
   matrix<int>& visit_time;
   matrix<int>& shortest_path_tree;
+  matrix<double>& distances;
 };
 
 template<typename Data_cost, typename Length_cost>

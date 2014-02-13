@@ -78,6 +78,46 @@ std::vector<Mesh::Point> pairpath_to_points(const std::vector<int>& path, const 
   return point_vector;
 }
 
+template<typename nodeT, typename edgepairT>
+void store_results_edgepair(matrix<nodeT>& node_container, std::vector<edgepairT>& edge_container, const matrix<int>& connectivity)
+{
+  // Initialize.
+  for (int i = 0; i < node_container.numel(); ++i) 
+      node_container(i) = -1; 
+
+  // Go through each each edge stored in visit time
+  // if it has been visited then it's != -1
+  int p0,p1,p2;
+
+  // No empty constructor.
+  std::vector<Mesh::Point> point_vector(3, make_point(0));
+
+  for (int i = 0; i < edge_container.size(); i++)
+  {
+    if (edge_container[i] == -1)
+      continue;
+
+    tie(p0,p1,p2) = points_in_a_edgepair(i, connectivity);
+    
+    point_vector[0] = make_point(p0);
+    point_vector[1] = make_point(p1);
+    point_vector[2] = make_point(p2);
+
+    for (Mesh::Point p : point_vector)
+    {
+      if (!validind(p))
+        continue;
+
+      nodeT visit_value = node_container(p.x, p.y, p.z);
+
+      if ( (visit_value == -1) || 
+          ( (visit_value >= 0) && (visit_value > edge_container[i]) ) )
+      {
+        node_container(p.x, p.y, p.z) = edge_container[i];
+      }
+    }
+  }
+}
 template<typename Data_cost, typename Length_cost, typename Curvature_cost, typename Torsion_cost>
 void  edgepair_segmentation(  const matrix<double>& data,
                               const matrix<unsigned char>& mesh_map,
@@ -289,48 +329,13 @@ void  edgepair_segmentation(  const matrix<double>& data,
     mexPrintf("Cost:    %g. \n", output.cost);
   }
 
-  // Store visit time
+  // Store extra information.
+  if (settings.store_distances)
+    store_results_edgepair<double,float>(output.distances, options.distance, connectivity);
+
   if (options.store_visited) 
-  {
-    // Initialize.
-    for (int i = 0; i < output.visit_time.numel(); ++i) 
-        output.visit_time(i) = -1; 
+    store_results_edgepair<int,int>(output.visit_time, options.visit_time, connectivity);
  
-    // Go through each each edge stored in visit time
-    // if it has been visited then it's != -1
-    int p0,p1,p2;
-
-    // No empty constructor.
-    std::vector<Mesh::Point> point_vector(3, make_point(0));
-
-    for (int i = 0; i < options.visit_time.size(); i++)
-    {
-      if (options.visit_time[i] == -1)
-        continue;
-
-      tie(p0,p1,p2) = points_in_a_edgepair(i, connectivity);
-      
-      point_vector[0] = make_point(p0);
-      point_vector[1] = make_point(p1);
-      point_vector[2] = make_point(p2);
-
-      for (Mesh::Point p : point_vector)
-      {
-        if (!validind(p))
-          continue;
-
-        double visit_value = output.visit_time(p.x, p.y, p.z);
-
-        if ( (visit_value == -1) || 
-            ( (visit_value >= 0) && (visit_value > options.visit_time[i]) ) )
-        {
-          output.visit_time(p.x, p.y, p.z) = options.visit_time[i];
-        }
-      }
-    }
-  }  
-
-    // Store parents
   // Conflicts are resolved by first visit.
   if (options.store_parents)
   {

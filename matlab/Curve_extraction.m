@@ -112,18 +112,20 @@ classdef Curve_extraction < handle
 				assert(all(self.problem_size == size(disallowed)));
 				mesh_map(disallowed) = 0;
 			end
-
-			% Check input
+			
 			assert(all(self.problem_size == size(start_set)));
-			assert(all(self.problem_size == size(end_set)));
-
-			if (any(start_set(:) & end_set(:)))
-				error('Some voxels are both in the start and end set');
-			end
-
 			mesh_map(start_set) = 2;
-			mesh_map(end_set) = 3;
 
+			% End set
+			if nargin > 2
+				if (any(start_set(:) & end_set(:)))
+					error('Some voxels are both in the start and end set');
+				end
+			
+				assert(all(self.problem_size == size(end_set)));
+				mesh_map(end_set) = 3;
+			end
+			
 			% Save
 			self.mesh_map = mesh_map;
 		end
@@ -154,6 +156,10 @@ classdef Curve_extraction < handle
 		function  [curve, cost, time, evaluations, visit_map ] = solve(self)
 			settings = gather_settings(self);
 
+			if (~any(self.mesh_map(:) == 3))
+				error('The problem has no end set.');
+			end
+			
 			[curve, total_cost, time, evaluations, visit_map] = ...
 			 		 curve_segmentation(self.data_type, self.mesh_map, self.data, self.connectivity, settings);
 
@@ -168,9 +174,20 @@ classdef Curve_extraction < handle
 			cost = self.cost;
 		end
 
+		% Compute distance to every point from the start set
+		function [distances, curve] = compute_all_distances(self)
+			settings = gather_settings(self);
+      settings.store_distances = true;
+      settings.compute_all_distances = true;
+
+			[curve, ~, ~, ~, ~, ~, distances] = ...
+			 		 curve_segmentation(self.data_type, self.mesh_map, self.data, self.connectivity, settings);
+		end
+
     function  [tree, curve] = compute_tree(self)
 			settings = gather_settings(self);
       settings.store_parents = true;
+      settings.compute_all_distances = true;
 
 			[curve, ~, ~, ~, ~, tree] = ...
 			 		 curve_segmentation(self.data_type, self.mesh_map, self.data, self.connectivity, settings);
@@ -191,6 +208,10 @@ classdef Curve_extraction < handle
 			if isempty(self.curve)
 				fprintf('No curve stored, running the solver \n');
 				self.solve()
+			end
+
+			if (~any(self.mesh_map(:) == 3))
+				error('The problem has no end set.');
 			end
 
 			settings = gather_settings(self);
@@ -512,10 +533,6 @@ classdef Curve_extraction < handle
 
 			if (~any(mesh_map(:) == 2))
 				error('The problem has no start set.');
-			end
-
-			if (~any(mesh_map(:) == 3))
-				error('The problem has no end set.');
 			end
 
 			self.mesh_map = mesh_map;

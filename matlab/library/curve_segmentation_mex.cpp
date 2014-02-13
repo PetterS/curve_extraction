@@ -89,7 +89,6 @@ void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
   startTime();
 
   // Check input and outputs
-  ASSERT(nlhs == 6);
   ASSERT(nrhs == 4 || nrhs == 5);
 
   // Mesh defining allowed pixels
@@ -210,11 +209,17 @@ void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
                                     dimensions[1],
                                     dimensions[2]);
 
-  if (options.store_parents)
-  {
-  	// We want the entire tree.
+  if (settings.store_distances)
+    dimensions = real_dimensions;
+  else
+    dimensions = empty_dimensions;
+
+  matrix<double> o_distances( dimensions[0],
+                              dimensions[1],
+                              dimensions[2]);
+
+  if (settings.compute_all_distances)
   	options.compute_all_distances = true;
-  }
 
   double run_time;
   double cost;
@@ -233,7 +238,7 @@ void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
   // Torsion: Pair of edges.
   // Curvature: Edges.
   // Length: Nodes.
-  SegmentationOutput output(points, run_time, evaluations, cost, o_visit_map, o_shortest_path_tree);
+  SegmentationOutput output(points, run_time, evaluations, cost, o_visit_map, o_shortest_path_tree, o_distances);
 
   // Curvature and Length can be calculated on Pair of Edges but this is overkill.
   // Same goes for Length on edges.
@@ -278,6 +283,7 @@ void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
   plhs[3] = o_eval;
   plhs[4] = o_visit_map;
   plhs[5] = o_shortest_path_tree;
+  plhs[6] = o_distances;
 }
 
 // Wrapper data from MATLAB.
@@ -286,9 +292,8 @@ void mexFunction(int            nlhs,     /* number of expected outputs */
                  int            nrhs,     /* number of inputs */
                  const mxArray  *prhs[]   /* mxArray input pointer array */)
 {
- int buff_size = 1024;
- char problem_type[buff_size];
- if (mxGetString(prhs[0], problem_type, buff_size))
+ char problem_type[1024];
+ if (mxGetString(prhs[0], problem_type, 1024))
    throw runtime_error("First argument must be a string.");
 
   if (!strcmp(problem_type,"linear_interpolation"))
