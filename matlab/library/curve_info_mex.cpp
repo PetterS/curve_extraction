@@ -131,9 +131,8 @@ void mexFunction(int            nlhs,     /* number of expected outputs */
                  int            nrhs,     /* number of inputs */
                  const mxArray  *prhs[]   /* mxArray input pointer array */)
 {
- int buff_size = 1024;
- char problem_type[buff_size];
- if (mxGetString(prhs[0], problem_type, buff_size)) 
+ char problem_type[1024];
+ if (mxGetString(prhs[0], problem_type, 1024)) 
    throw runtime_error("First argument must be a string.");
 
   if (!strcmp(problem_type,"linear_interpolation"))

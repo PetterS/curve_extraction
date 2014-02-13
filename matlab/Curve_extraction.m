@@ -173,7 +173,7 @@ classdef Curve_extraction < handle
       settings.store_parents = true;
 
 			[curve, ~, ~, ~, ~, tree] = ...
-			 		 curve_segmentation(self.mesh_map, self.data, self.connectivity, settings);
+			 		 curve_segmentation(self.data_type, self.mesh_map, self.data, self.connectivity, settings);
 
 			% If no curve is store this
 			if isempty(self.curve)
