@@ -153,7 +153,8 @@ classdef Curve_extraction < handle
 
 		end
 
-		function  [curve, cost, time, evaluations, visit_map ] = solve(self)
+		% Shortest path from the start set to the end set.
+		function  [curve, cost, time, evaluations, visit_map ] = shortest_path(self)
 			settings = gather_settings(self);
 
 			if (~any(self.mesh_map(:) == 3))
@@ -184,7 +185,8 @@ classdef Curve_extraction < handle
 			 		 curve_segmentation(self.data_type, self.mesh_map, self.data, self.connectivity, settings);
 		end
 
-    function  [tree, curve] = compute_tree(self)
+		% Compute visitation_tree
+    function  [tree, curve] = compute_visit_tree(self)
 			settings = gather_settings(self);
       settings.store_parents = true;
       settings.compute_all_distances = true;
@@ -206,8 +208,8 @@ classdef Curve_extraction < handle
 			end
 
 			if isempty(self.curve)
-				fprintf('No curve stored, running the solver \n');
-				self.solve()
+				fprintf('No curve stored, running the shortest_path \n');
+				self.shortest_path()
 			end
 
 			if (~any(self.mesh_map(:) == 3))

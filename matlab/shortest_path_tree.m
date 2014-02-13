@@ -27,7 +27,7 @@ C.set_connectivity_by_radius(4);
 %% Length
 C.length_penalty = 1;
 C.curvature_penalty = 0;
-[tree,curve] = C.compute_tree();
+[tree,curve] = C.compute_visit_tree();
 C.curve = curve;
 
 figure(1);
@@ -58,7 +58,7 @@ title('Shortest-path tree length regularization');
 figure(2);
 C.length_penalty = 0;
 C.curvature_penalty = 1;
-[tree,curve] = C.compute_tree();
+[tree,curve] = C.compute_visit_tree();
 C.curve = curve;
 C.display();
 hold on;

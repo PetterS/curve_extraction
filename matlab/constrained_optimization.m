@@ -118,7 +118,7 @@ for iter = 1:20
 	end
 
 	C.curvature_penalty = sigma;
-	[Curve, Enew] = C.solve();
+	[Curve, Enew] = C.shortest_path();
 	Cnew = Enew.curvature / sigma;
 	gnew = Cnew - curvature_limit;
 	dnew = Enew.total - sigma*curvature_limit;

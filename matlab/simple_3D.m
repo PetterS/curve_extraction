@@ -39,21 +39,21 @@ C.length_penalty = strength;
 C.curvature_penalty = 0;
 C.torsion_penalty = 0;
 
-c{1} = C.solve();
+c{1} = C.shortest_path();
 
 %%
 C.length_penalty = 0;
 C.curvature_penalty = strength;
 C.torsion_penalty = 0;
 
-c{2} = C.solve();
+c{2} = C.shortest_path();
 
 %%
 C.length_penalty = 0;
 C.curvature_penalty = 0;
 C.torsion_penalty = strength;
 
-c{3} = C.solve();
+c{3} = C.shortest_path();
 
 %% View
 figure(1); clf; hold on;

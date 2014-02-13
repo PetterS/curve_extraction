@@ -98,13 +98,13 @@ assert(length(curvature_regs) == 3);
 
 C.length_penalty = 0;
 C.curvature_penalty = curvature_regs(1);
-curvature_1 = C.solve();
+curvature_1 = C.shortest_path();
 
 C.curvature_penalty = curvature_regs(2);
-curvature_2 = C.solve();
+curvature_2 = C.shortest_path();
 
 C.curvature_penalty = curvature_regs(3);
-curvature_3 = C.solve();
+curvature_3 = C.shortest_path();
 
 % Display
 
@@ -114,13 +114,13 @@ assert(length(length_regs) == 3);
 
 C.curvature_penalty = 0;
 C.length_penalty = length_regs(1);
-length_1 = C.solve();
+length_1 = C.shortest_path();
 
 C.length_penalty = length_regs(2);
-length_2 = C.solve();
+length_2 = C.shortest_path();
 
 C.length_penalty = length_regs(3);
-length_3 = C.solve();
+length_3 = C.shortest_path();
 
 %% Generate Figure 6 (c) and (d) visit order of the algorithm
 % with and without A*.
@@ -129,11 +129,11 @@ C.length_penalty = 0;
 C.store_visit_time = true;
 
 C.use_a_star = false;
-C.solve();
+C.shortest_path();
 without_astar = double(C.visit_map);
 
 C.use_a_star = true;
-C.solve();
+C.shortest_path();
 with_astar = double(C.visit_map);
 
 %% Display

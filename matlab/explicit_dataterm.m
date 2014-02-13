@@ -43,7 +43,7 @@ end_set(:,end) = true;
 %% Compare to linear interpolation
 figure(1);
 C = Curve_extraction('edge', data, connectivity, start_set, end_set);
-C.solve();
+C.shortest_path();
 C.display();
 C1 = C.curve;
 
@@ -52,7 +52,7 @@ C1 = C.curve;
 figure(2);
 Cl = Curve_extraction('linear_interpolation', linear_data, start_set, end_set);
 Cl.set_connectivity_by_radius(radius);
-Cl.solve();
+Cl.shortest_path();
 Cl.display();
 
 C2 = C.curve;
