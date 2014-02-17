@@ -34,9 +34,9 @@ class Geodesic_length
       auto next = prev;
       next++;
 
-      // Length on each plane of the surface.
       z1 = depth(*prev);
 
+      // This code assumes that a surface is built up by piecewise planar parts...
       for (; next != points.end(); prev++,next++)
       {
           z2 = depth(*next);
