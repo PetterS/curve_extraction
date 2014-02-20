@@ -1,3 +1,4 @@
+#pragma once
 class Linear_data_cost
 {
   public: 

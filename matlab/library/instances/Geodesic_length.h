@@ -47,6 +47,11 @@ class Geodesic_length
       {
         std::tie(i00,i01,i10,i11) = depth_corners(*prev);
 
+        i00 *= vd[2];
+        i01 *= vd[2];
+        i10 *= vd[2];
+        i11 *= vd[2];
+
         x0 = prev->first;
         x1 = next->first;
 
@@ -60,6 +65,7 @@ class Geodesic_length
         x0 = (x0-std::floor(x0))*vd[0];
         y0 = (y0-std::floor(y0))*vd[1];
 
+        // See paper for explanation.
         d11 = (i00+i11-i10-i01)/(vd[0]*vd[1]);
         d10 = (y0*(i01-i11) + y1*(i10-i00) )/(vd[0]*vd[1]);
         d01 = (x0*(i10-i11) + x1*(i01-i11) )/(vd[0]*vd[1]);
@@ -87,7 +93,6 @@ class Geodesic_length
 
       return penalty*cost;
     }
-
 
   // Data
   bool data_depdent;

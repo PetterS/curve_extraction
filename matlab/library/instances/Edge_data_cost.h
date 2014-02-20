@@ -1,3 +1,4 @@
+#pragma once
 // Explicitly defined cost for each edge.
 class Edge_data_cost 
 {

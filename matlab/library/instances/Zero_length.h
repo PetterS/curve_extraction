@@ -1,3 +1,4 @@
+#pragma once
 class Zero_length
 {
   public:
