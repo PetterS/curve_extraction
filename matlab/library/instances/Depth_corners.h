@@ -1,19 +1,20 @@
 #pragma once
 #include "Boundary_points.h"
 
-class Depth_function
+typedef std::tuple<double,double,double,double> corners;
+
+class Depth_corners
 {
 public:
-  Depth_function(const matrix<double>& data, const vector<double>& voxel_dimensions) :
-    data(data), vd(voxel_dimensions)
+  Depth_corners(const matrix<double>& data) : data(data)
   {}
 
-  double operator() (boundary_point bp)
+  corners operator() (boundary_point bp)
   {
     return operator()(bp.first, bp.second);
   }
 
-  double operator () (double x,double y)
+  corners operator () (double x,double y)
   {
     // Determine four closest points
     double x_int, y_int;
@@ -24,22 +25,11 @@ public:
 
     // Sample data_cost
     i00 = data_value(x_int+0,y_int+0);
-    i10 = data_value(x_int+1,y_int+0);
     i01 = data_value(x_int+0,y_int+1);
+    i10 = data_value(x_int+1,y_int+0);
     i11 = data_value(x_int+1,y_int+1);
      
-    // Location in the square
-    x = x-x_int;
-    y = y-y_int;
-
-    // The square is defined by [0,vd[0]]x[0,vd[1]
-    // Bilinear interpolation
-    return  ( 1/ ((vd[0]-0)*(vd[1]-0) ) ) *
-            (  i00 * (vd[0]-x) *(vd[1]-y)
-             + i10 * (x-0)     *(vd[1]-y)
-            + i01 * (vd[0]-x) *(y-0)
-             + i11 * (x-0)     *(y-0)
-            );
+    return corners(i00,i01,i10,11);
   } 
 
   // Sample data or closest point inside data.
@@ -63,5 +53,4 @@ public:
   }
 
   const matrix<double> data;
-  const vector<double> vd;
 };

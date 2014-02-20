@@ -1,7 +1,7 @@
 #pragma once
 
 // Note boundary goes in the middle of the pixels.
-// In the PieceWiseConstant data cost the boundary is real voxel/pixel boundary.
+// In the PieceWiseConstant data cost the boundary is the voxel/pixel boundary.
 typedef std::pair<double,double> boundary_point;
 
 class Boundary_points
