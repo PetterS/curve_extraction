@@ -91,30 +91,30 @@ TEST_CASE("Interpolate/Unary", "")
 
  	id = 0;
 	un_inf[id++] =  0.435994902142004;
-  un_inf[id++] =  0.025926231827891;
-  un_inf[id++] =  0.549662477878709;
-  un_inf[id++] =  0.435322392618277;
-  un_inf[id++] =  0.420367802087489;
- 	un_inf[id++] =  std::numeric_limits<double>::infinity();
-  un_inf[id++] =  0.204648634037843;
-  un_inf[id++] =  0.619270966350664;
-  un_inf[id++] =  0.299654673674523;
-  un_inf[id++] =  0.266827275102867;
-  un_inf[id++] =  std::numeric_limits<double>::infinity();
-  un_inf[id++] =  0.529142094277039;
-  un_inf[id++] =  0.134579945344934;
-  un_inf[id++] =  0.513578121265746;
-  un_inf[id++] =  0.184439865646915;
-  un_inf[id] 	 =  0.785335147816673;
+	un_inf[id++] =  0.025926231827891;
+	un_inf[id++] =  0.549662477878709;
+	un_inf[id++] =  0.435322392618277;
+	un_inf[id++] =  0.420367802087489;
+	un_inf[id++] =  std::numeric_limits<double>::infinity();
+	un_inf[id++] =  0.204648634037843;
+	un_inf[id++] =  0.619270966350664;
+	un_inf[id++] =  0.299654673674523;
+	un_inf[id++] =  0.266827275102867;
+	un_inf[id++] =  std::numeric_limits<double>::infinity();
+	un_inf[id++] =  0.529142094277039;
+	un_inf[id++] =  0.134579945344934;
+	un_inf[id++] =  0.513578121265746;
+	un_inf[id++] =  0.184439865646915;
+	un_inf[id] 	 =  0.785335147816673;
 
-  PieceWiseConstant data_inf(&un_inf[0], M, N, O, voxeldimensions);
+	PieceWiseConstant data_inf(&un_inf[0], M, N, O, voxeldimensions);
   
-  test_unary(data_inf, 0,0,0, 3,1,0, 	0.799221196019935);
-  test_unary(data_inf, 0,0,0, 1,0,0, 	0.230960566984948);
-  test_unary(data_inf, 1,0,0, 1,1,0, 	0.163041051224839);
-  test_unary(data_inf, 2,1,0, -1,1,0, 0.333383812519488);
-  test_unary(data_inf, 1,2,0, 1,1,0, 	0.319094055350835);  
- 	test_unary(data_inf, 2,3,0, 1,0,0, 	0.484887506731794);  
+	test_unary(data_inf, 0,0,0, 3,1,0, 	0.799221196019935);
+	test_unary(data_inf, 0,0,0, 1,0,0, 	0.230960566984948);
+	test_unary(data_inf, 1,0,0, 1,1,0, 	0.163041051224839);
+	test_unary(data_inf, 2,1,0, -1,1,0, 0.333383812519488);
+	test_unary(data_inf, 1,2,0, 1,1,0, 	0.319094055350835);
+ 	test_unary(data_inf, 2,3,0, 1,0,0, 	0.484887506731794);
 }
 
 TEST_CASE("Interpolate/Unary inf")
