@@ -1,6 +1,6 @@
 % This script reproduces Figure 6 in
 % Shortest Paths with Curvature and Torsion
-% Petter Strandmark, Johannes Ulén, Fredrik Kahl, Leo Grady. 
+% Petter Strandmark, Johannes Ulï¿½n, Fredrik Kahl, Leo Grady. 
 % International Conference on Computer Vision. 2013.
 %
 % Windows note:
@@ -23,21 +23,17 @@ I = imread('../data/irrawaday-delta-sevcik.jpg');
 I = I(40:end,:,:);
 I = imresize(I,0.25);
 
-% mesh_map defining allowed pixels
-% Encoded as
-% 0: Disallowed
-% 1: Allowed
-% 2: Start set
-% 3: End set.
+% Define start/end set.
 [w,h,c] = size(I);
-mesh_map = ones([size(I,1) size(I,2)], 'int32');
+start_set = false([size(I,1) size(I,2)]);
+end_set = false([size(I,1) size(I,2)]);
 
-% Start set
-mesh_map(1:3, 1:round(end/2)) = 2;
-mesh_map(end,1:round((1/20*h))) = 2;
+start_set(1:3, 1:round(end/2)) = 2;
+start_set(end,1:round((1/20*h))) = 2;
+end_set(end-3:end, :) = 3;
 
-% End set
-mesh_map(end-3:end, :) = 3;
+% Remove overlap
+start_set(end_set) = 0;
 
 %% Unary, hand crafted
 River_colors = {};
@@ -51,7 +47,7 @@ River_colors{end+1} = [182 149 121];
 River_colors{end+1} = [205 176 165];
 River_colors{end+1} = [156 133 102];
 
-unary = inf(size(I,1), size(I,2));
+data = inf(size(I,1), size(I,2));
 target_intensity = zeros(size(I));
 for i = 1 : numel(River_colors);
     
@@ -59,21 +55,28 @@ for i = 1 : numel(River_colors);
     target_intensity(:,:,2) = River_colors{i}(2);  % G
     target_intensity(:,:,3) = River_colors{i}(3);  % B
     
-    unary_i = LAB(I) - LAB(target_intensity);
-    unary_i = sum(unary_i.^2, 3);
-    unary = min(unary, unary_i);
+    data_i = LAB(I) - LAB(target_intensity);
+    data_i = sum(data_i.^2, 3);
+    data = min(data, data_i);
 end
 
 % Scale down
-unary = unary/1e3;
+data = data/1e3;
 
 % Setup the problem instance
-C = Curve_extraction(mesh_map, unary);
+data_type = 'linear_interpolation';
+C = Curve_extraction(data_type, data, start_set, end_set);
+
+C.num_threads = min(feature('numThreads'),2);
+C.descent_method = 'lbfgs';
+
+% Use all edges with size <= regularization radius
+C.set_connectivity_by_radius(2.5);
+
 
 %% Define settings
 % Use all edges with size <= regularization radius
-C.regularization_radius = 2.5;
-C.VERBOSE = true;
+C.verbose = true;
 
 % rho in paper
 C.length_penalty = 0;
@@ -95,13 +98,13 @@ assert(length(curvature_regs) == 3);
 
 C.length_penalty = 0;
 C.curvature_penalty = curvature_regs(1);
-curvature_1 = C.solve();
+curvature_1 = C.shortest_path();
 
 C.curvature_penalty = curvature_regs(2);
-curvature_2 = C.solve();
+curvature_2 = C.shortest_path();
 
 C.curvature_penalty = curvature_regs(3);
-curvature_3 = C.solve();
+curvature_3 = C.shortest_path();
 
 % Display
 
@@ -111,13 +114,13 @@ assert(length(length_regs) == 3);
 
 C.curvature_penalty = 0;
 C.length_penalty = length_regs(1);
-length_1 = C.solve();
+length_1 = C.shortest_path();
 
 C.length_penalty = length_regs(2);
-length_2 = C.solve();
+length_2 = C.shortest_path();
 
 C.length_penalty = length_regs(3);
-length_3 = C.solve();
+length_3 = C.shortest_path();
 
 %% Generate Figure 6 (c) and (d) visit order of the algorithm
 % with and without A*.
@@ -126,12 +129,12 @@ C.length_penalty = 0;
 C.store_visit_time = true;
 
 C.use_a_star = false;
-C.solve();
-without_astar = C.visit_map;
+C.shortest_path();
+without_astar = double(C.visit_map);
 
 C.use_a_star = true;
-C.solve();
-with_astar = C.visit_map;
+C.shortest_path();
+with_astar = double(C.visit_map);
 
 %% Display
 figure(1);

@@ -18,6 +18,7 @@ using std::runtime_error;
 
 #include "mex.h"
 #include <sstream>
+#undef ASSERT
 #define ASSERT(cond) if (!(cond)) { std::stringstream sout; \
                                     sout << "Error (file " << __FILE__ \
                                          <<", line " << __LINE__ << "): " \

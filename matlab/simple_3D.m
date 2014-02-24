@@ -11,13 +11,27 @@ close all; clear all;
 
 rng(1)
 n = 10;
-unary = rand(n,n,n);
-mesh_map = ones(size(unary),'int32');
-mesh_map(:,:,1) = 2;
-mesh_map(:,:,end) = 3;
+data = rand(n,n,n);
+
+% True at voxels where it allowed to start/end
+start_set = false(size(data));
+end_set = false(size(data));
+
+% Possible to forbid certain voxels.
+disallowed = false(size(data));
+
+% Define start/end set.
+start_set(:,:,1) = true;
+end_set(:,:,end) = true;
+
 
 %% Create Curve object
-C = Curve_extraction(mesh_map, unary);
+data_type = 'linear_interpolation';
+C = Curve_extraction(data_type, data, start_set, end_set, disallowed);
+C.set_connectivity_by_radius(4);
+
+C.num_threads = min(feature('numThreads'),2);
+
 C.store_visit_time = true;
 strength = 1e2;
 %%
@@ -25,21 +39,21 @@ C.length_penalty = strength;
 C.curvature_penalty = 0;
 C.torsion_penalty = 0;
 
-c{1} = C.solve();
+c{1} = C.shortest_path();
 
 %%
 C.length_penalty = 0;
 C.curvature_penalty = strength;
 C.torsion_penalty = 0;
 
-c{2} = C.solve();
+c{2} = C.shortest_path();
 
 %%
 C.length_penalty = 0;
 C.curvature_penalty = 0;
 C.torsion_penalty = strength;
 
-c{3} = C.solve();
+c{3} = C.shortest_path();
 
 %% View
 figure(1); clf; hold on;

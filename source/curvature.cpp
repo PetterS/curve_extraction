@@ -97,27 +97,6 @@ R compute_curvature_internal(R x1, R y1, R z1,
 	using std::atan2;
 	using std::abs;
 
-	{
-		static const double pi = atan(1.0)*4;
-
-		const double d1x = spii::to_double(x2) - spii::to_double(x1);
-		const double d1y = spii::to_double(y2) - spii::to_double(y1);
-
-		const double d2x = spii::to_double(x3) - spii::to_double(x2);
-		const double d2y = spii::to_double(y3) - spii::to_double(y2);
-
-		const double angle1 = atan2(d1y,d1x);
-		const double angle2 = atan2(d2y,d2x);
-
-		double diff_angle = abs(angle2-angle1);
-		diff_angle = std::min(diff_angle, 2*pi - diff_angle);
-
-		// This prevents bad pairs.
-		if (diff_angle >= pi - 0.001) {
-			return std::numeric_limits<float>::infinity();
-		}
-	}
-
 	const R a = x1 - 2*x2 + x3;
 	const R b = y1 - 2*y2 + y3;
 	const R c = z1 - 2*z2 + z3;
@@ -211,7 +190,7 @@ R curve_extraction::compute_torsion(R x1, R y1, R z1,
                                     R x2, R y2, R z2,
                                     R x3, R y3, R z3,
                                     R x4, R y4, R z4,
-                                    R p, int n)
+                                    R p, bool writable_cache, int n)
 {
 	using std::pow;
 	using std::sqrt;
@@ -296,7 +275,7 @@ R curve_extraction::compute_torsion(R x1, R y1, R z1,
 
 	if (use_cache<R>::value) {
 		// Set the cache and return.
-		if (torsion_cache.size() < max_cache_size) {
+		if (writable_cache && torsion_cache.size() < max_cache_size) {
 			torsion_cache[entry] = sum;
 		}
 	}
@@ -312,7 +291,7 @@ INSTANTIATE_CURVATURE(float);
 
 #define INSTANTIATE_TORSION(R) \
 	template           \
-	R curve_extraction::compute_torsion(R, R, R, R, R, R, R, R, R, R, R, R, R, int);
+	R curve_extraction::compute_torsion(R, R, R, R, R, R, R, R, R, R, R, R, R, bool, int);
 INSTANTIATE_TORSION(double);
 INSTANTIATE_TORSION(float);
 

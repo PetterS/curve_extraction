@@ -2,7 +2,7 @@
 
 // The indexing:
 // Assume we have M neighbors in connectivity.
-// Then a edge (e) starting in node i 
+// Then a edge (e) starting in node i
 // have index i*M + e
 // The edge numbering is defined in the connectivity matrix.
 
@@ -16,7 +16,7 @@ std::tuple<int,int> root_and_edge(int edge_num, const matrix<int>& connectivity)
   return std::make_tuple(root_node,edge_id);
 }
 
-// Gives head and tail of the edge
+// Gives tail of the edge
 Mesh::Point  tail_of_edge(int edge_num, const matrix<int>& connectivity)
 {
   int num_points_per_element =  connectivity.M;
@@ -58,25 +58,59 @@ std::vector<Mesh::Point>  edgepath_to_points(const std::vector<int>& path, const
   return point_vector;
 }
 
-
-
-void edge_segmentation( std::vector<Mesh::Point>& points,
-                        double& run_time,
-                        int& evaluations,
-                        double& cost,
-                        const matrix<int>& mesh_map,
-                        PieceWiseConstant& data_term,
-                        const matrix<int>& connectivity,
-                        const InstanceSettings& settings,
-                        const PointSets& start_sets,
-                        const PointSets& end_sets,
-                        const std::vector<double>& voxeldimensions,
-                        const ShortestPathOptions& options,
-                        matrix<double>& visit_time)
+template<typename nodeT, typename edgeT>
+void store_results_edge(matrix<nodeT>& node_container, std::vector<edgeT>& edge_container, const matrix<int>& connectivity)
 {
-  // Create functor handling regularization costs
-  length_cost_functor length_cost(voxeldimensions, settings.length_penalty);
-  curvature_cost_functor curvature_cost(voxeldimensions, settings.curvature_penalty, settings.curvature_power);
+  // Initialize.
+  for (int i = 0; i < node_container.numel(); ++i)
+      node_container(i) = -1;
+
+  // Go through each each edge stored in visit time
+  // if it has been visited then it's != -1
+  std::vector<Mesh::Point> point_vector(2, make_point(0));
+  for (int i = 0; i < edge_container.size(); i++)
+  {
+    if (edge_container[i] == -1)
+      continue;
+
+    point_vector[0] = tail_of_edge(i, connectivity);
+    point_vector[1] = head_of_edge(i, connectivity);
+
+    for (Mesh::Point p : point_vector)
+    {
+      if (!validind(p))
+        continue;
+
+      nodeT visit_value = node_container(p.x, p.y, p.z);
+
+      if ( (visit_value == -1) ||
+          ( (visit_value >= 0) && (visit_value > edge_container[i]) ) )
+      {
+        node_container(p.x, p.y, p.z) = edge_container[i];
+      }
+    }
+  }
+
+  return;
+}
+
+
+
+template<typename Data_cost, typename Length_cost, typename Curvature_cost>
+void edge_segmentation( const matrix<double>& data,
+                        const matrix<unsigned char>& mesh_map,
+                        const matrix<int>& connectivity,
+                        InstanceSettings& settings,
+                        ShortestPathOptions& options,
+                        SegmentationOutput& output)
+{
+  Data_cost data_cost(data, connectivity, settings.voxel_dimensions);
+  Length_cost length_cost(data, settings.voxel_dimensions, settings.length_penalty);
+  Curvature_cost curvature_cost(data, settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
+
+  bool cacheable = true;
+  if (length_cost.data_depdent || curvature_cost.data_depdent) 
+    cacheable = false;
 
   // Some notation for the edge graph
   // Elements corresponds to points in the original graph
@@ -95,24 +129,26 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
 
   int x,y,z, x2,y2,z2,x3,y3,z3, element_number, element_number_2;
 
-  for (int i = 0; i < connectivity.M; i++) {
-    x2 = connectivity(i,0);
-    y2 = connectivity(i,1);
-    z2 = connectivity(i,2);
+  if (cacheable)
+  {
+    for (int i = 0; i < connectivity.M; i++) {
+      x2 = connectivity(i,0);
+      y2 = connectivity(i,1);
+      z2 = connectivity(i,2);
 
-  for (int j = 0; j < connectivity.M; j++) {
-    x3 = x2 + connectivity(j,0);
-    y3 = y2 + connectivity(j,1);
-    z3 = z2 + connectivity(j,2);
+    for (int j = 0; j < connectivity.M; j++) {
+      x3 = x2 + connectivity(j,0);
+      y3 = y2 + connectivity(j,1);
+      z3 = z2 + connectivity(j,2);
 
-    int n = i*num_points_per_element +j;
+      int n = i*num_points_per_element +j;
 
-     regularization_cache[n] = curvature_cost(0,0,0,x2,y2,z2,x3,y3,z3)
-                            + length_cost(x2,y2,z2,x3,y3,z3);
+       regularization_cache[n] = curvature_cost(0,0,0,x2,y2,z2,x3,y3,z3)
+                              + length_cost(x2,y2,z2,x3,y3,z3);
+    }
+    }
   }
-  }
-
-  if (VERBOSE)
+  if (verbose)
     mexPrintf("Creating start/end sets...");
 
   // start and end set
@@ -161,69 +197,17 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
   }
   }
 
-  // Extra start sets.
-  for (int i = 0; i < start_sets.size(); ++i) {
-    const auto points = start_sets[i];
-    for (int j = 0; j < points.size() - 1; ++j)
-    {
-      int element_number = sub2ind(points[j]);
-
-      int dx = points[j+1].x - points[j].x;
-      int dy = points[j+1].y - points[j].y;
-      int dz = points[j+1].z - points[j].z;
-
-      int k;
-      for (k = 0; k < connectivity.M; k++)
-      {
-        if (  (std::abs(dx - connectivity(k,0)) < 1e-6) &&
-              (std::abs(dy - connectivity(k,1)) < 1e-6) &&
-              (std::abs(dz - connectivity(k,2)) < 1e-6) )
-          break;
-      }
-
-      if (k == connectivity.M)
-        mexErrMsgTxt("Unable to find edge \n");
-
-      start_set.insert(element_number*num_points_per_element + k);
-    }
-  }
-
-  // Extra end sets.
-  for (int i = 0; i < end_sets.size(); ++i) {
-    const auto points = end_sets[i];
-    for (int j = 0; j < points.size() - 1; ++j) {
-      int element_number = sub2ind(points[j]);
-
-      int dx = points[j+1].x - points[j].x;
-      int dy = points[j+1].y - points[j].y;
-      int dz = points[j+1].z - points[j].z;
-
-      int k;
-      for (k = 0; k < connectivity.M; k++)
-      {
-        if (  (std::abs(dx - connectivity(k,0)) < 1e-6) &&
-              (std::abs(dy - connectivity(k,1)) < 1e-6) &&
-              (std::abs(dz - connectivity(k,2)) < 1e-6) )
-          break;
-      }
-
-      if (k == connectivity.M)
-        mexErrMsgTxt("Unable to find edge \n");
-
-      end_set.insert(element_number*num_points_per_element + k);
-    }
-  }
-
   int e_super = num_edges;
   std::set<int> super_edge;
   super_edge.insert(e_super);
 
-  if (VERBOSE)
+  if (verbose)
     mexPrintf("done.\n");
 
+  int evaluations = 0;
   auto get_neighbors =
-    [ &evaluations, &data_term, &num_points_per_element, &regularization_cache,
-      &e_super, &start_set, &connectivity, &length_cost]
+    [ &evaluations, &data_cost, &num_points_per_element, &regularization_cache,
+      &e_super, &start_set, &connectivity, &length_cost, &cacheable, &curvature_cost]
     (int e, std::vector<Neighbor>* neighbors) -> void
   {
     evaluations++;
@@ -240,17 +224,14 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
         int x1,y1,z1,
             x2,y2,z2;
 
-        tie(x1,y1,z1) = ind2sub(root); 
+        tie(x1,y1,z1) = ind2sub(root);
 
         x2 = x1 + connectivity(k,0);
         y2 = y1 + connectivity(k,1);
         z2 = z1 + connectivity(k,2);
 
-        float cost = data_term.evaluate_line_integral<double>
-                      (x1, y1, z1,
-                       x2, y2, z2);
-
-        cost += length_cost(x1,y1,z1,x2,y2,z2);              
+        double cost = data_cost(x1, y1, z1, x2, y2, z2);
+        cost += length_cost(x1,y1,z1,x2,y2,z2);
 
         neighbors->push_back(Neighbor(*itr, cost));
       }
@@ -284,22 +265,27 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
 
            // Id of destination, (element_number*num_points_per_element + edge_id)
           int dest = sub2ind(x2,y2,z2)*num_points_per_element + edge_id_2;
-          float cost;
+          double cost;
 
           if (validind(x3,y3,z3))
           {
-            // Adjacency id  
-            cost = data_term.evaluate_line_integral<double>
-                    (x2, y2, z2,
-                     x3, y3, z3);
+            // Adjacency id
+            cost = data_cost(x2, y2, z2, x3, y3, z3);
 
-            // Lookup id
-            int edge_type =  edge_id_1*num_points_per_element + edge_id_2;
-            cost += regularization_cache[edge_type];
+            if (cacheable)
+            {
+              // Lookup id
+              int edge_type =  edge_id_1*num_points_per_element + edge_id_2;
+              cost += regularization_cache[edge_type];
+            } else
+            {
+              cost += curvature_cost(x1,y1,z1,x2,y2,z2,x3,y3,z3);
+              cost += length_cost(x2,y2,z2,x3,y3,z3);
+            }
           }
 
           else {
-            cost = std::numeric_limits<float>::infinity();
+            cost = std::numeric_limits<double>::infinity();
           }
 
           (*neighbors)[edge_id_2] = Neighbor(dest, cost);
@@ -316,48 +302,56 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
     [&heuristic_options, &connectivity]
     (int e) -> double
   {
-    int p;
-    tie(p, std::ignore) = root_and_edge(e, connectivity);
-    return heuristic_options.distance[p];
+    Mesh::Point p = head_of_edge(e, connectivity);
+
+    return heuristic_options.distance[sub2ind(p.x,p.y,p.z)];
   };
 
   std::function<double(int)>* lower_bound_pointer = nullptr;
 
-  if (settings.use_a_star) {
+  if (settings.use_a_star && !options.store_parents) {
     // Call node_segmentation. It solves the same problem, but without
     // the curvature term.
     // We tell it to compute all distances, and we will get a
     // vector of the distance from any node to the end set.
     // (node_segmentation switches the start and end sets.)
+    // If all parents are to be stored A* will not help.
     double heuristic_runtime = 0;
     int heuristic_evaluations = 0;
     double heuristic_cost = 0;
+    matrix<int> empty_matrix;
+    matrix<double> empty_double_matrix;
 
-    node_segmentation(points,
-                      heuristic_runtime,
-                      heuristic_evaluations,
-                      heuristic_cost,
+    SegmentationOutput heuristic_output
+    (output.points, heuristic_runtime, heuristic_evaluations, heuristic_cost, output.visit_time, empty_matrix, empty_double_matrix);
+
+    node_segmentation<Data_cost, Length_cost>
+                     (data,
                       mesh_map,
-                      data_term,
                       connectivity,
                       settings,
-                      start_sets,
-                      end_sets,
-                      voxeldimensions,
                       heuristic_options,
-                      visit_time);
+                      heuristic_output);
 
     lower_bound_pointer = &lower_bound;
   }
 
-  if (VERBOSE)
+  if (verbose)
     mexPrintf("Computing shortest curvature ...");
 
   std::vector<int> path_edges;
   double start_time = ::get_wtime();
   evaluations = 0;
 
-  cost = shortest_path(num_edges+1,
+  // This can be a bit confusing: when we use line-graphs
+  // the parent is built into the edge so we do need to store them
+  // we DO however need to store the visit order in order to resolve conflicts.
+  if (options.store_parents)
+    options.store_visited = true;
+
+  options.store_parents = false;
+
+  output.cost = shortest_path(num_edges+1,
                        super_edge,
                        end_set,
                        get_neighbors,
@@ -365,53 +359,65 @@ void edge_segmentation( std::vector<Mesh::Point>& points,
                        lower_bound_pointer,
                        options);
 
+  // Code clarity
+  options.store_parents = settings.store_parents;
 
   double end_time = ::get_wtime();
-  run_time = end_time - start_time;
+  output.run_time = end_time - start_time;
 
   path_edges.erase(path_edges.begin());  // Remove super edge
-  points = edgepath_to_points(path_edges, connectivity);
+  output.points = edgepath_to_points(path_edges, connectivity);
 
-  if (VERBOSE)
+  output.evaluations = evaluations;
+  if (verbose)
   {
     mexPrintf("done.\n");
-    mexPrintf("Running time:  %g (s), ", run_time);
-    mexPrintf("Evaluations: %d, ", evaluations);
+    mexPrintf("Running time:  %g (s), ", output.run_time);
+    mexPrintf("Evaluations: %d, ", output.evaluations);
     mexPrintf("Path length: %d, ", path_edges.size() );
-    mexPrintf("Cost:    %g. \n", cost);
+    mexPrintf("Cost:    %g. \n", output.cost);
   }
 
+  if (settings.store_distances)
+    store_results_edge<double,float>(output.distances, options.distance, connectivity);
+
   // Store visit time
-  if (options.store_visited) 
-  {
-    // Initialize.
-    for (int i = 0; i < visit_time.numel(); ++i) 
-        visit_time(i) = -1; 
+  if (options.store_visited)
+    store_results_edge<int,int>(output.visit_time, options.visit_time, connectivity);
  
-    // Go through each each edge stored in visit time
-    // if it has been visited then it's != -1
+  // Store parents
+  // Conflicts are resolved by first visit.
+  if (options.store_parents)
+  {
+    ASSERT(options.store_visited);
+
+    // Initialize.
+    for (int i = 0; i < output.shortest_path_tree.numel(); ++i)
+        output.shortest_path_tree(i) = -1;
+
+    // Go through each edge stored in visit time
     std::vector<Mesh::Point> point_vector(2, make_point(0));
     for (int i = 0; i < options.visit_time.size(); i++)
     {
-      if (options.visit_time[i] == -1)
+      point_vector[0] = tail_of_edge(i, connectivity);
+      if (!validind(point_vector[0]))
         continue;
 
-      point_vector[0] = tail_of_edge(i, connectivity);
       point_vector[1] = head_of_edge(i, connectivity);
+      if (!validind(point_vector[1]))
+        continue;
 
-      for (Mesh::Point p : point_vector)
+      int time = output.visit_time(point_vector[1].x,
+                            point_vector[1].y,
+                            point_vector[1].z);
+
+      // Is this the edge which was here first?
+      if (time == options.visit_time[i])
       {
-        if (!validind(p))
-          continue;
-
-        double visit_value = visit_time(p.x, p.y, p.z);
-
-        if ( (visit_value == -1) || 
-            ( (visit_value >= 0) && (visit_value > options.visit_time[i]) ) )
-        {
-          visit_time(p.x, p.y, p.z) = options.visit_time[i];
-        }
+        output.shortest_path_tree(point_vector[1].x,
+                           point_vector[1].y,
+                           point_vector[1].z) = sub2ind(point_vector[0]);
       }
     }
   }
- }
+}

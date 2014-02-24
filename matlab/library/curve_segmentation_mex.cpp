@@ -1,21 +1,13 @@
 // Johannes Ulén and Petter Strandmark 2013
 #include "curve_segmentation.h"
-bool VERBOSE;
-double timer;
 
-#ifdef USE_OPENMP
-#include <omp.h>
-double get_wtime()
-{
-  return ::omp_get_wtime();
-}
-#else
-#include <ctime>
-double get_wtime()
-{
-  return std::time(0);
-}
-#endif
+// Avoid explicit instantiation.
+#include "node_segmentation.cpp"
+#include "edge_segmentation.cpp"
+#include "edgepair_segmentaion.cpp"
+
+bool verbose;
+double timer;
 
 int M = 1;
 int N = 1;
@@ -87,59 +79,46 @@ double endTime(const char* message)
   return t;
 }
 
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+// Data_cost: Any function of two points.
+// Length_cost any function of two points.
+// Curvature_cost any function of three points.
+// Torsion_ocst any function of four points.
+template<typename Data_cost, typename Length_cost, typename Curvature_cost, typename Torsion_cost>
+void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   startTime();
 
   // Check input and outputs
-  ASSERT(nlhs == 6);
-  ASSERT(nrhs >= 3); // optional arguments exist
+  ASSERT(nrhs == 4 || nrhs == 5);
 
-  // Mesh defining allowed pixels
-  // Encoded as
+  // Mesh defines allowed pixels/voxel encoded as
   // 0: Disallowed
   // 1: Allowed
   // 2: Start set
   // 3: End set.
-  int curarg =0;
-  const matrix<int> mesh_map(prhs[curarg++]);
-  const matrix<double> unary(prhs[curarg++]);
+  int curarg =1;
+  const matrix<unsigned char> mesh_map(prhs[curarg++]);
+  const matrix<double> data(prhs[curarg++]);
   const matrix<int> connectivity(prhs[curarg++]);
 
   // For 2 images third column should be zeros.
   ASSERT(connectivity.N == 3);
   ASSERT(connectivity.ndim() == 2);
 
-  M = unary.M;
-  N = unary.N;
-  O = unary.O;
+  M = mesh_map.M;
+  N = mesh_map.N;
+  O = mesh_map.O;
 
-  // Only 2 or 3d grid
+  // Only 2d or 3d grid
   if ((mesh_map.ndim() != 2) && (mesh_map.ndim() != 3))
-      mexErrMsgTxt("Only 2d and 3d grid supported. \n");
+      mexErrMsgTxt("Only two and three-dimensional problem supported. \n");
 
-  // Optional options
   MexParams params(nrhs-curarg, prhs+curarg); //Structure to hold and parse additional parameters
-  InstanceSettings settings = parse_settings(params); 
-
-  vector<double> voxeldimensions = params.get< vector<double> >("voxeldimensions");
-
-  if (voxeldimensions.empty())
-  {
-    voxeldimensions.push_back(1.0);
-    voxeldimensions.push_back(1.0);
-    voxeldimensions.push_back(1.0);
-  }
-
-  int num_threads_to_use = params.get<int>("num_threads", -1);
+  InstanceSettings settings = parse_settings(params);
 
   // Check input
-  ASSERT(voxeldimensions.size() == 3);
+  ASSERT(settings.voxel_dimensions.size() == 3);
   ASSERT(settings.regularization_radius > 0);
-  ASSERT(mesh_map.ndim() == unary.ndim());
-  ASSERT(mesh_map.M      == unary.M);
-  ASSERT(mesh_map.N      == unary.N);
-  ASSERT(mesh_map.O      == unary.O);
   ASSERT(settings.length_penalty >= 0);
   ASSERT(settings.curvature_penalty >= 0);
   ASSERT(settings.torsion_penalty >= 0);
@@ -162,85 +141,24 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     use_edges = true;
   }
 
-  if (VERBOSE)
+  // No line graph needed hence A* will not be used.
+  if (!use_edges && !use_pairs)
+    settings.use_a_star = false;
+
+  if (verbose)
     mexPrintf("Connectivity size is %d. \n", connectivity.M);
 
-  // Extra start and end sets. Cell arrays of points.
-  const mxArray* start_sets_cell = params.get<const mxArray*>("start_sets", 0);
-  const mxArray* end_sets_cell = params.get<const mxArray*>("end_sets", 0);
-  PointSets start_sets, end_sets;
-  if (start_sets_cell) {
-    ASSERT(mxIsCell(start_sets_cell));
-    auto cell_size = mxGetNumberOfElements(start_sets_cell);
-
-    for (int i = 0; i < cell_size; ++i) {
-      auto element = mxGetCell(start_sets_cell, i);
-      matrix<double> points_matrix(element);
-
-      start_sets.push_back(std::vector<Mesh::Point>());
-      auto& points = start_sets.back();
-
-      if (points_matrix.N == 3)
-      {
-        for (int j = 0; j < points_matrix.M; ++j) {
-          points.push_back(Mesh::Point(points_matrix(j, 0),
-                                       points_matrix(j, 1),
-                                       points_matrix(j, 2)));
-        }
-      } else if (points_matrix.N == 2)
-      {
-        for (int j = 0; j < points_matrix.M; ++j) {
-          points.push_back(Mesh::Point(points_matrix(j, 0),
-                                       points_matrix(j, 1),
-                                       0));
-        }
-      }
-      else {
-        mexErrMsgTxt("Error in defined start sets.");
-      }
-    }
-  }
-  if (end_sets_cell) {
-    ASSERT(mxIsCell(end_sets_cell));
-    auto cell_size = mxGetNumberOfElements(end_sets_cell);
-    for (int i = 0; i < cell_size; ++i) {
-      auto element = mxGetCell(end_sets_cell, i);
-      end_sets.push_back(std::vector<Mesh::Point>());
-      auto& points = end_sets.back();
-      matrix<double> points_matrix(element);
-
-      if (points_matrix.N == 3)
-      {
-        for (int j = 0; j < points_matrix.M; ++j) {
-          points.push_back(Mesh::Point(points_matrix(j, 0),
-                                       points_matrix(j, 1),
-                                       points_matrix(j, 2)));
-        }
-      } else if (points_matrix.N == 2)
-      {
-        for (int j = 0; j < points_matrix.M; ++j) {
-          points.push_back(Mesh::Point(points_matrix(j, 0),
-                                       points_matrix(j, 1),
-                                       0));
-        }
-      }
-      else {
-        mexErrMsgTxt("Error in defined end sets.");
-      }
-    }
-  }
-
-  if (VERBOSE)
+  if (verbose)
     endTime("Reading data");
 
   #ifdef USE_OPENMP
     int max_threads = omp_get_max_threads();
-    if (num_threads_to_use > 0) {
-      max_threads = num_threads_to_use;
+    if (settings.num_threads > 0) {
+      max_threads = settings.num_threads;
     }
     omp_set_num_threads(max_threads);
     int current_num_threads = -1;
-    if (VERBOSE) {
+    if (verbose) {
       #pragma omp parallel for
       for (int i = 0; i < 1000; ++i)
       {
@@ -254,27 +172,59 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   ShortestPathOptions options;
   options.print_progress = false;
   options.maximum_queue_size = 1000 * 1000 * 1000;
-
-
-  matrix<double>  o_visit_map( unary.M, 
-                               unary.N, 
-                               unary.O);
-
-
-  PieceWiseConstant data_term(unary.data,
-                              unary.M,
-                              unary.N,
-                              unary.O,
-                              voxeldimensions);
-
   options.store_visited = settings.store_visit_time;
+  options.store_parents = settings.store_parents;
+
+  // Empty matrices if visit order or parents are not calculated.
+  // For edge and edge pair type graphs the visit map is needed
+  // to resolve conflicts when shortest_path tree is to be calculated.
+  std::vector<int> empty_dimensions(3,0);
+  std::vector<int> real_dimensions(3);
+  std::vector<int> dimensions(3);
+
+  real_dimensions[0] = mesh_map.M;
+  real_dimensions[1] = mesh_map.N;
+  real_dimensions[2] = mesh_map.O;
+
+  if (options.store_visited ||
+      (use_edges && options.store_parents) ||
+      (use_pairs && options.store_parents)
+     )
+    dimensions = real_dimensions;
+  else
+    dimensions = empty_dimensions;
+
+  matrix<int>  o_visit_map   ( dimensions[0],
+                               dimensions[1],
+                               dimensions[2]);
+
+  if (options.store_parents)
+    dimensions = real_dimensions;
+  else
+    dimensions = empty_dimensions;
+
+  matrix<int> o_shortest_path_tree( dimensions[0],
+                                    dimensions[1],
+                                    dimensions[2]);
+
+  if (settings.store_distances)
+    dimensions = real_dimensions;
+  else
+    dimensions = empty_dimensions;
+
+  matrix<double> o_distances( dimensions[0],
+                              dimensions[1],
+                              dimensions[2]);
+
+  if (settings.compute_all_distances)
+  	options.compute_all_distances = true;
 
   double run_time;
   double cost;
   int evaluations;
   std::vector<Mesh::Point> points;
 
-  if (VERBOSE)
+  if (verbose)
   {
     mexPrintf("Regularization coefficients. Length: %g Curvature: %g Torsion: %g \n",
               settings.length_penalty, settings.curvature_penalty, settings.torsion_penalty);
@@ -286,35 +236,30 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // Torsion: Pair of edges.
   // Curvature: Edges.
   // Length: Nodes.
+  SegmentationOutput output(points, run_time, evaluations, cost, o_visit_map, o_shortest_path_tree, o_distances);
 
   // Curvature and Length can be calculated on Pair of Edges but this is overkill.
   // Same goes for Length on edges.
   if (use_pairs)
   {
-    edgepair_segmentation(points, run_time, evaluations, cost,
-                          mesh_map, data_term, connectivity, settings,
-                          voxeldimensions, options, o_visit_map);
+    edgepair_segmentation<Data_cost, Length_cost, Curvature_cost, Torsion_cost>
+    (data, mesh_map, connectivity, settings, options, output);
   }
   else if (use_edges)
   {
-    edge_segmentation(  points, run_time, evaluations, cost,
-                        mesh_map, data_term, connectivity,
-                        settings,
-                        start_sets, end_sets, 
-                        voxeldimensions, options, o_visit_map);
-  } else 
+    edge_segmentation<Data_cost, Length_cost, Curvature_cost>
+    (data, mesh_map, connectivity, settings, options, output);
+  }
+  else
   {
-    node_segmentation( points, run_time, evaluations, cost,
-                       mesh_map, data_term,  connectivity,
-                       settings, start_sets, end_sets,
-                       voxeldimensions, options, o_visit_map);
-  } 
+    node_segmentation<Data_cost, Length_cost>
+    (data, mesh_map, connectivity, settings, options, output);
+  }
 
   matrix<double>  o_path(points.size(),3);
   matrix<double>  o_time(1);
   matrix<int>     o_eval(1);
   matrix<double>  o_cost(1);
-  matrix<double>  o_connectivity(1);
 
   int n_line = 0;
   for (   auto it = points.begin(); it != points.end(); it++)
@@ -325,16 +270,36 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       n_line++;
   }
 
-  o_time(0) = run_time;
-  o_eval(0) = evaluations;
-  o_cost(0) = cost;
-  o_connectivity(0) = connectivity.M;
+  o_time(0) = output.run_time;
+  o_eval(0) = output.evaluations;
+  o_cost(0) = output.cost;
 
   // Write to MatLab
   plhs[0] = o_path;
-  plhs[1] = o_time;
-  plhs[2] = o_eval;
-  plhs[3] = o_cost;
-  plhs[4] = o_connectivity;
-  plhs[5] = o_visit_map;
+  plhs[1] = o_cost;
+  plhs[2] = o_time;
+  plhs[3] = o_eval;
+  plhs[4] = o_visit_map;
+  plhs[5] = o_shortest_path_tree;
+  plhs[6] = o_distances;
+}
+
+// Wrapper data from MATLAB.
+void mexFunction(int            nlhs,     /* number of expected outputs */
+                 mxArray        *plhs[],  /* mxArray output pointer array */
+                 int            nrhs,     /* number of inputs */
+                 const mxArray  *prhs[]   /* mxArray input pointer array */)
+{
+ char problem_type[1024];
+ if (mxGetString(prhs[0], problem_type, 1024))
+   throw runtime_error("First argument must be a string.");
+
+  if (!strcmp(problem_type,"linear_interpolation"))
+    curve_segmentation<Linear_data_cost, Euclidean_length, Euclidean_curvature, Euclidean_torsion>(nlhs, plhs, nrhs, prhs);
+  else if (!strcmp(problem_type,"edge"))
+    curve_segmentation<Edge_data_cost, Euclidean_length, Euclidean_curvature, Euclidean_torsion>(nlhs, plhs, nrhs, prhs); 
+  else if (!strcmp(problem_type,"geodesic"))
+    curve_segmentation<Zero_data_cost, Geodesic_length, Geodesic_curvature, Zero_torsion>(nlhs, plhs, nrhs, prhs);
+  else
+    throw runtime_error("Unknown data type");
 }

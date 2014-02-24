@@ -24,6 +24,7 @@ R compute_torsion(R x1, R y1, R z1,
                   R x3, R y3, R z3,
                   R x4, R y4, R z4,
                   R power = 2.0,
+                  bool writable_cache = true,
                   int n_approximation_points = 200);
 
 }  // namespace curve_extraction
