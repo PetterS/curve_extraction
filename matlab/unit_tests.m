@@ -119,6 +119,7 @@ classdef unit_tests < matlab.unittest.TestCase
 			C.torsion_penalty = 0;
 			tol = 1e-10;
 			
+			% Curvature
 			for length_penalty = [0 0.1 1.38 4.23]
 				for curvature_penalty = [0 0.2 0.33 0.46];
 					C.length_penalty = length_penalty;
@@ -135,6 +136,21 @@ classdef unit_tests < matlab.unittest.TestCase
 				end
 			end
 			
+			% Torsion
+			C.length_penalty = 0.28;
+			C.curvature_penalty = 0.43;
+			for torsion_penalty = [0 0.2 0.33 0.46];
+
+					C.torsion_penalty = torsion_penalty;
+					C.use_a_star = false;
+					[curve,cost] = C.shortest_path;
+					
+					C.use_a_star = true;
+					[a_curve, a_cost] = C.shortest_path;
+					
+					obj.verifyEqual(numel(curve),numel(a_curve));
+					obj.verifyEqual(cost.total, a_cost.total, 'AbsTol', tol);
+			end
 		end
 		
 		%% eps penalty 

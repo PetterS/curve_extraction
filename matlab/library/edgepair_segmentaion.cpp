@@ -188,6 +188,55 @@ void  edgepair_segmentation(  const matrix<double>& data,
     }
   }
 
+  // Note:
+  // A* lower bound is calculated on the node-graph
+  // It is possible to to get a tighter bound
+  // by running it on a edge-graph (including curvature penalty). 
+  // However the resulting complete list of all edge costs might be
+  // prohibitively large for many applications.
+
+  ShortestPathOptions heuristic_options;
+  heuristic_options.compute_all_distances = true;
+  // The lower bound function is just the distance
+  // without curvature taken into account.
+  std::function<double(int)> lower_bound =
+    [&heuristic_options, &connectivity]
+    (int e) -> double
+  {
+    int p;
+    tie(ignore, ignore, p) = points_in_a_edgepair(e, connectivity);
+    return heuristic_options.distance[p];
+  };
+
+  std::function<double(int)>* lower_bound_pointer = nullptr;
+
+  if (settings.use_a_star && !options.store_parents) {
+    // Call node_segmentation. It solves the same problem, but without
+    // the curvature term.
+    // We tell it to compute all distances, and we will get a
+    // vector of the distance from any node to the end set.
+    // (node_segmentation switches the start and end sets.)
+    // If all parents are to be stored A* will not help.
+    double heuristic_runtime = 0;
+    int heuristic_evaluations = 0;
+    double heuristic_cost = 0;
+    matrix<int> empty_matrix;
+    matrix<double> empty_double_matrix;
+
+    SegmentationOutput heuristic_output
+    (output.points, heuristic_runtime, heuristic_evaluations, heuristic_cost, output.visit_time, empty_matrix, empty_double_matrix);
+
+    node_segmentation<Data_cost, Length_cost>
+                     (data,
+                      mesh_map,
+                      connectivity,
+                      settings,
+                      heuristic_options,
+                      heuristic_output);
+
+    lower_bound_pointer = &lower_bound;
+  }
+  
   // Super_edge which all edges goes out from. This is needed
   // because otherwise the first edge will have 0 regularization
   int e_super = num_edges;
@@ -308,7 +357,7 @@ void  edgepair_segmentation(  const matrix<double>& data,
                         end_set_pairs,
                         get_neighbors_torsion,
                         &path_pairs,
-                        0,
+                        lower_bound_pointer,
                         options);
 
   // Code clarity
