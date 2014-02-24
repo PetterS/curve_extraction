@@ -16,7 +16,7 @@ std::tuple<int,int> root_and_edge(int edge_num, const matrix<int>& connectivity)
   return std::make_tuple(root_node,edge_id);
 }
 
-// Gives head and tail of the edge
+// Gives tail of the edge
 Mesh::Point  tail_of_edge(int edge_num, const matrix<int>& connectivity)
 {
   int num_points_per_element =  connectivity.M;
@@ -302,9 +302,9 @@ void edge_segmentation( const matrix<double>& data,
     [&heuristic_options, &connectivity]
     (int e) -> double
   {
-    int p;
-    tie(p, std::ignore) = root_and_edge(e, connectivity);
-    return heuristic_options.distance[p];
+    Mesh::Point p = head_of_edge(e, connectivity);
+
+    return heuristic_options.distance[sub2ind(p.x,p.y,p.z)];
   };
 
   std::function<double(int)>* lower_bound_pointer = nullptr;
