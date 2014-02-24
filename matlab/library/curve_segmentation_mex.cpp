@@ -91,8 +91,7 @@ void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
   // Check input and outputs
   ASSERT(nrhs == 4 || nrhs == 5);
 
-  // Mesh defining allowed pixels
-  // Encoded as
+  // Mesh defines allowed pixels/voxel encoded as
   // 0: Disallowed
   // 1: Allowed
   // 2: Start set
@@ -110,11 +109,10 @@ void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
   N = mesh_map.N;
   O = mesh_map.O;
 
-  // Only 2 or 3d grid
+  // Only 2d or 3d grid
   if ((mesh_map.ndim() != 2) && (mesh_map.ndim() != 3))
       mexErrMsgTxt("Only two and three-dimensional problem supported. \n");
 
-  // Optional options
   MexParams params(nrhs-curarg, prhs+curarg); //Structure to hold and parse additional parameters
   InstanceSettings settings = parse_settings(params);
 

@@ -1,32 +1,76 @@
-% Class handling curve extraction
-% Johannes
+%% Class handling curve extraction
+% For example usage, there are several examples in /matlab.
+%
+% This class solves the shortest path problem.
+% Data cost, start/end/disallowed sets are all restricted to be either 2D or 3D matrices of the same size.
+% Right now there are three different types of problem formulation supported.
+%
+% data_type = 'linear_interpolation':
+% The data cost of each edge is given by linearly interpolating the data matrix.
+%
+% data_type = 'edge'
+% The data cost of each edge is given explicitly.
+%
+% data_type = 'geodesic'
+% There is no data cost, the data matrix defines a height at each voxel.
+% The shortest path is calculated on this surface.
+%
 classdef Curve_extraction < handle
 
 	% Settings
 	properties
+
+		%% The following parameters define the cost function to be minimized.
+		% The cost for a give curve is
+		% data_cost(curve) +
+		% + length_penalty | length of curve |
+		% + curvature_penalty | curvature of curve |^curvature_power
+		% + torsion_penalty |torsion of curve|^torsion_power
 		length_penalty = 0;
 		curvature_penalty = 0,
 		torsion_penalty = 0,
 		curvature_power = 2.0;
 		torsion_power = 2.0;
+
+		% When curvature regularization is used potential speedups can be achieved
+		% by A*.
 		use_a_star = true;
+
+		% Verbose information from the optimization.
 		verbose = false;
+
+		% Store the visit order when performing shortest path calculations.
 		store_visit_time = false;
+
+		% Number of threads the optimizer uses.
+		% Three parts of the code are parallelized.
+		% 1. All costs in a neighborhood.
+		% 2. Linearly interpolation a data cost.
+		% 3. Local optimization.
 		num_threads = int32(min(2,feature('numThreads')));
 
+		% Data to optimize over
 		data =  [];
 
-		% Created in the constructor.
+		% Defines the connectivity as a delta functions
+		% Each row is a new edge
+		% E.g. [dx dy dz] for voxel (x,y,z) gives and edge to (x+dx,y+dy,z+dz)
+		% Initial connectivity is set in the constructor.
+		% Tip: Can be generated via the method obj.set_connectivity_by_radius.
 		connectivity = [];
 
-		% Local optimization
+		% Settings local optimization
 		maxiter = 1000;
 		descent_method = 'lbfgs';
 
+		% The length of each voxel side
+		% [x_length y_length z_length]
 		voxel_dimensions = [1 1 1];
+
+		% Placeholder for a shortest path
 		curve = [];
 
-		% "Virtual"
+		% "Virtual" parameters set in the constructor.
 		start_set;
 		end_set;
 		disallowed_set;
@@ -39,9 +83,6 @@ classdef Curve_extraction < handle
 		cost;
 		info;
 		evaluations = nan,
-
-		% Note: For length regularization the visit map runs from end set to start set
-		% this is because the same code get lower bound for A*.
 		visit_map = [];
 	end
 
@@ -69,18 +110,20 @@ classdef Curve_extraction < handle
 			settings.num_threads = self.num_threads;
 		end
 
+		% Used when the shortest path on a surface is calculated.
 		function geodesic_constructor(self, data, varargin)
-	
+
 			% Default length penalty is ~= 0 for this data type
 			self.length_penalty = 1;
 
 			if ~ismatrix(data)
 				error('Only 2D dimensional data supported by geodesic shortest path');
 			end
-			
+
 			self.interpolation_constructor(data, varargin{:});
 		end
-		
+
+		% Used when the data cost is defined by by performing linear interpolation a 2D or 3D matrix.
 		function interpolation_constructor(self, data, varargin)
 			self.problem_size = size(data);
 			self.data = data;
@@ -91,6 +134,7 @@ classdef Curve_extraction < handle
 			self.create_mesh_map(varargin{:});
 		end
 
+		% Used when each edge in the graph is given an explicit cost.
 		function edge_constructor(self, data, connectivity, varargin)
 			self.connectivity = int32(connectivity);
 			self.problem_size = size(data);
@@ -102,7 +146,8 @@ classdef Curve_extraction < handle
 			self.create_mesh_map(varargin{:});
 		end
 
-
+		% Create a mesh_map which is used internally to keep track on
+		% start set, end_set and disallowed pixel/voxels.
 		function self = create_mesh_map(self, start_set, end_set, disallowed)
 			% Create a structure holding the start/end and allowed pixels
 			% for the algorithm to visit.
@@ -112,7 +157,7 @@ classdef Curve_extraction < handle
 				assert(all(self.problem_size == size(disallowed)));
 				mesh_map(disallowed) = 0;
 			end
-			
+
 			assert(all(self.problem_size == size(start_set)));
 			mesh_map(start_set) = 2;
 
@@ -121,17 +166,18 @@ classdef Curve_extraction < handle
 				if (any(start_set(:) & end_set(:)))
 					error('Some voxels are both in the start and end set');
 				end
-			
+
 				assert(all(self.problem_size == size(end_set)));
 				mesh_map(end_set) = 3;
 			end
-			
+
 			% Save
 			self.mesh_map = mesh_map;
 		end
 	end
 	methods
-		% Find global solution in the mesh implicitly defined by the connectivity.
+
+		% Constructor
 		function self = Curve_extraction(data_type, varargin)
 			addpath([fileparts(mfilename('fullpath')) filesep 'library']);
 
@@ -160,7 +206,7 @@ classdef Curve_extraction < handle
 			if (~any(self.mesh_map(:) == 3))
 				error('The problem has no end set.');
 			end
-			
+
 			[curve, total_cost, time, evaluations, visit_map] = ...
 			 		 curve_segmentation(self.data_type, self.mesh_map, self.data, self.connectivity, settings);
 
@@ -183,9 +229,17 @@ classdef Curve_extraction < handle
 
 			[curve, ~, ~, ~, ~, ~, distances] = ...
 			 		 curve_segmentation(self.data_type, self.mesh_map, self.data, self.connectivity, settings);
+
+			if 	min(distances(self.disallowed_set))	 < 1e38
+				error('Disallowed set should have infinte cost.');
+			end
+			distances(self.disallowed_set) = inf;
+
 		end
 
 		% Compute visitation_tree
+		% Returns a matrix (named tree) where each entry contains the linear index to
+		% the parent voxel when every pixel/voxel is visited.
     function  [tree, curve] = compute_visit_tree(self)
 			settings = gather_settings(self);
       settings.store_parents = true;
@@ -200,7 +254,9 @@ classdef Curve_extraction < handle
 			end
 		end
 
-		% Move away from discretized solution and find a local optimum.
+		% Perform local optimization on a discrete shortest_path solution.
+		% The user can perform local optimization on any curve
+		% by setting obj.curve and then calling this method.
 		function [curve,cost,time] = local_optimization(self)
 
 			if ~strcmp(self.data_type,'linear_interpolation')
@@ -233,18 +289,18 @@ classdef Curve_extraction < handle
 			end
 		end
 
-		% Draw current solution (only supports 2D curves)
+		% Show information about the stored shortest path and settings.
 		function display(self)
 			details(self);
 			clf; hold on;
 
 			msgs = {};
-			
+
 			if (~isempty(self.curve))
 				msgs{end+1} = sprintf('Cost; total: %g data: %g, length: %g curvature: %g, torsion %g.', ...
 					self.cost.total, self.cost.data, self.cost.length, self.cost.curvature, self.cost.torsion);
 			end
-			
+
 			msgs{end+1} = sprintf('Penalty; %g|length| + %g|curvature|^{%g} + %g|torsion|^{%g}.', ...
 					self.length_penalty, self.curvature_penalty, self.curvature_power, self.torsion_penalty, self.torsion_power);
 
@@ -292,11 +348,14 @@ classdef Curve_extraction < handle
 					legend('Curve','Start','End','Location', 'EastOutside');
 				end
 			else
-				fprintf('No solution stored, please run obj.solve() \n');
+				fprintf('No solution stored, please run obj.shortest_path() \n');
 			end
 		end
 
 		%% Set functions
+
+		% This function updates to connectivity to consist of
+		% every edge with a unique angle whose length is <= radius.
 		function set_connectivity_by_radius(self, radius)
 
 			if strcmp(self.data_type,'edge')
@@ -331,7 +390,11 @@ classdef Curve_extraction < handle
 			self.reset_solution();
 		end
 
-
+		% Two different local optimization algorithms are supported:
+		% lbgfs (Broyden–Fletcher–Goldfarb–Shanno) uses symbolic differentiation.
+		% nelder-mead: purely uses function evaluations and performs no differentiation.
+		%
+		% Tip: It is recommended to use lbgfs.
 		function set.descent_method(self, method)
 				switch method
 					case 'lbfgs'
@@ -345,10 +408,6 @@ classdef Curve_extraction < handle
 				self.descent_method = method;
 		end
 
-		% Connectivity
-		% Each row defines offset from a voxel,
-		% e.g: For 2D data connectivity = [1 0; 0 1; -1 0; 0 -1],
-		% defines standard 4-connectivity.
 		function set.connectivity(self, connectivity)
 
 			assert((size(connectivity,2) ~= 3) ||  (size(connectivity,2) ~= 2))
@@ -362,7 +421,7 @@ classdef Curve_extraction < handle
 			if (numel(unique(connectivity,'rows')) ~= numel(connectivity))
 				error('Duplicate entries in the given connectivity');
 			end
-			
+
 
 			assert(size(connectivity,2) == 3);
 
@@ -465,7 +524,7 @@ classdef Curve_extraction < handle
 
 			cost = self.cached_cost;
 		end
-		
+
 		function info = get.info(self)
 			if isempty(self.cached_cost)
 				[self.cached_cost,self.cached_info] = self.curve_info(self.curve);
@@ -473,7 +532,7 @@ classdef Curve_extraction < handle
 
 			info = self.cached_info;
 		end
-		
+
 		% Keeping the cuvre
 		function reset_solution(self)
 			self.cached_cost = [];
@@ -557,8 +616,8 @@ classdef Curve_extraction < handle
 			if nargin < 2
 				curve = self.curve;
 			end
-			
-			if ~isempty(curve)			
+
+			if ~isempty(curve)
 				settings = gather_settings(self);
 				[cost,info] = curve_info(self.data_type, self.data, curve, self.connectivity, settings);
 			else
