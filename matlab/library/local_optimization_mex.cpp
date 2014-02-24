@@ -19,20 +19,6 @@
 using namespace spii;
 using namespace curve_extraction;
 
-#ifdef USE_OPENMP
-#include <omp.h>
-double get_wtime()
-{
-	return ::omp_get_wtime();
-}
-#else
-#include <ctime>
-double get_wtime()
-{
-	return std::time(0);
-}
-#endif
-
 void mex_log_function(const std::string& str)
 {
 	mexPrintf("%s\n", str.c_str());
@@ -211,13 +197,11 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 	                             settings.voxel_dimensions);
 
 	// Adding data cost
-	if (settings.data_type == linear_interpolation)
-	{
-		auto data = std::make_shared<AutoDiffTerm<LinearUnary<PieceWiseConstant>, 3, 3>>(data_term);
+	auto data = std::make_shared<AutoDiffTerm<LinearUnary<PieceWiseConstant>, 3, 3>>(data_term);
 
-		for (int i = 1; i < n; ++i)
-			f.add_term(data, points[i-1].xyz, points[i].xyz);
-	}
+	for (int i = 1; i < n; ++i)
+		f.add_term(data, points[i-1].xyz, points[i].xyz);
+
 
 	// Functor for each type of regularization penalty
 	auto length = std::make_shared<AutoDiffTerm<Length, 3, 3>>(settings.voxel_dimensions, settings.length_penalty);
