@@ -16,7 +16,7 @@ void node_segmentation( const matrix<double>& data,
   bool cacheable =  !length_cost.data_depdent;
   std::vector<double> regularization_cache(connectivity.M);
 
-   // Pre-calculate regularization cost for every item connectivity
+   // Pre-calculate regularization cost for every connectivity
   if (cacheable) 
   {
     for (int k = 0; k < connectivity.M; k++)
@@ -46,9 +46,9 @@ void node_segmentation( const matrix<double>& data,
     {
       for (int k = 0; k < connectivity.M; k++)
       {
-        x2 = x1 - connectivity(k,0);
-        y2 = y1 - connectivity(k,1);
-        z2 = z1 - connectivity(k,2);
+        x2 = x1 + connectivity(k,0);
+        y2 = y1 + connectivity(k,1);
+        z2 = z1 + connectivity(k,2);
 
         if (validind(x2,y2,z2))
         {
