@@ -209,6 +209,17 @@ classdef Curve_extraction < handle
 				curvature_check = info.curvature < self.curvature_limit;
 				torsion_check = info.torsion < self.torsion_limit;
 				
+				% Avoid potential numerical issues
+				if (self.length_limit == inf)
+					length_check = true;
+				end
+				if (self.curvature_limit == inf)
+					curvature_check = true;
+				end
+				if (self.torsion_limit == inf)
+					torsion_check = true;
+				end
+	
 				feasible = length_check && curvature_check && torsion_check;
 		end
 	end
@@ -489,8 +500,10 @@ classdef Curve_extraction < handle
 			msgs{end+1} = sprintf('Cost function ; data + %g|length| + %g|curvature|^{%g} + %g|torsion|^{%g}.', ...
 					self.length_penalty, self.curvature_penalty, self.curvature_power, self.torsion_penalty, self.torsion_power);
 
-			msgs{end+1} = sprintf('Curve info: Length: %g |curvature|^{%g}: %g  |torsion|^{%g}: %g', ...
+			if (~isempty(curve))
+				msgs{end+1} = sprintf('Curve info: Length: %g |curvature|^{%g}: %g  |torsion|^{%g}: %g', ...
 					self.info.length,  self.curvature_power, self.info.curvature,  self.torsion_power, self.info.torsion);
+			end
 				
 			if (strcmp(self.data_type,'linear_interpolation') || strcmp(self.data_type,'geodesic'))
 
