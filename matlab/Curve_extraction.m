@@ -1,5 +1,5 @@
 %% Class handling curve extraction
-% For example usage, there are several examples in /matlab.
+% For example usage, there are several examples in this folder.
 %
 % This class solves the shortest path problem.
 % Data cost, start/end/disallowed sets are all restricted to be either 2D or 3D matrices of the same size.
@@ -20,17 +20,42 @@ classdef Curve_extraction < handle
 	% Settings
 	properties
 
-		%% The following parameters define the cost function to be minimized.
-		% The cost for a give curve is
-		% data_cost(curve) +
-		% + length_penalty | length of curve |
-		% + curvature_penalty | curvature of curve |^curvature_power
-		% + torsion_penalty |torsion of curve|^torsion_power
+		%% 
+		% The cost function for a give curve is defined as:
+		% cost =  data_cost(curve) 
+		% 			+ length_penalty | length of curve |
+		% 			+ curvature_penalty | curvature of curve |^curvature_power
+		% 			+ torsion_penalty | torsion of curve|^torsion_power
 		length_penalty = 0;
 		curvature_penalty = 0,
 		torsion_penalty = 0,
 		curvature_power = 2.0;
 		torsion_power = 2.0;
+		
+		%%
+		% The above cost function penalizes either length, curvature or torsion.
+		% The limits below are hard constraints on the curve.
+		% Note: These are not upper  bounds on the cost function 
+		% but upper bounds on the length, curvature and torsion of the curve.
+		% Modifying these results in a Constrained Shortest Path First (CSPF).
+		length_limit = inf;
+		curvature_limit = inf;
+		torsion_limit = inf;
+
+		% The CSPF is solved user supergradient optimization with the following settings:
+		supergradient_max_duality_gap = 1e-8;
+		supergradient_iterations = 25;
+
+		% The range the supergradient optimizer searches over:
+		% These settings should work for most applications.
+		length_range = [0 1e6];
+		curvature_range = [0 1e6];
+		torsion_range = [0 1e6];
+		
+		% Override penalty functions to make corresponding solution
+		% to obey he limits.
+		% This is useful for local optimization post-processing.
+		override_penalty = true;
 
 		% When curvature regularization is used potential speedups can be achieved
 		% by A*.
@@ -60,7 +85,7 @@ classdef Curve_extraction < handle
 		connectivity = [];
 
 		% Settings local optimization
-		maxiter = 1000;
+		local_optimization_maxiter = 1000;
 		descent_method = 'lbfgs';
 
 		% The length of each voxel side
@@ -78,19 +103,24 @@ classdef Curve_extraction < handle
 
 	% Stored by the solver
 	properties (SetAccess = protected)
+		% In case of (CSPF)
+		duality_gap = 0;
+
 		data_type = '';
-		time = nan;
 		cost;
 		info;
-		evaluations = nan,
 		visit_map = [];
 	end
 
 	properties (Hidden)
+		% Internal bookkeeping.
 		problem_size;
 		cached_cost;
 		cached_info;
 		mesh_map = [];
+
+		% Default settings when methods are not called with an explicit argument.
+		default_connectivity_radius = 3;
 	end
 
 	methods (Access = protected)
@@ -103,7 +133,7 @@ classdef Curve_extraction < handle
 			settings.use_a_star = self.use_a_star;
 			settings.verbose = self.verbose;
 			settings.data_type = self.data_type;
-			settings.maxiter = self.maxiter;
+			settings.maxiter = self.local_optimization_maxiter;
 			settings.store_visit_time =  self.store_visit_time;
 			settings.descent_method = self.descent_method;
 			settings.voxel_dimensions = self.voxel_dimensions;
@@ -128,8 +158,7 @@ classdef Curve_extraction < handle
 			self.problem_size = size(data);
 			self.data = data;
 
-			default_radius = 3;
-			self.set_connectivity_by_radius(default_radius);
+			self.set_connectivity_by_radius(self.default_connectivity_radius);
 
 			self.create_mesh_map(varargin{:});
 		end
@@ -174,6 +203,14 @@ classdef Curve_extraction < handle
 			% Save
 			self.mesh_map = mesh_map;
 		end
+		
+		function feasible = curve_feasibility_check(self, info)
+				length_check = info.length < self.length_limit;
+				curvature_check = info.curvature < self.curvature_limit;
+				torsion_check = info.torsion < self.torsion_limit;
+				
+				feasible = length_check && curvature_check && torsion_check;
+		end
 	end
 	methods
 
@@ -201,26 +238,167 @@ classdef Curve_extraction < handle
 
 		% Shortest path from the start set to the end set.
 		function  [curve, cost, time, evaluations, visit_map ] = shortest_path(self)
-			settings = gather_settings(self);
-
+			if nargin < 2
+				settings = gather_settings(self);
+			end
+			
 			if (~any(self.mesh_map(:) == 3))
 				error('The problem has no end set.');
 			end
-
-			[curve, total_cost, time, evaluations, visit_map] = ...
-			 		 curve_segmentation(self.data_type, self.mesh_map, self.data, self.connectivity, settings);
-
+			
+			[curve, ~, time, evaluations, visit_map] = ...
+				curve_segmentation(self.data_type, self.mesh_map, self.data, self.connectivity, settings);
+			
 			% Saving solution
 			self.curve = curve;
-			self.time = time;
-			self.evaluations = evaluations;
 			self.visit_map = visit_map;
-
-			% When self.curve is set the cost is automatically updated
-			% with detailed info
+			
+			% When self.curve is set the cost is automatically updated with detailed info
 			cost = self.cost;
+			
+			%% Supergradient 
+			% Check if curve is within limits otherwise run super-gradient optimization
+			if (self.curve_feasibility_check(self.info))
+				return;
+			end
+			
+			% Variables
+			% x(1): function value
+			% x(2): length penalty variable
+			% x(3): curvature penalty variable
+			% x(4): torsion penalty variable
+			c = [-1; 0; 0; 0];
+			A = zeros(0, 4);
+			b = zeros(0, 1);
+			lb = [-inf; self.length_range(1); self.curvature_range(1); self.torsion_range(1)];
+			ub = [inf;  self.length_range(2); self.curvature_range(2); self.torsion_range(2)];
+			
+			projected_cost = nan;
+
+			% Have we found any feasible solution?
+			feasible_solution = false;
+			
+			% Determine which constraints are needed
+			% Constraint 1: Length
+			% Constraint 2: Curvature
+			% Constraint 3: Torsion
+			active_constraints = true(3,1);
+			if (self.length_limit == inf)
+				active_constraints(1) = false;
+			end
+			
+			if (self.curvature_limit == inf)
+				active_constraints(2) = false;
+			end
+			
+			if (self.torsion_limit == inf)
+				active_constraints(3) = false;
+			end
+
+			initial_multipliers = [settings.length_penalty; settings.curvature_penalty; settings.torsion_penalty];
+			multipliers = initial_multipliers;
+			
+			limits = [self.length_limit; self.curvature_limit; self.torsion_limit];
+			limits(~active_constraints) = 0;
+			
+			for iter = 1:self.supergradient_iterations
+				
+				if iter > 1
+					% Determine which point on the dual function to evaluate.
+					options = optimset('Display','none');
+					[x, ~, exitflag] = linprog(c, A, b, [], [], lb, ub,[], options);
+					assert(exitflag == 1);
+					
+					projected_cost = x(1);
+					
+					multipliers = x(2:4);
+					multipliers(~active_constraints) = initial_multipliers(~active_constraints);
+
+					settings.length_penalty     = multipliers(1);
+					settings.curvature_penalty	= multipliers(2);
+					settings.torsion_penalty	  = multipliers(3);
+					
+					[sg.curve, ~, sg.time, sg.evaluations, sg.visit_map] = ...
+						curve_segmentation(self.data_type, self.mesh_map, self.data, self.connectivity, settings);
+					
+					time = time+sg.time;
+					evaluations = evaluations + sg.evaluations;
+					
+					[cost,info] = curve_info(self.data_type, self.data, sg.curve, self.connectivity, settings);		
+				else
+					
+					% Shortest path has already been run with initial penalty settings.
+					cost = self.cost;
+					info = self.info;
+				end
+								
+				values(1,1) = info.length;
+				values(2,1) = info.curvature;
+				values(3,1) = info.torsion;
+
+				% Constraint g(x) <= 0.
+				g = values - limits;
+				g(~active_constraints) = 0;
+				
+				% Dual function.
+				% The solver returns  \min f(x) + \sum \multiplier * value
+				% the dual function is defined as d(x) =  \min f(x) + \sum \multiplier*(value -limit)
+				dual_val = cost.total - sum(multipliers.*limits);
+				
+				% Duality gap
+				gap = projected_cost - dual_val;
+				
+				A = [A; 1, -g(:)'];
+				b = [b; dual_val - sum(multipliers.*g)];
+								
+				% Feasibility check
+				if (self.curve_feasibility_check(info))
+					feasible_solution = true;
+					
+					% Store feasible solution
+					curve = sg.curve;
+					visit_map = sg.visit_map;
+					self.duality_gap = gap;
+				end
+					
+				if (self.verbose)				
+					fprintf('Iteration: %d \n', iter);
+					
+					if (self.curve_feasibility_check(info))
+						fprintf('Current solution is feasible. \n');
+					else
+						fprintf('Current solution is infeasible. \n');
+					end
+									
+					fprintf('Duality gap: %g \n', gap);
+					fprintf('Length: %g max: %g	penalty: %g \n', values(1), limits(1), multipliers(1));
+					fprintf('Curvature: %g max: %g	penalty: %g. \n',  values(2), limits(2), multipliers(2));
+					fprintf('Torsion: %g max: %g	penalty: %g. \n',  values(3), limits(3), multipliers(3));
+					fprintf('---\n');
+					self.plot_curve(curve);
+					drawnow();
+				end
+				
+				if gap < self.supergradient_max_duality_gap
+					break;
+				end
+			end
+						
+			if (~feasible_solution)
+				warning('Unable to find a feasible solution. Returning optimal solution for the orginal cost function.');
+			else
+				if (self.override_penalty)
+					self.length_penalty = settings.length_penalty;
+					self.curvature_penalty = settings.curvature_penalty;
+					self.torsion_penalty = settings.torsion_penalty;
+				end
+				
+				self.curve = curve;
+				self.visit_map = visit_map;
+			end
 		end
 
+		
 		% Compute distance to every point from the start set
 		function [distances, curve] = compute_all_distances(self)
 			settings = gather_settings(self);
@@ -292,18 +470,28 @@ classdef Curve_extraction < handle
 		% Show information about the stored shortest path and settings.
 		function display(self)
 			details(self);
-			clf; hold on;
+			self.plot_curve(self.curve);
+		end
 
+		function plot_curve(self, curve)
+			if nargin < 2
+				curve = self.curve;
+			end
+			
+			clf; hold on;
 			msgs = {};
 
-			if (~isempty(self.curve))
+			if (~isempty(curve))
 				msgs{end+1} = sprintf('Cost; total: %g data: %g, length: %g curvature: %g, torsion %g.', ...
 					self.cost.total, self.cost.data, self.cost.length, self.cost.curvature, self.cost.torsion);
 			end
 
-			msgs{end+1} = sprintf('Penalty; %g|length| + %g|curvature|^{%g} + %g|torsion|^{%g}.', ...
+			msgs{end+1} = sprintf('Cost function ; data + %g|length| + %g|curvature|^{%g} + %g|torsion|^{%g}.', ...
 					self.length_penalty, self.curvature_penalty, self.curvature_power, self.torsion_penalty, self.torsion_power);
 
+			msgs{end+1} = sprintf('Curve info: Length: %g |curvature|^{%g}: %g  |torsion|^{%g}: %g', ...
+					self.info.length,  self.curvature_power, self.info.curvature,  self.torsion_power, self.info.torsion);
+				
 			if (strcmp(self.data_type,'linear_interpolation') || strcmp(self.data_type,'geodesic'))
 
 				if (length(self.problem_size) == 2)
@@ -325,25 +513,25 @@ classdef Curve_extraction < handle
 				end
 			end
 
-			if (~isempty(self.curve))
+			if (~isempty(curve))
 				title({msgs{:}});
 
 				cmap = jet(3);
 
 				% Draw the stored solution.
 				if (length(self.problem_size) == 3)
-					plot3(self.curve(:,1), self.curve(:,2), self.curve(:,3),'-r', 'linewidth', 2);
+					plot3(curve(:,1), curve(:,2), curve(:,3),'-r', 'linewidth', 2);
 
-					plot3(self.curve(1,1),self.curve(1,2),self.curve(1,3),'ko', 'MarkerFaceColor',cmap(2,:), 'MarkerSize',5);
-					plot3(self.curve(end,1),self.curve(end,2),self.curve(end,3),'ko','MarkerFaceColor', cmap(3,:), 'MarkerSize',5);
+					plot3(curve(1,1),curve(1,2),curve(1,3),'ko', 'MarkerFaceColor',cmap(2,:), 'MarkerSize',5);
+					plot3(curve(end,1),curve(end,2),curve(end,3),'ko','MarkerFaceColor', cmap(3,:), 'MarkerSize',5);
 
 					legend('Curve','Start','End','Location', 'EastOutside');
 					view(3)
 				else
 
-					plot(self.curve(:,2),self.curve(:,1),'r-' , 'linewidth',2)
-					plot(self.curve(1,2),self.curve(1,1),'ko','MarkerFaceColor', cmap(2,:), 'MarkerSize',5);
-					plot(self.curve(end,2),self.curve(end,1),'ko','MarkerFaceColor', cmap(3,:), 'MarkerSize',5);
+					plot(curve(:,2),curve(:,1),'r-' , 'linewidth',2)
+					plot(curve(1,2),curve(1,1),'ko','MarkerFaceColor', cmap(2,:), 'MarkerSize',5);
+					plot(curve(end,2),curve(end,1),'ko','MarkerFaceColor', cmap(3,:), 'MarkerSize',5);
 
 					legend('Curve','Start','End','Location', 'EastOutside');
 				end
@@ -353,7 +541,6 @@ classdef Curve_extraction < handle
 		end
 
 		%% Set functions
-
 		% This function updates to connectivity to consist of
 		% every edge with a unique angle whose length is <= radius.
 		function set_connectivity_by_radius(self, radius)
@@ -446,14 +633,6 @@ classdef Curve_extraction < handle
 
 			self.length_penalty = length_penalty;
 			self.reset_solution();
-		end
-
-		function set.maxiter(self, maxiter)
-			if (maxiter < 0)
-				error('Number of iterations for local optimization must be positive.');
-			end
-
-			self.maxiter = maxiter;
 		end
 
 		function set.curvature_penalty(self, curvature_penalty)
@@ -606,6 +785,90 @@ classdef Curve_extraction < handle
 			self.reset_solution();
 		end
 
+		function check_limit(~, limit)
+			if (limit(1) < 0)
+				error('Limit must be >= 0.');
+			end
+		end
+
+		function set.length_limit(self, limit)
+			self.check_limit(limit);
+
+			self.length_limit = limit;
+		end
+
+		function set.curvature_limit(self, limit)
+			self.check_limit(limit);
+
+			self.curvature_limit = limit;
+		end
+
+		function set.torsion_limit(self, limit)
+			self.check_limit(limit);
+
+			if (numel(self.problem_size) == 2)
+				error('2D problem always have zero torsion.');
+			end
+			self.torsion_limit = limit;
+		end
+
+		function check_range(~, range)
+			if (numel(range) ~= 2)
+				error('Range must be given as a vector as [lower_bound upper_bound].');
+			end
+
+			if (range(1) < 0)
+				error('Lower bound must be >= 0.');
+			end
+
+			if (range(2) < range(1))
+				error('upper bound < lower bound.');
+			end
+		end
+
+		function set.length_range(self, range)
+			self.check_range(range);
+
+			self.length_range = range;
+		end
+
+		function set.curvature_range(self, range)
+			self.check_range(range);
+
+			self.curvature_range = range;
+		end
+
+		function set.torsion_range(self, range)
+			self.check_range(range);
+
+			self.torsion_range = range;
+		end
+
+		function set.local_optimization_maxiter(self, iterations)
+			if (iterations < 0)
+				error('Iterations >= 0.');
+			end
+			
+			self.local_optimization_maxiter = iterations;
+		end
+
+		
+		function set.supergradient_iterations(self, iterations)
+			if (iterations < 0)
+				error('Iterations >= 0.');
+			end
+			
+			self.supergradient_iterations = iterations;
+		end
+
+		function set.supergradient_max_duality_gap(self, rel_gap)
+			if (rel_gap < 0)
+				error('Relative gap  >= 0.');
+			end
+			
+			self.supergradient_max_duality_gap = rel_gap;
+		end
+		
 		% Given a curve this function calculates the total cost
 		% of the curve given the current parameters and data cost
 		% and stores it in cost.

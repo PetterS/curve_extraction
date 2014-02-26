@@ -12,7 +12,7 @@ classdef unit_tests < matlab.unittest.TestCase
 		
 		rng_seed = 0;
 		problem_size = [9 8 5];
-		problem_size_large = [50 50 50];
+		problem_size_large = [50 50 25];
 	end
 	
 	methods
@@ -85,6 +85,7 @@ classdef unit_tests < matlab.unittest.TestCase
 			obj.verifyEqual(cost.curvature, 0, 'AbsTol', tol);
 			obj.verifyEqual(cost.torsion, 0, 'AbsTol', tol);
 			obj.verifyEqual(size(curve,1), 5);
+
 
 			%% |curvature|^2
 			C.curvature_power = 2;
@@ -288,15 +289,60 @@ classdef unit_tests < matlab.unittest.TestCase
 		
 		%% 
 		function local_optimization(obj)
+			import matlab.unittest.constraints.IsGreaterThanOrEqualTo;
+			
 			C = obj.linear_obj_large;
 			C.length_penalty = 1;
 			C.curvature_penalty = 1;
 
 			[~,cost] = C.shortest_path();
 			[~,lcost] = C.local_optimization();
-			
-			import matlab.unittest.constraints.IsGreaterThanOrEqualTo;
+
 			obj.verifyThat( cost.total, IsGreaterThanOrEqualTo(lcost.total) );
+		end
+		
+		%% Constrained Shortest Paths
+		function limits(obj)
+			import matlab.unittest.constraints.*;
+			C = obj.linear_obj_large;
+			
+			C.length_penalty = 0;
+			C.torsion_penalty = 0;
+			C.curvature_penalty = 0;
+			
+			length_max = 30;
+			curvature_max = 5;		
+			C.shortest_path();
+	
+			% Check that current solution does not fulfill limit
+			% and enforce length.
+			obj.verifyThat(C.info.length, IsGreaterThan(length_max));
+			C.length_limit = length_max;
+			C.shortest_path();		
+			obj.verifyThat(C.info.length, IsLessThanOrEqualTo(length_max));
+			
+			% Enforce curvature.
+			obj.verifyThat(C.info.curvature, IsGreaterThan(curvature_max));
+			C.curvature_limit = curvature_max;
+			C.shortest_path();
+			obj.verifyThat(C.info.curvature, IsLessThanOrEqualTo(curvature_max));
+
+			% Reset
+			C.length_limit = inf;
+			C.curvature_limit = inf;
+			
+			% Smaller problem for torsion
+			C = obj.linear_obj;
+			C.shortest_path();		
+			torsion_max = 0.5;
+
+			% Enforce torsion.
+			obj.verifyThat(C.info.curvature, IsGreaterThan(torsion_max));
+			C.torsion_limit = torsion_max;
+			C.shortest_path();
+			obj.verifyThat(C.info.curvature, IsLessThanOrEqualTo(torsion_max));
+			
+			C.torsion_limit = inf;
 		end
 	end
 end
