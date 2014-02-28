@@ -21,6 +21,35 @@ classdef unit_tests < matlab.unittest.TestCase
 			curve_obj.start_set = curve_obj.end_set;
 			curve_obj.end_set = tmp;
 		end
+
+		% Computes the visit tree for C and checks that it is sane.
+		function test_visit_tree(obj, C)
+			[tree, ~] = C.compute_visit_tree();
+			obj.assertEqual(size(tree), obj.problem_size);
+
+			% Verify that every node in the tree points to something valid.
+			for ind = 1:numel(tree)
+				obj.assertGreaterThanOrEqual(tree(ind), 0);
+				obj.assertLessThanOrEqual(tree(ind), prod(obj.problem_size));
+			end
+
+			% Verify that it is actually a tree.
+			check = -ones(size(tree));
+			for ind = 1:numel(tree)
+				% Follow this path to the root.
+				ind2 = ind;
+				while tree(ind2) ~= 0 % The root node.
+					% Next indices
+					[i2, j2, k2] = ind2sub(size(tree), tree(ind2));
+					% We cannot loop back.
+					obj.assertLessThan(check(i2, j2, k2), ind);
+					% Store that we are visiting this node.
+					check(i2, j2, k2) = ind;
+					% Go to the node.
+					ind2 = sub2ind(size(tree), i2, j2, k2);
+				end
+			end
+		end
 	end
 	
 	% Setup
@@ -164,13 +193,13 @@ classdef unit_tests < matlab.unittest.TestCase
 			C.torsion_penalty = 0;
 			tol = 1e-4;
 			[curve,cost] = C.shortest_path();
-			
+
 			% Curvature
 			C.curvature_penalty = 1e-100;
 			[curve2,cost2] = C.shortest_path();
 			obj.verifyEqual(numel(curve),numel(curve2));
 			obj.verifyEqual(cost.total, cost2.total, 'AbsTol', tol);
-			
+
 			% Torsion
 			C.curvature_penalty = 0;
 			C.torsion_penalty = 1e-100;
@@ -194,6 +223,7 @@ classdef unit_tests < matlab.unittest.TestCase
 			obj.switch_start_and_end_set(C);
 			[s_curve,s_cost] = C.shortest_path();
 			obj.verifyEqual(numel(curve),numel(s_curve));
+			obj.verifyEqual(curve, s_curve(end:-1:1, :));
 			obj.verifyEqual(cost.total, s_cost.total, 'AbsTol', tol);
 			
 			%% Curvature
@@ -202,6 +232,7 @@ classdef unit_tests < matlab.unittest.TestCase
 			obj.switch_start_and_end_set(C);
 			[s_curve,s_cost] = C.shortest_path();
 			obj.verifyEqual(numel(curve),numel(s_curve));
+			obj.verifyEqual(curve, s_curve(end:-1:1, :));
 			obj.verifyEqual(cost.total, s_cost.total, 'AbsTol', tol);
 			
 			%% Torsion
@@ -210,6 +241,7 @@ classdef unit_tests < matlab.unittest.TestCase
 			obj.switch_start_and_end_set(C);
 			[s_curve,s_cost] = C.shortest_path();
 			obj.verifyEqual(numel(curve),numel(s_curve));
+			obj.verifyEqual(curve, s_curve(end:-1:1, :));
 			obj.verifyEqual(cost.total, s_cost.total, 'AbsTol', tol);
 			
 			obj.switch_start_and_end_set(C);
@@ -297,6 +329,23 @@ classdef unit_tests < matlab.unittest.TestCase
 			
 			import matlab.unittest.constraints.IsGreaterThanOrEqualTo;
 			obj.verifyThat( cost.total, IsGreaterThanOrEqualTo(lcost.total) );
+		end
+
+		%% Test the API for computing the visit tree.
+		function compute_visit_tree(obj)
+			C = obj.linear_obj;
+			C.set_connectivity_by_radius(3);
+			C.length_penalty = 1.1;
+			C.curvature_penalty = 0;
+			C.torsion_penalty = 0;
+
+			test_visit_tree(obj, C);
+
+			C.curvature_penalty = 1e-100;
+			test_visit_tree(obj, C);
+
+			C.torsion_penalty = 1e-100;
+			test_visit_tree(obj, C);
 		end
 	end
 end
