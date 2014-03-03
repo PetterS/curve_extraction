@@ -21,6 +21,35 @@ classdef unit_tests < matlab.unittest.TestCase
 			curve_obj.start_set = curve_obj.end_set;
 			curve_obj.end_set = tmp;
 		end
+
+		% Computes the visit tree for C and checks that it is sane.
+		function test_visit_tree(obj, C)
+			[tree, ~] = C.compute_visit_tree();
+			obj.assertEqual(size(tree), obj.problem_size);
+
+			% Verify that every node in the tree points to something valid.
+			for ind = 1:numel(tree)
+				obj.assertGreaterThanOrEqual(tree(ind), 0);
+				obj.assertLessThanOrEqual(tree(ind), prod(obj.problem_size));
+			end
+
+			% Verify that it is actually a tree.
+			check = -ones(size(tree));
+			for ind = 1:numel(tree)
+				% Follow this path to the root.
+				ind2 = ind;
+				while tree(ind2) ~= 0 % The root node.
+					% Next indices
+					[i2, j2, k2] = ind2sub(size(tree), tree(ind2));
+					% We cannot loop back.
+					obj.assertLessThan(check(i2, j2, k2), ind);
+					% Store that we are visiting this node.
+					check(i2, j2, k2) = ind;
+					% Go to the node.
+					ind2 = sub2ind(size(tree), i2, j2, k2);
+				end
+			end
+		end
 	end
 	
 	% Setup
