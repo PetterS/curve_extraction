@@ -793,6 +793,10 @@ classdef Curve_extraction < handle
 		end
 
 		function set.curve(self, curve)
+			if (isempty(curve))
+				return;
+			end
+			
 			assert(size(curve,2) == length(self.problem_size));
 			self.curve = curve;
 			self.reset_solution();
