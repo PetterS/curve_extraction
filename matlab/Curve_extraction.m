@@ -579,7 +579,7 @@ classdef Curve_extraction < handle
 		end
 
 		function set.voxel_dimensions(self, voxel_dimensions)
-			assert(length(voxel_dimensions) == 2 || length(voxel_dimensions == 3));
+			assert(length(voxel_dimensions) == 2 || length(voxel_dimensions) == 3);
 			assert(all(voxel_dimensions) > 0);
 
 			if (length(voxel_dimensions) == 2)
