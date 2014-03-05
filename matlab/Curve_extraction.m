@@ -317,8 +317,7 @@ classdef Curve_extraction < handle
 				if iter > 1
 					% Determine which point on the dual function to evaluate.
 					options = optimset('Display','none');
-					[x, ~, exitflag] = linprog(c, A, b, [], [], lb, ub,[], options);
-					assert(exitflag == 1);
+					x = linprog(c, A, b, [], [], lb, ub,[], options);
 
 					projected_cost = x(1);
 
