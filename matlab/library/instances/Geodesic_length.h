@@ -62,6 +62,9 @@ class Geodesic_length
         dy = (y0-y1)*vd[1];
 
         // Fractional part
+        x1 = (x1-std::floor(x0))*vd[0];
+        y1 = (y1-std::floor(y0))*vd[1];
+
         x0 = (x0-std::floor(x0))*vd[0];
         y0 = (y0-std::floor(y0))*vd[1];
 
