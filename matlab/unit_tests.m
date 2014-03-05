@@ -373,6 +373,20 @@ classdef unit_tests < matlab.unittest.TestCase
 			
 			C.torsion_limit = inf;
 		end
+
+		 %% Test the API for computing the visit tree.
+ 		function compute_visit_tree(obj)
+  		C = obj.linear_obj;
+ 			C.set_connectivity_by_radius(3);
+ 			C.length_penalty = 1.1;
+ 			C.curvature_penalty = 0;
+  		C.torsion_penalty = 0;
+			test_visit_tree(obj, C);
+  		C.curvature_penalty = 1e-100;
+ 			test_visit_tree(obj, C);
+ 			C.torsion_penalty = 1e-100;
+  		test_visit_tree(obj, C);
+  	end
 	end
 end
 
