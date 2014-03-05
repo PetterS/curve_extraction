@@ -6,7 +6,8 @@ typedef std::tuple<double,double,double,double> corners;
 class Depth_corners
 {
 public:
-  Depth_corners(const matrix<double>& data) : data(data)
+  Depth_corners(const vector<double>& voxel_dimensions, const matrix<double>& data) 
+  : data(data), vd(voxel_dimensions)
   {}
 
   corners operator() (boundary_point bp)
@@ -24,10 +25,10 @@ public:
     double i00,i10,i01,i11;
 
     // Sample data_cost
-    i00 = data_value(x_int+0,y_int+0);
-    i01 = data_value(x_int+0,y_int+1);
-    i10 = data_value(x_int+1,y_int+0);
-    i11 = data_value(x_int+1,y_int+1);
+    i00 = data_value(x_int+0,y_int+0)*vd[2];
+    i01 = data_value(x_int+0,y_int+1)*vd[2];
+    i10 = data_value(x_int+1,y_int+0)*vd[2];
+    i11 = data_value(x_int+1,y_int+1)*vd[2];
      
     return corners(i00,i01,i10,11);
   } 
@@ -52,5 +53,6 @@ public:
     return x;
   }
 
+  vector<double> vd;
   const matrix<double> data;
 };

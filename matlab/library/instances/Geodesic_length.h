@@ -16,7 +16,7 @@ class Geodesic_length
         data_depdent(true),
         boundary_points(voxel_dimensions, data.M, data.N),
         euclidean_length(data, voxel_dimensions, penalty),
-        depth_corners(data)
+        depth_corners(voxel_dimensions,data)
    {
    }
 
@@ -46,11 +46,6 @@ class Geodesic_length
       for (; next != points.end(); prev++,next++)
       {
         std::tie(i00,i01,i10,i11) = depth_corners(*prev);
-
-        i00 *= vd[2];
-        i01 *= vd[2];
-        i10 *= vd[2];
-        i11 *= vd[2];
 
         x0 = prev->first;
         x1 = next->first;
