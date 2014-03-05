@@ -63,27 +63,25 @@ class Geodesic_length
         x0 = (x0-std::floor(x0))*vd[0];
         y0 = (y0-std::floor(y0))*vd[1];
 
-        // See paper for explanation.
         d11 = (i00+i11-i10-i01)/(vd[0]*vd[1]);
-        d10 = (y0*(i01-i11) + y1*(i10-i00) )/(vd[0]*vd[1]);
-        d01 = (x0*(i10-i11) + x1*(i01-i11) )/(vd[0]*vd[1]);
+        d10 = (i10-i00)/(vd[0]*vd[1]);
+        d01 = (i01-i00)/(vd[0]*vd[1]);
 
-        a = 2*d11*dx*dy;
-        b = 2*i00-i10-i01;
-        c = b/(2*d11);
-        dsqr = (sqr(dx)+sqr(dy))/(sqr(a));
-        f = sqr(c)+dsqr;
-        g = 1+2*c+f;
-
-        //
-        if ((dx == 0) || (dy == 0) || (d11 == 0))
+        double tolerance = 1e-8;
+        if ( (abs(dx) < tolerance) || (abs(dy) < tolerance) || (abs(d11) < tolerance) )
         {
           cost += sqrt(sqr(dx)+sqr(dy)+sqr(dx*d10+dy*d01));
         } else
         {
+          a = 2*d11*dx*dy;
+          b = (y0*dx+x0*dy)/(2*dx*dy) + (d01*dy+d10*dx)/a;
+          c = (sqr(dx)+sqr(dy))/(sqr(a));
+          f = sqr(b)+c;
+          g = 1+2*b+f;
+
           p1 = abs(a)/2;
-          p2 = dsqr*(log ( abs( (c+1+sqrt(g))/(c+sqrt(f)) ) ) );
-          p3 = (c+1)*sqrt(g)-c*sqrt(f);
+          p2 = c*(log ( abs( (b+1+sqrt(g))/(b+sqrt(f)) ) ) );
+          p3 = (b+1)*sqrt(g)-b*sqrt(f);
 
           cost += p1*(p2+p3);
         }

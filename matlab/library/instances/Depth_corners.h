@@ -30,7 +30,7 @@ public:
     i10 = data_value(x_int+1,y_int+0)*vd[2];
     i11 = data_value(x_int+1,y_int+1)*vd[2];
      
-    return corners(i00,i01,i10,11);
+    return corners(i00,i01,i10,i11);
   } 
 
   // Sample data or closest point inside data.
