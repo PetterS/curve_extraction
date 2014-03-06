@@ -12,6 +12,7 @@ void node_segmentation( const matrix<double>& data,
 {
   Data_cost data_cost(data, connectivity, settings.voxel_dimensions);
   Length_cost length_cost(data, settings.voxel_dimensions, settings.length_penalty);
+  Delta_point delta_point(connectivity);
 
   bool cacheable = true;
   if ( (length_cost.data_depdent) && (settings.length_penalty > 0) )
@@ -22,49 +23,42 @@ void node_segmentation( const matrix<double>& data,
    // Pre-calculate regularization cost for every connectivity
   if (cacheable) 
   {
+    Point p1 = make_point(0);
+
     for (int k = 0; k < connectivity.M; k++)
     {
-      int x = connectivity(k,0);
-      int y = connectivity(k,1);
-      int z = connectivity(k,2);
-
-      regularization_cache[k] = length_cost(0,0,0,x,y,z);
+      Point p2 = delta_point(p1,k);
+      regularization_cache[k] = length_cost(p1.xyz, p2.xyz);
     }
   }
 
   int evaluations = 0;
   auto get_neighbors =
     [&evaluations, &data_cost, &connectivity, 
-      &regularization_cache, &cacheable, &length_cost]
+      &regularization_cache, &cacheable, 
+      &length_cost, &delta_point]
     (int n, std::vector<Neighbor>* neighbors) -> void
   {
     evaluations++;
+    Point p1 = make_point(n);
 
-    int x1,y1,z1;
-    int x2,y2,z2;
-
-    tie(x1,y1,z1) = ind2sub(n);
-
-    if (validind(x1,y1,z1))
+    if (valid_point(p1))
     {
       for (int k = 0; k < connectivity.M; k++)
       {
-        x2 = x1 + connectivity(k,0);
-        y2 = y1 + connectivity(k,1);
-        z2 = z1 + connectivity(k,2);
-
-        if (validind(x2,y2,z2))
+        Point p2 = delta_point(p1,k);
+        if (valid_point(p2))
         {
           // Unary
-          double cost = data_cost(x1,y1,z1,x2,y2,z2);
+          double cost = data_cost(p1.xyz, p2.xyz);
 
           // Length reg;
           if (cacheable)
             cost += regularization_cache[k];
           else
-            cost += length_cost(x1,y1,z1,x2,y2,z2);
+            cost += length_cost(p1.xyz,p2.xyz);
 
-          int dest = sub2ind(x2, y2, z2);
+          int dest = point2ind(p2);
 
           neighbors->push_back(Neighbor(dest, cost));
         }

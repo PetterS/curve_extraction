@@ -3,7 +3,6 @@
 #include "Boundary_points.h"
 #include "Depth_corners.h"
 
-template<typename R>
 class Geodesic_length
 {
   public:
@@ -20,14 +19,22 @@ class Geodesic_length
    {
    }
 
+    template<typename R>
     inline R sqr(R x)
     {
       return x*x;
     }
 
-    R operator () (R x0, R y0, R z0, R x1, R y1, R z1)
+    template<typename R>
+    R operator()(const R* const point1, const R* const point2)
     {
       using std::abs;
+
+      double x0 = point1[0];
+      double y0 = point1[1];
+
+      double x1 = point2[0];
+      double y1 = point2[1];
 
       // For fixed connectivity relative boundary_points can be cached.
       std::vector<boundary_point> points = boundary_points(x0,y0,x1,y1);

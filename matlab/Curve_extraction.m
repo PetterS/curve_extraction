@@ -461,7 +461,8 @@ classdef Curve_extraction < handle
 			end
 
 			settings = gather_settings(self);
-			[curve, ~, time, success] = local_optimization(self.mesh_map, self.data, self.curve, settings);
+			[curve, ~, time, success] = local_optimization(	self.data_type, self.curve, self.mesh_map, ...
+																											self.data, self.connectivity, settings);
 
 			if (~success)
 				if (self.verbose)

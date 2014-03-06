@@ -1,6 +1,5 @@
 #pragma once
 
-template<typename R>
 class Geodesic_curvature
 {
   public:
@@ -12,9 +11,8 @@ class Geodesic_curvature
     data_depdent(true)
   {};
 
-  R operator () ( R x1, R y1, R z1,
-                  R x2, R y2, R z2,
-                  R x3, R y3, R z3)
+  template<typename R>
+  R operator()(const R* const point1, const R* const point2, const R* const point3) const
   {
     return R(0);
   }

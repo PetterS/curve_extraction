@@ -78,7 +78,7 @@ void store_results_edge(matrix<nodeT>& node_container, std::vector<edgeT>& edge_
 
     for (Point p : point_vector)
     {
-      if (!validind(p))
+      if (!valid_point(p))
         continue;
 
       nodeT visit_value = node_container(p[0], p[1], p[2]);
@@ -107,6 +107,7 @@ void edge_segmentation( const matrix<double>& data,
   Data_cost data_cost(data, connectivity, settings.voxel_dimensions);
   Length_cost length_cost(data, settings.voxel_dimensions, settings.length_penalty);
   Curvature_cost curvature_cost(data, settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
+  Delta_point delta_point(connectivity);
 
   bool cacheable = true;
   if ( (length_cost.data_depdent) && (settings.length_penalty > 0) )
@@ -133,20 +134,17 @@ void edge_segmentation( const matrix<double>& data,
   int x,y,z, x2,y2,z2,x3,y3,z3, element_number, element_number_2;
   if (cacheable)
   {
+    Point p1 = make_point(0);
+
     for (int i = 0; i < connectivity.M; i++) {
-      x2 = connectivity(i,0);
-      y2 = connectivity(i,1);
-      z2 = connectivity(i,2);
+      Point p2 = delta_point(p1,i);
 
     for (int j = 0; j < connectivity.M; j++) {
-      x3 = x2 + connectivity(j,0);
-      y3 = y2 + connectivity(j,1);
-      z3 = z2 + connectivity(j,2);
-
+      Point p3 = delta_point(p2,j);
       int n = i*num_points_per_element +j;
 
-       regularization_cache[n] = curvature_cost(0,0,0,x2,y2,z2,x3,y3,z3)
-                              + length_cost(x2,y2,z2,x3,y3,z3);
+      regularization_cache[n] = curvature_cost( p1.xyz, p2.xyz, p3.xyz)
+                              + length_cost(            p2.xyz, p3.xyz);
     }
     }
   }
@@ -210,7 +208,8 @@ void edge_segmentation( const matrix<double>& data,
   int evaluations = 0;
   auto get_neighbors =
     [ &evaluations, &data_cost, &num_points_per_element, &regularization_cache,
-      &e_super, &start_set, &connectivity, &length_cost, &cacheable, &curvature_cost]
+      &e_super, &start_set, &connectivity, &length_cost, 
+      &cacheable, &curvature_cost, &delta_point]
     (int e, std::vector<Neighbor>* neighbors) -> void
   {
     evaluations++;
@@ -224,17 +223,11 @@ void edge_segmentation( const matrix<double>& data,
         int root, k;
         tie(root, k) = root_and_edge(*itr, connectivity);
 
-        int x1,y1,z1,
-            x2,y2,z2;
+        Point p1 = make_point(root);
+        Point p2 = delta_point(p1, k);
 
-        tie(x1,y1,z1) = ind2sub(root);
-
-        x2 = x1 + connectivity(k,0);
-        y2 = y1 + connectivity(k,1);
-        z2 = z1 + connectivity(k,2);
-
-        double cost = data_cost(x1, y1, z1, x2, y2, z2);
-        cost += length_cost(x1,y1,z1,x2,y2,z2);
+        double cost  = data_cost(   p1.xyz, p2.xyz);
+        cost        += length_cost( p1.xyz, p2.xyz);
 
         neighbors->push_back(Neighbor(*itr, cost));
       }
@@ -244,15 +237,10 @@ void edge_segmentation( const matrix<double>& data,
       int root, edge_id_1;
       tie(root, edge_id_1) = root_and_edge(e, connectivity);
 
-      int x1,y1,z1, x2,y2,z2;
-
-      tie(x1,y1,z1) = ind2sub(root);
-
-      x2 = x1 + connectivity(edge_id_1,0);
-      y2 = y1 + connectivity(edge_id_1,1);
-      z2 = z1 + connectivity(edge_id_1,2);
-
-      if (validind(x2,y2,z2))
+      Point p1 = make_point(root);
+      Point p2 = delta_point(p1, edge_id_1);
+      
+      if (valid_point(p2))
       {
         neighbors->resize(num_points_per_element);
 
@@ -262,18 +250,16 @@ void edge_segmentation( const matrix<double>& data,
 
         for (int edge_id_2 = 0; edge_id_2 < num_points_per_element; ++edge_id_2)
         {
-          int x3 = x2 + connectivity(edge_id_2,0);
-          int y3 = y2 + connectivity(edge_id_2,1);
-          int z3 = z2 + connectivity(edge_id_2,2);
+          Point p3 = delta_point(p2, edge_id_2);
 
            // Id of destination, (element_number*num_points_per_element + edge_id)
-          int dest = sub2ind(x2,y2,z2)*num_points_per_element + edge_id_2;
+          int dest = point2ind(p2)*num_points_per_element + edge_id_2;
           double cost;
 
-          if (validind(x3,y3,z3))
+          if (valid_point(p3))
           {
             // Adjacency id
-            cost = data_cost(x2, y2, z2, x3, y3, z3);
+            cost = data_cost(p2.xyz, p3.xyz);
 
             if (cacheable)
             {
@@ -282,8 +268,8 @@ void edge_segmentation( const matrix<double>& data,
               cost += regularization_cache[edge_type];
             } else
             {
-              cost += curvature_cost(x1,y1,z1,x2,y2,z2,x3,y3,z3);
-              cost += length_cost(x2,y2,z2,x3,y3,z3);
+              cost += curvature_cost(p1.xyz,p2.xyz, p3.xyz);
+              cost += length_cost   (       p2.xyz, p3.xyz);
             }
           }
 
@@ -299,6 +285,7 @@ void edge_segmentation( const matrix<double>& data,
 
   ShortestPathOptions heuristic_options;
   heuristic_options.compute_all_distances = true;
+
   // The lower bound function is just the distance
   // without curvature taken into account.
   std::function<double(int)> lower_bound =
@@ -306,8 +293,7 @@ void edge_segmentation( const matrix<double>& data,
     (int e) -> double
   {
     Point p = head_of_edge(e, connectivity);
-
-    return heuristic_options.distance[sub2ind(p[0],p[1],p[2])];
+    return heuristic_options.distance[point2ind(p)];
   };
 
   std::function<double(int)>* lower_bound_pointer = nullptr;
@@ -403,11 +389,11 @@ void edge_segmentation( const matrix<double>& data,
     for (int i = 0; i < options.visit_time.size(); i++)
     {
       point_vector[0] = tail_of_edge(i, connectivity);
-      if (!validind(point_vector[0]))
+      if (!valid_point(point_vector[0]))
         continue;
 
       point_vector[1] = head_of_edge(i, connectivity);
-      if (!validind(point_vector[1]))
+      if (!valid_point(point_vector[1]))
         continue;
 
       int time = output.visit_time( point_vector[1][0],
@@ -419,7 +405,7 @@ void edge_segmentation( const matrix<double>& data,
       {
         output.shortest_path_tree(  point_vector[1][0],
                                     point_vector[1][1],
-                                    point_vector[1][2]) = sub2ind(point_vector[0]);
+                                    point_vector[1][2]) = point2ind(point_vector[0]);
       }
     }
   }

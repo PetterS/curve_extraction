@@ -24,119 +24,21 @@ void mex_log_function(const std::string& str)
 	mexPrintf("%s\n", str.c_str());
 }
 
-class Length
-{
-	public:
-		Length(std::vector<double> dims_, double penalty_)
-		{
-			dims = dims_;
-			penalty = penalty_;
-		}
-
-		template<typename R>
-		R operator()(const R* const point1, const R* const point2) const
-		{
-			using std::sqrt;
-			R dx = dims[0]*(point1[0] - point2[0]);
-			R dy = dims[1]*(point1[1] - point2[1]);
-			R dz = dims[2]*(point1[2] - point2[2]);
-
-			return  penalty*sqrt(dx*dx + dy*dy + dz*dz);
-		}
-
-	private:
-		std::vector<double> dims;
-		double penalty;
-};
-
-class Curvature
-{
-public:
-	Curvature(std::vector<double> dims_, double penalty_,  double power_)
-	{
-		dims = dims_;
-		power = power_;
-		penalty = penalty_;
-	}
-
-	template<typename R>
-	R operator()(const R* const point1, const R* const point2, const R* const point3) const
-	{
-		return  penalty * compute_curvature<R>(
-						point1[0]*dims[0], point1[1]*dims[1], point1[2]*dims[2],
-						point2[0]*dims[0], point2[1]*dims[1], point2[2]*dims[2],
-						point3[0]*dims[0], point3[1]*dims[1], point3[2]*dims[2],
-						power, false);
-	}
-
-private:
-	std::vector<double> dims;
-	double power;
-	double penalty;
-};
-
-class Torsion
-{
-public:
-	Torsion(std::vector<double> dims_, double penalty_,  double power_)
-	{
-		dims = dims_;
-		power = power_;
-		penalty = penalty_;
-	}
-
-	template<typename R>
-	R operator()(const R* const point1,
-	             const R* const point2,
-	             const R* const point3,
-	             const R* const point4) const
-	{
-		return  penalty * compute_torsion<R>(
-						point1[0]*dims[0], point1[1]*dims[1], point1[2]*dims[2],
-						point2[0]*dims[0], point2[1]*dims[1], point2[2]*dims[2],
-						point3[0]*dims[0], point3[1]*dims[1], point3[2]*dims[2],
-						point4[0]*dims[0], point4[1]*dims[1], point4[2]*dims[2],
-						power, false);
-	}
-
-private:
-	std::vector<double> dims;
-	double power;
-	double penalty;
-};
-
-template<typename DataTermImpl>
-class LinearUnary
-{
-public:
-	LinearUnary(DataTermImpl& data_term_)
-		: data_term(data_term_)
-	{ }
-
-	template<typename R>
-	R operator()(const R* const point1, const R* const point2) const
-	{
-		return data_term.evaluate_line_integral(point1[0],point1[1],point1[2],
-		                                        point2[0],point2[1],point2[2]);
-	}
-
-private:
-	DataTermImpl& data_term;
-};
-
-
-void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+template<typename Data_cost, typename Length_cost, typename Curvature_cost, typename Torsion_cost>
+void local_optimization(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
 	double start_time = ::get_wtime();
 
 	using namespace std;
-	ASSERT(nrhs == 3);
+	ASSERT(nrhs == 5);
 	ASSERT(nlhs == 4)
 
-	const matrix<double> data_matrix(prhs[0]);
-	const matrix<double> path(prhs[1]);
+	int curarg = 1;
+	const matrix<double> data_matrix(prhs[curarg++]);
+	const matrix<double> path(prhs[curarg++]);
+	const matrix<int> connectivity(prhs[curarg++]);
 
-	MexParams params(1, prhs+2);
+	MexParams params(nrhs-curarg, prhs+curarg);
 	InstanceSettings settings = parse_settings(params);
 
 	const int n = path.M;
@@ -170,7 +72,6 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 			points[i].xyz[j] = max(points[i].xyz[j], 0.0);
 		}
 
-
 		points[i].xyz[0] = min(points[i].xyz[0], data_matrix.M - 1.0);
 		points[i].xyz[1] = min(points[i].xyz[1], data_matrix.N - 1.0);
 		points[i].xyz[2] = min(points[i].xyz[2], data_matrix.O - 1.0);
@@ -185,25 +86,21 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 	f.set_constant(points[n-2].xyz, true);
 	f.set_constant(points[n-1].xyz, true);
 
-	PieceWiseConstant data_term( data_matrix.data,
-	                             data_matrix.M,
-	                             data_matrix.N,
-	                             data_matrix.O,
-	                             settings.voxel_dimensions);
-
 	// Adding data cost
-	auto data = std::make_shared<AutoDiffTerm<LinearUnary<PieceWiseConstant>, 3, 3>>(data_term);
+	 auto data = std::make_shared<AutoDiffTerm<Data_cost, 3, 3>>
+	 			(data_matrix, connectivity, settings.voxel_dimensions);
 
 	for (int i = 1; i < n; ++i)
 		f.add_term(data, points[i-1].xyz, points[i].xyz);
 
 
 	// Functor for each type of regularization penalty
-	auto length = std::make_shared<AutoDiffTerm<Length, 3, 3>>(settings.voxel_dimensions, settings.length_penalty);
-	auto curvature = std::make_shared<AutoDiffTerm<Curvature, 3, 3, 3>>
-				(settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
-	auto torsion = std::make_shared<AutoDiffTerm<Torsion, 3, 3, 3, 3>>
-				(settings.voxel_dimensions, settings.torsion_penalty, settings.torsion_power);
+	auto length = std::make_shared<AutoDiffTerm<Length_cost, 3, 3>>
+				(data_matrix, settings.voxel_dimensions, settings.length_penalty);
+	auto curvature = std::make_shared<AutoDiffTerm<Curvature_cost, 3, 3, 3>>
+				(data_matrix, settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
+	auto torsion = std::make_shared<AutoDiffTerm<Torsion_cost, 3, 3, 3, 3>>
+				(data_matrix, settings.voxel_dimensions, settings.torsion_penalty, settings.torsion_power);
 
 	// Adding length cost
 	if (settings.length_penalty > 0)
@@ -314,15 +211,18 @@ void mexFunction_main(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 	plhs[3] = o_successful;
 }
 
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+// Wrapper data from MATLAB.
+void mexFunction(int            nlhs,     /* number of expected outputs */
+                 mxArray        *plhs[],  /* mxArray output pointer array */
+                 int            nrhs,     /* number of inputs */
+                 const mxArray  *prhs[]   /* mxArray input pointer array */)
 {
-	try {
-		mexFunction_main(nlhs, plhs, nrhs, prhs);
-	}
-	catch (std::exception& error) {
-		mexErrMsgTxt(error.what());
-	}
-	catch (...) {
-		mexErrMsgTxt("Unknown exception.");
-	}
+ char problem_type[1024];
+ if (mxGetString(prhs[0], problem_type, 1024))
+   throw runtime_error("First argument must be a string.");
+
+  if (!strcmp(problem_type,"linear_interpolation"))
+    local_optimization<Linear_data_cost, Euclidean_length, Euclidean_curvature, Euclidean_torsion>(nlhs, plhs, nrhs, prhs);
+  else
+    throw runtime_error("Unknown data type");
 }

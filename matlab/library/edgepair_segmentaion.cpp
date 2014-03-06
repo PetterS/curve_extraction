@@ -55,7 +55,6 @@ points_in_a_edgepair(int edgepair_num, const matrix<int>& connectivity)
   return std::make_tuple(root,q2,q3);
 }
 
-
 std::vector<Point> pairpath_to_points(const std::vector<int>& path, const matrix<int>& connectivity)
 {
   std::vector<Point> point_vector;
@@ -105,7 +104,7 @@ void store_results_edgepair(matrix<nodeT>& node_container, std::vector<edgepairT
 
     for (Point p : point_vector)
     {
-      if (!validind(p))
+      if (!valid_point(p))
         continue;
 
       nodeT visit_value = node_container(p[0],p[1],p[2]);
@@ -136,6 +135,7 @@ void  edgepair_segmentation(  const matrix<double>& data,
   Length_cost length_cost(data,settings.voxel_dimensions, settings.length_penalty);
   Curvature_cost curvature_cost(data, settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
   Torsion_cost torsion_cost(data, settings.voxel_dimensions, settings.torsion_penalty, settings.torsion_power);
+  Delta_point delta_point(connectivity);
 
   int num_elements = mesh_map.numel();
   int num_points_per_element = connectivity.M*connectivity.M;
@@ -155,10 +155,11 @@ void  edgepair_segmentation(  const matrix<double>& data,
 
   typedef std::tuple<int, int, int> cache_index;
   std::map<cache_index, double>  cached_values;
+  Point p1 = make_point(0);
 
   auto regularization_cache =
     [&cached_values, &connectivity, &length_cost, 
-      &curvature_cost, &torsion_cost] 
+      &curvature_cost, &torsion_cost, &p1, &delta_point] 
         (int e1,int e2,int e3)-> double
   {   
     cache_index index(e1,e2,e3);
@@ -170,25 +171,13 @@ void  edgepair_segmentation(  const matrix<double>& data,
     }
     else 
     {
-      int x2,x3,x4;
-      int y2,y3,y4;
-      int z2,z3,z4;
+      Point p2 = delta_point(p1,e1);
+      Point p3 = delta_point(p2,e2);
+      Point p4 = delta_point(p3,e3);
 
-      x2 =      connectivity(e1,0);
-      y2 =      connectivity(e1,1);
-      z2 =      connectivity(e1,2);
-
-      x3 = x2 + connectivity(e2,0);
-      y3 = y2 + connectivity(e2,1),
-      z3 = z2 + connectivity(e2,2);
-
-      x4 = x3 + connectivity(e3,0);
-      y4 = y3 + connectivity(e3,1),
-      z4 = z3 + connectivity(e3,2);
-
-      double  cost =   length_cost(                   x3,y3,z3, x4,y4,z4);
-              cost +=  curvature_cost(     x2,y2,z2,  x3,y3,z3, x4,y4,z4);
-              cost +=  torsion_cost(0,0,0, x2,y2,z2,  x3,y3,z3, x4,y4,z4);
+      double  cost =   length_cost(                 p3.xyz, p4.xyz);
+              cost +=  curvature_cost(      p2.xyz, p3.xyz, p4.xyz);
+              cost +=  torsion_cost(p1.xyz, p2.xyz, p3.xyz, p4.xyz);
 
       cached_values[ index ] = cost;
       return cost;
@@ -198,42 +187,34 @@ void  edgepair_segmentation(  const matrix<double>& data,
   // Read mesh_map to find end and start set.
   std::set<int> start_set_pairs, end_set_pairs;
 
-  int x1,y1,z1,
-      x2,y2,z2,
-      x3,y3,z3,
-      x4,y4,z4;
+
   for (int n = 0; n < mesh_map.numel(); ++n)
   {
-    tie(x1,y1,z1) = ind2sub(n);
+    Point p1 = make_point(n);
 
     for (int e1 = 0; e1 < connectivity.M; e1++) { 
-      x2 = x1 + connectivity(e1,0);
-      y2 = y1 + connectivity(e1,1);
-      z2 = z1 + connectivity(e1,2);
 
-      if (!validind(x2,y2,z2))
+      Point p2 = delta_point(p1,e1);
+      if (!valid_point(p2))
         continue;
 
       for (int e2 = 0; e2 < connectivity.M; e2++) 
       {
-        x3 = x2 + connectivity(e2,0);
-        y3 = y2 + connectivity(e2,1);
-        z3 = z2 + connectivity(e2,2);
+        Point p3 = delta_point(p2,e2);
 
         // Symmetric neighborhood leads to useless pair going back to itself.
-        if ((x1 == x3) & (y1 == y3) & (z1 == z3))
+        if (p1 == p3)
           continue;
 
-        if (!validind(x3,y3,z3))
+        if (!valid_point(p3))
            continue;
 
-        int pair_id = sub2ind(x1,y1,z1)*num_points_per_element 
-                 + connectivity.M*e1 + e2;
+        int pair_id = n*num_points_per_element + connectivity.M*e1 + e2;
 
-        if ( mesh_map( x1, y1, z1) == 2)
+        if ( mesh_map(p1[0], p1[1], p1[2]) == 2)
           start_set_pairs.insert(pair_id);
 
-        if ( mesh_map( x3, y3, z3) == 3)
+        if ( mesh_map(p3[0], p3[1], p3[2]) == 3)
           end_set_pairs.insert(pair_id);
       }
     }
@@ -299,7 +280,7 @@ void  edgepair_segmentation(  const matrix<double>& data,
     [&evaluations, &data_cost,
      &e_super, &connectivity, &start_set_pairs,
      &length_cost, &curvature_cost, &torsion_cost,
-     &regularization_cache, &cacheable]
+     &regularization_cache, &cacheable, &delta_point]
     (int ep, std::vector<Neighbor>* neighbors) -> void
   {
     evaluations++;
@@ -314,20 +295,16 @@ void  edgepair_segmentation(  const matrix<double>& data,
         int q1, q2, q3;
         tie(q1, q2, q3) = points_in_a_edgepair(*itr, connectivity);
 
-        int x2,y2,z2,
-            x3,y3,z3, 
-            x4,y4,z4;
+        Point p2 = make_point(q1);
+        Point p3 = make_point(q2);
+        Point p4 = make_point(q3);
 
-        tie(x2,y2,z2) = ind2sub(q1);
-        tie(x3,y3,z3) = ind2sub(q2);
-        tie(x4,y4,z4) = ind2sub(q3);
+        double  cost  = data_cost(p2.xyz, p3.xyz);
+                cost += data_cost(p3.xyz, p4.xyz);
 
-        double cost = data_cost(x2, y2, z2, x3, y3, z3);
-              cost += data_cost(x3, y3, z3, x4, y4, z4);
-
-        cost += curvature_cost(x2,y2,z2, x3,y3,z3, x4,y4,z4);
-        cost += length_cost(x2,y2,z2,x3,y3,z3);
-        cost += length_cost(x3,y3,z3,x4,y4,z4);
+        cost += curvature_cost(p2.xyz,  p3.xyz,p4.xyz);
+        cost += length_cost(            p2.xyz,p3.xyz);
+        cost += length_cost(            p3.xyz,p4.xyz);
 
         neighbors->push_back(Neighbor(*itr, cost));
       }
@@ -347,52 +324,39 @@ void  edgepair_segmentation(  const matrix<double>& data,
       int e1, e2;
       tie(e1,e2) = decompose_edgepair(edgepair_id, connectivity);
 
-      int x1,y1,z1, 
-          x2,y2,z2,
-          x3,y3,z3,
-          x4,y4,z4;
-
-      tie(x1,y1,z1) = ind2sub(root);
-
-      x2 = x1 + connectivity(e1,0);
-      y2 = y1 + connectivity(e1,1);
-      z2 = z1 + connectivity(e1,2);
-
-      x3 = x2 + connectivity(e2,0);
-      y3 = y2 + connectivity(e2,1),
-      z3 = z2 + connectivity(e2,2);
+      Point p1 = make_point(root);
+      Point p2 = delta_point(p1,e1);
+      Point p3 = delta_point(p2,e2);
 
       for (int e3 = 0; e3 < connectivity.M; e3++) 
       {
-        x4 = x3 + connectivity(e3,0);
-        y4 = y3 + connectivity(e3,1),
-        z4 = z3 + connectivity(e3,2);
+        Point p4 = delta_point(p3,e3);
 
         double cost;
-        if (!validind(x4,y4,z4))
+        if (!valid_point(p4))
           continue;
 
-        if ((x2 == x4) & (y2 == y4) & (z2 == z4))
+        if (p2 == p4)
           continue;
 
         // Unary cost
-        cost = data_cost(x3,y3,z3, x4,y4,z4);
+        cost = data_cost(p3.xyz,p4.xyz);
 
         if (cacheable)
         {
           cost += regularization_cache(e1,e2,e3);
         } else
         {
-          cost += length_cost(                      x3,y3,z3, x4,y4,z4);
-          cost += curvature_cost(         x2,y2,z2, x3,y3,z3, x4,y4,z4);
-          cost += torsion_cost(x1,y1,z1,  x2,y2,z2, x3,y3,z3, x4,y4,z4);
+          cost += length_cost(                  p3.xyz, p4.xyz);
+          cost += curvature_cost(       p2.xyz, p3.xyz, p4.xyz);
+          cost += torsion_cost(p1.xyz,  p2.xyz, p3.xyz, p4.xyz);
         }
 
         // Destination id
         int edge_pair_id = connectivity.M*e2 + e3;
 
         // Index of neighboring edgepair.
-        int dest = sub2ind(x2,y2,z2)*(connectivity.M*connectivity.M) + edge_pair_id;
+        int dest = point2ind(p2)*(connectivity.M*connectivity.M) + edge_pair_id;
         neighbors->push_back(Neighbor(dest, cost));
       }
     }
@@ -463,13 +427,13 @@ void  edgepair_segmentation(  const matrix<double>& data,
       point_vector[1] = make_point(p1);
       point_vector[2] = make_point(p2);
 
-      if (!validind(point_vector[0]))
+      if (!valid_point(point_vector[0]))
         continue;
 
-      if (!validind(point_vector[1]))
+      if (!valid_point(point_vector[1]))
         continue;
 
-      if (!validind(point_vector[2]))
+      if (!valid_point(point_vector[2]))
         continue;
 
       // First edge
@@ -482,7 +446,7 @@ void  edgepair_segmentation(  const matrix<double>& data,
       {
         output.shortest_path_tree(point_vector[1][0],
                                   point_vector[1][1],
-                                  point_vector[1][2]) = sub2ind(point_vector[0]);
+                                  point_vector[1][2]) = point2ind(point_vector[0]);
       }
 
       // Second edge
@@ -495,7 +459,7 @@ void  edgepair_segmentation(  const matrix<double>& data,
       {
         output.shortest_path_tree(point_vector[2][0],
                                   point_vector[2][1],
-                                  point_vector[2][2]) = sub2ind(point_vector[1]);
+                                  point_vector[2][2]) = point2ind(point_vector[1]);
       }
     }
   }

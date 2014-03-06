@@ -53,20 +53,16 @@ void curve_info(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   plhs[7] = curve_torsion;
 
   Data_cost data_cost(data_matrix, connectivity, settings.voxel_dimensions);
+  Length_cost length_fun(data_matrix, settings.voxel_dimensions, 1);
 
   // Data cost
   for (int k = 0; k < (int)path.M-1; k++)
   {
-    total_data_cost(0) += data_cost( path(k+0,0) -1, path(k+0,1) -1, path(k+0,2) -1,
-                                path(k+1,0) -1, path(k+1,1) -1, path(k+1,2) -1);
-  }
+    Point p1(path(k+0,0) -1, path(k+0,1) -1, path(k+0,2) -1);
+    Point p2(path(k+1,0) -1, path(k+1,1) -1, path(k+1,2) -1);
 
-  // Length
-  Length_cost length_fun(data_matrix, settings.voxel_dimensions, 1);
-  for (int k = 0; k < (int)path.M-1; k++)
-  {
-    curve_length(0) += length_fun(path(k+0,0) -1, path(k+0,1) -1, path(k+0,2) -1,
-                                  path(k+1,0) -1, path(k+1,1) -1, path(k+1,2) -1);
+    total_data_cost(0)  += data_cost(   p1.xyz, p2.xyz);
+    curve_length(0)     += length_fun(  p1.xyz, p2.xyz);
   }
 
 
@@ -74,35 +70,23 @@ void curve_info(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Curvature_cost curvature_fun(data_matrix, settings.voxel_dimensions, 1, settings.curvature_power);
  	for (int k = 0; k < (int)path.M-2; k++)
  	{
-     curve_curvature(0) +=
-     curvature_fun((path(k+0,0)-1),
-           				      (path(k+0,1)-1),
-           				      (path(k+0,2)-1),
-           				      (path(k+1,0)-1),
-           				      (path(k+1,1)-1),
-           				      (path(k+1,2)-1),
-            			      (path(k+2,0)-1),
-            			      (path(k+2,1)-1),
-            			      (path(k+2,2)-1));
+    Point p1(path(k+0,0) -1, path(k+0,1) -1, path(k+0,2) -1);
+    Point p2(path(k+1,0) -1, path(k+1,1) -1, path(k+1,2) -1);
+    Point p3(path(k+2,0) -1, path(k+2,1) -1, path(k+2,2) -1);
+   
+    curve_curvature(0) += curvature_fun(p1.xyz, p2.xyz, p3.xyz);
  	}
 
   // Torsion
   Torsion_cost torsion_fun(data_matrix, settings.voxel_dimensions, 1, settings.torsion_power);
   for (int k = 0; k < (int)path.M-3; k++)
   {
-    curve_torsion(0) +=
-    torsion_fun((path(k+0,0)-1),
-                     (path(k+0,1)-1),
-                     (path(k+0,2)-1),
-                     (path(k+1,0)-1),
-                     (path(k+1,1)-1),
-                     (path(k+1,2)-1),
-                     (path(k+2,0)-1),
-                     (path(k+2,1)-1),
-                     (path(k+2,2)-1),
-                     (path(k+3,0)-1),
-                     (path(k+3,1)-1),
-                     (path(k+3,2)-1));
+    Point p1(path(k+0,0) -1, path(k+0,1) -1, path(k+0,2) -1);
+    Point p2(path(k+1,0) -1, path(k+1,1) -1, path(k+1,2) -1);
+    Point p3(path(k+2,0) -1, path(k+2,1) -1, path(k+2,2) -1);
+    Point p4(path(k+3,0) -1, path(k+3,1) -1, path(k+3,2) -1);
+
+    curve_torsion(0) += torsion_fun(p1.xyz, p2.xyz, p3.xyz, p4.xyz);
   }
 
   // Add weights
@@ -136,23 +120,11 @@ void mexFunction(int            nlhs,     /* number of expected outputs */
    throw runtime_error("First argument must be a string.");
 
   if (!strcmp(problem_type,"linear_interpolation"))
-    curve_info< Linear_data_cost<double>, 
-                Euclidean_length<double>, 
-                Euclidean_curvature<double>, 
-                Euclidean_torsion<double>
-                >(nlhs, plhs, nrhs, prhs);
+    curve_info<Linear_data_cost, Euclidean_length, Euclidean_curvature, Euclidean_torsion>(nlhs, plhs, nrhs, prhs);
   else if (!strcmp(problem_type,"edge"))
-    curve_info< Edge_data_cost<double>, 
-                Euclidean_length<double>, 
-                Euclidean_curvature<double>, 
-                Euclidean_torsion<double>
-                >(nlhs, plhs, nrhs, prhs); 
+    curve_info<Edge_data_cost, Euclidean_length, Euclidean_curvature, Euclidean_torsion>(nlhs, plhs, nrhs, prhs); 
   else if (!strcmp(problem_type,"geodesic"))
-    curve_info< Zero_data_cost<double>, 
-                Geodesic_length<double>, 
-                Geodesic_curvature<double>, 
-                Zero_torsion<double>
-                >(nlhs, plhs, nrhs, prhs);
+    curve_info< Zero_data_cost, Geodesic_length, Geodesic_curvature, Zero_torsion>(nlhs, plhs, nrhs, prhs);
   else
     throw runtime_error("Unknown data type");
 }

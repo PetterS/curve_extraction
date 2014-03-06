@@ -14,14 +14,14 @@ public:
 	                  const std::vector<double>& voxeldimensions);
 
 	template<typename R>
-	R evaluate(R x, R y, R z = 0.0);
+	R evaluate(R x, R y, R z = 0.0) const;
 
 	template<typename R>
 	R evaluate_line_integral(R x1, R y1, R z1,
-	                         R x2, R y2, R z2);
+	                         R x2, R y2, R z2) const;
 private:
-	int xyz_to_ind(double x, double y, double z);
-	template<typename R> 	bool inside_volume(R x, R y, R s);
+	int xyz_to_ind(double x, double y, double z) const;
+	template<typename R> 	bool inside_volume(R x, R y, R s) const;
 	int M, N, O;
 	const double* unary;
 	const std::vector<double> voxeldimensions;
@@ -35,13 +35,13 @@ public:
 	          const std::vector<double>& voxeldimensions);
 
 	template<typename R>
-	R evaluate(R x, R y, R z = 0.0);
+	R evaluate(R x, R y, R z = 0.0) const;
 
 	template<typename R>
 	R evaluate_line_integral(R x1, R y1, R z1,
-	                         R x2, R y2, R z2);
+	                         R x2, R y2, R z2) const;
 private:
-	int xyz_to_ind(double x, double y, double z);
+	int xyz_to_ind(double x, double y, double z) const;
 	int M, N, O;
 	const double* unary;
 	const std::vector<double> voxeldimensions;

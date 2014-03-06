@@ -67,6 +67,27 @@ struct Point
 
   double xyz[3];
 };
+
+class Delta_point
+{
+  public:
+    Delta_point (const matrix<int>& connectivity) :
+    connectivity(connectivity)
+  {};
+
+  Point operator() (Point& root, int k) 
+  {
+    Point p;
+    p[0] = root[0] + connectivity(k,0);
+    p[1] = root[1] + connectivity(k,1);
+    p[2] = root[2] + connectivity(k,2);
+
+    return p;
+  }
+
+  const matrix<int> connectivity;  
+};
+
 struct InstanceSettings
 {
   InstanceSettings()
@@ -172,7 +193,7 @@ bool validind(int n1, int n2, int n3)
   return true;
 }
 
-bool validind(Point p)
+bool valid_point(Point p)
 {
   return validind(p[0],p[1],p[2]);
 }
@@ -184,7 +205,7 @@ int sub2ind(int n1, int n2, int n3)
     return  n1 + n2*M + n3*M*N;
 }
 
-int sub2ind(Point p)
+int point2ind(Point p)
 {
   return sub2ind(p[0], p[1], p[2]);
 }

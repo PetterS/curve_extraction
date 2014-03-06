@@ -25,7 +25,7 @@ TriLinear::TriLinear(const double * unary_,
 //
 //  pixel ix = 5 has real coordinates [4.5, 5.5).
 //
-int TriLinear::xyz_to_ind(double x, double y, double z)
+int TriLinear::xyz_to_ind(double x, double y, double z) const
 {
 	int ix = std::max(std::min(int(x + 0.5), M - 1), 0);
 	int iy = std::max(std::min(int(y + 0.5), N - 1), 0);
@@ -34,14 +34,14 @@ int TriLinear::xyz_to_ind(double x, double y, double z)
 }
 
 template<typename R>
-R TriLinear::evaluate(R x, R y, R z)
+R TriLinear::evaluate(R x, R y, R z) const
 {
 	return 0;
 }
 
 template<typename R>
 R TriLinear::evaluate_line_integral(R sx, R sy, R sz,
-                                    R ex, R ey, R ez)
+                                    R ex, R ey, R ez) const
 {
 	using std::sqrt;
 	using std::floor;
@@ -126,8 +126,8 @@ R TriLinear::evaluate_line_integral(R sx, R sy, R sz,
 }  // namespace curve_extraction
 
 #define INSTANTIATE(classname, R) \
-	template R curve_extraction::classname::evaluate_line_integral(R,R,R, R,R,R); \
-	template R curve_extraction::classname::evaluate(R,R,R);
+	template R curve_extraction::classname::evaluate_line_integral(R,R,R, R,R,R) const; \
+	template R curve_extraction::classname::evaluate(R,R,R) const;
 
 typedef fadbad::F<double, 3> F3;
 typedef fadbad::F<double, 6> F6;

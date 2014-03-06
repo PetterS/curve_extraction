@@ -1,6 +1,5 @@
 #pragma once
 
-template<typename R>
 class Linear_data_cost
 {
   public: 
@@ -11,11 +10,13 @@ class Linear_data_cost
           data_term(data.data, data.M, data.N, data.O, voxel_dimensions)
   {};
 
-  R operator () (R x1, R y1, R z1, R x2, R y2, R z2) 
+  template<typename R>
+  R operator()(const R* const point1, const R* const point2) const
   {
-    return data_term.evaluate_line_integral<R>(x1,y1,z1, x2,y2,z2);
+    return data_term.evaluate_line_integral(point1[0],point1[1],point1[2],
+                                            point2[0],point2[1],point2[2]);
   }
 
 protected:
-  PieceWiseConstant data_term;
+  const PieceWiseConstant data_term;
 };
