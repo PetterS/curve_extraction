@@ -36,10 +36,12 @@ using std::tie;
 #include <curve_extraction/shortest_path.h>
 
 using namespace curve_extraction;
-typedef std::vector<std::vector<Mesh::Point>> PointSets;
-extern double timer;
-extern int M,N,O;
-extern bool verbose;
+double timer;
+int M = 1;
+int N = 1;
+int O = 1;
+
+bool verbose;
 
 enum Descent_method {lbfgs, nelder_mead};
 
@@ -138,21 +140,75 @@ InstanceSettings parse_settings(MexParams params)
   return settings;
 }
 
-double get_wtime();
-bool validind(int n1, int n2, int n3);
-bool validind(Mesh::Point p);
+// Work linear indices like MatLab, but starting from 0.
+// Syntax coordinates (n1,n2,n3), image size (M,N,O);
+bool validind(int n1, int n2, int n3)
+{
+  if ( (n1 > M-1 || n2 > N-1 || n3 > O-1) || (n1 < 0 || n2 < 0 || n3 < 0) )
+    return false;
 
-int sub2ind(int n1, int n2, int n3);
-int sub2ind(Mesh::Point p);
+  return true;
+}
 
-std::tuple<int,int,int> ind2sub(int n);
-Mesh::Point make_point(int n);
+bool validind(Mesh::Point p)
+{
+  return validind(p.x,p.y,p.z);
+}
+
+// Syntax coordinates (n1,n2,n3), image size (M,N,O);
+int sub2ind(int n1, int n2, int n3)
+{
+  // Linear index
+    return  n1 + n2*M + n3*M*N;
+}
+
+int sub2ind(Mesh::Point p)
+{
+  return sub2ind(p.x, p.y, p.z);
+}
+
+std::tuple<int,int,int> ind2sub(int n)
+{
+  int z = n/(M*N);
+  int y = (n-z*M*N)/M;
+  int x = n - y*M - z*M*N;
+
+  return std::make_tuple(x,y,z);
+}
+
+Mesh::Point make_point(int n)
+{
+  int z = n/(M*N);
+  int y = (n-z*M*N)/M;
+  int x = n - y*M - z*M*N;
+
+  return Mesh::Point(x,y,z);
+}
+
+void startTime()
+{
+  timer = ::get_wtime();
+}
+
+double endTime()
+{
+  double current_time = ::get_wtime();
+  double elapsed = current_time - timer;
+  timer = current_time;
+
+  return elapsed;
+}
+
+double endTime(const char* message)
+{
+  double t = endTime();
+  mexPrintf("%s : %g (s). \n", message, t);
+  return t;
+}
 
 std::tuple<int, int, int>
 points_in_a_edgepair(int edgepair_num, const matrix<int>& connectivity);
-std::vector<Mesh::Point>
-edgepath_to_points(const std::vector<int>& path, const matrix<int>& connectivity);
-double distance_between_points(double x1,double y1,double z1, double x2, double y2, double z2, const std::vector<double>& voxel_dimensions);
+std::vector<Mesh::Point> edgepath_to_points(const std::vector<int>& path, const matrix<int>& connectivity);
 
 struct SegmentationOutput
 {
