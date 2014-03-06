@@ -56,9 +56,9 @@ points_in_a_edgepair(int edgepair_num, const matrix<int>& connectivity)
 }
 
 
-std::vector<Mesh::Point> pairpath_to_points(const std::vector<int>& path, const matrix<int>& connectivity)
+std::vector<Point> pairpath_to_points(const std::vector<int>& path, const matrix<int>& connectivity)
 {
-  std::vector<Mesh::Point> point_vector;
+  std::vector<Point> point_vector;
 
   // Start points
   if (path.size() > 0) {
@@ -90,7 +90,7 @@ void store_results_edgepair(matrix<nodeT>& node_container, std::vector<edgepairT
   int p0,p1,p2;
 
   // No empty constructor.
-  std::vector<Mesh::Point> point_vector(3, make_point(0));
+  std::vector<Point> point_vector(3, make_point(0));
 
   for (int i = 0; i < edge_container.size(); i++)
   {
@@ -103,17 +103,17 @@ void store_results_edgepair(matrix<nodeT>& node_container, std::vector<edgepairT
     point_vector[1] = make_point(p1);
     point_vector[2] = make_point(p2);
 
-    for (Mesh::Point p : point_vector)
+    for (Point p : point_vector)
     {
       if (!validind(p))
         continue;
 
-      nodeT visit_value = node_container(p.x, p.y, p.z);
+      nodeT visit_value = node_container(p[0],p[1],p[2]);
 
       if ( (visit_value == -1) || 
           ( (visit_value >= 0) && (visit_value > edge_container[i]) ) )
       {
-        node_container(p.x, p.y, p.z) = edge_container[i];
+        node_container(p[0],p[1],p[2]) = edge_container[i];
       }
     }
   }
@@ -455,7 +455,7 @@ void  edgepair_segmentation(  const matrix<double>& data,
     // Go through each each edge stored in visit time
     // if it has been visited then it's != -1
     int p0,p1,p2;
-    std::vector<Mesh::Point> point_vector(3, make_point(0));
+    std::vector<Point> point_vector(3, make_point(0));
     for (int i = 0; i < options.visit_time.size(); i++)
     {
       tie(p0,p1,p2) = points_in_a_edgepair(i, connectivity);
@@ -473,29 +473,29 @@ void  edgepair_segmentation(  const matrix<double>& data,
         continue;
 
       // First edge
-      int time = output.visit_time(point_vector[1].x,
-                            point_vector[1].y,
-                            point_vector[1].z);
+      int time = output.visit_time( point_vector[1][0],
+                                    point_vector[1][1],
+                                    point_vector[1][2]);
 
       // Is this the edge which was here first?
       if (time == options.visit_time[i])
       {
-        output.shortest_path_tree(point_vector[1].x,
-                           point_vector[1].y,
-                           point_vector[1].z) = sub2ind(point_vector[0]);
+        output.shortest_path_tree(point_vector[1][0],
+                                  point_vector[1][1],
+                                  point_vector[1][2]) = sub2ind(point_vector[0]);
       }
 
       // Second edge
-      time = output.visit_time(point_vector[2].x,
-                        point_vector[2].y,
-                        point_vector[2].z);
+      time = output.visit_time( point_vector[2][0],
+                                point_vector[2][1],
+                                point_vector[2][2]);
 
       // Is this the edge which was here first?
       if (time == options.visit_time[i])
       {
-        output.shortest_path_tree(point_vector[2].x,
-                           point_vector[2].y,
-                           point_vector[2].z) = sub2ind(point_vector[1]);
+        output.shortest_path_tree(point_vector[2][0],
+                                  point_vector[2][1],
+                                  point_vector[2][2]) = sub2ind(point_vector[1]);
       }
     }
   }

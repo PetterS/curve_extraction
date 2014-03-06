@@ -17,7 +17,7 @@ std::tuple<int,int> root_and_edge(int edge_num, const matrix<int>& connectivity)
 }
 
 // Gives tail of the edge
-Mesh::Point  tail_of_edge(int edge_num, const matrix<int>& connectivity)
+Point  tail_of_edge(int edge_num, const matrix<int>& connectivity)
 {
   int num_points_per_element =  connectivity.M;
   int tail    = edge_num / num_points_per_element;
@@ -26,32 +26,32 @@ Mesh::Point  tail_of_edge(int edge_num, const matrix<int>& connectivity)
 }
 
 // Gives head and tail of the edge
-Mesh::Point  head_of_edge(int edge_num, const matrix<int>& connectivity)
+Point  head_of_edge(int edge_num, const matrix<int>& connectivity)
 {
   int num_points_per_element =  connectivity.M;
   int edgeid = edge_num % num_points_per_element;
 
-  Mesh::Point tail_point = tail_of_edge(edge_num, connectivity);
+  Point tail_point = tail_of_edge(edge_num, connectivity);
 
-  return Mesh::Point( tail_point.x + connectivity(edgeid,0),
-                      tail_point.y + connectivity(edgeid,1),
-                      tail_point.z + connectivity(edgeid,2));
+  return Point( tail_point[0] + connectivity(edgeid,0),
+                tail_point[1] + connectivity(edgeid,1),
+                tail_point[2] + connectivity(edgeid,2));
 }
 
 
-std::vector<Mesh::Point>  edgepath_to_points(const std::vector<int>& path, const matrix<int>& connectivity)
+std::vector<Point>  edgepath_to_points(const std::vector<int>& path, const matrix<int>& connectivity)
 {
-  std::vector<Mesh::Point> point_vector;
-  Mesh::Point first();
+  std::vector<Point> point_vector;
+  Point first();
 
   // Start point
   if (path.size() > 0) {
-     Mesh::Point tail = tail_of_edge(path[0], connectivity);
+     Point tail = tail_of_edge(path[0], connectivity);
      point_vector.push_back(tail);
   }
 
   for (int i = 0; i < path.size(); i++) {
-     Mesh::Point head = head_of_edge(path[i], connectivity);
+     Point head = head_of_edge(path[i], connectivity);
      point_vector.push_back(head);
   }
 
@@ -67,7 +67,7 @@ void store_results_edge(matrix<nodeT>& node_container, std::vector<edgeT>& edge_
 
   // Go through each each edge stored in visit time
   // if it has been visited then it's != -1
-  std::vector<Mesh::Point> point_vector(2, make_point(0));
+  std::vector<Point> point_vector(2, make_point(0));
   for (int i = 0; i < edge_container.size(); i++)
   {
     if (edge_container[i] == -1)
@@ -76,17 +76,17 @@ void store_results_edge(matrix<nodeT>& node_container, std::vector<edgeT>& edge_
     point_vector[0] = tail_of_edge(i, connectivity);
     point_vector[1] = head_of_edge(i, connectivity);
 
-    for (Mesh::Point p : point_vector)
+    for (Point p : point_vector)
     {
       if (!validind(p))
         continue;
 
-      nodeT visit_value = node_container(p.x, p.y, p.z);
+      nodeT visit_value = node_container(p[0], p[1], p[2]);
 
       if ( (visit_value == -1) ||
           ( (visit_value >= 0) && (visit_value > edge_container[i]) ) )
       {
-        node_container(p.x, p.y, p.z) = edge_container[i];
+        node_container(p[0], p[1], p[2]) = edge_container[i];
       }
     }
   }
@@ -305,9 +305,9 @@ void edge_segmentation( const matrix<double>& data,
     [&heuristic_options, &connectivity]
     (int e) -> double
   {
-    Mesh::Point p = head_of_edge(e, connectivity);
+    Point p = head_of_edge(e, connectivity);
 
-    return heuristic_options.distance[sub2ind(p.x,p.y,p.z)];
+    return heuristic_options.distance[sub2ind(p[0],p[1],p[2])];
   };
 
   std::function<double(int)>* lower_bound_pointer = nullptr;
@@ -399,7 +399,7 @@ void edge_segmentation( const matrix<double>& data,
         output.shortest_path_tree(i) = -1;
 
     // Go through each edge stored in visit time
-    std::vector<Mesh::Point> point_vector(2, make_point(0));
+    std::vector<Point> point_vector(2, make_point(0));
     for (int i = 0; i < options.visit_time.size(); i++)
     {
       point_vector[0] = tail_of_edge(i, connectivity);
@@ -410,16 +410,16 @@ void edge_segmentation( const matrix<double>& data,
       if (!validind(point_vector[1]))
         continue;
 
-      int time = output.visit_time(point_vector[1].x,
-                            point_vector[1].y,
-                            point_vector[1].z);
+      int time = output.visit_time( point_vector[1][0],
+                                    point_vector[1][1],
+                                    point_vector[1][2]);
 
       // Is this the edge which was here first?
       if (time == options.visit_time[i])
       {
-        output.shortest_path_tree(point_vector[1].x,
-                           point_vector[1].y,
-                           point_vector[1].z) = sub2ind(point_vector[0]);
+        output.shortest_path_tree(  point_vector[1][0],
+                                    point_vector[1][1],
+                                    point_vector[1][2]) = sub2ind(point_vector[0]);
       }
     }
   }

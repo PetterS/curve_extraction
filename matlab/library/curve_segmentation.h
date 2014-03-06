@@ -42,9 +42,31 @@ int N = 1;
 int O = 1;
 
 bool verbose;
-
 enum Descent_method {lbfgs, nelder_mead};
 
+struct Point
+{
+  Point () {}
+  Point (double x, double y, double z)
+  {
+    xyz[0] = x;
+    xyz[1] = y;
+    xyz[2] = z;
+  }
+
+  bool operator== (Point &other)
+  {
+    return (xyz[0] == other.xyz[0] &&
+            xyz[1] == other.xyz[1] &&
+            xyz[2] == other.xyz[2]);
+  }
+
+  double& operator [](int i) {
+    return xyz[i];
+  }
+
+  double xyz[3];
+};
 struct InstanceSettings
 {
   InstanceSettings()
@@ -150,9 +172,9 @@ bool validind(int n1, int n2, int n3)
   return true;
 }
 
-bool validind(Mesh::Point p)
+bool validind(Point p)
 {
-  return validind(p.x,p.y,p.z);
+  return validind(p[0],p[1],p[2]);
 }
 
 // Syntax coordinates (n1,n2,n3), image size (M,N,O);
@@ -162,9 +184,9 @@ int sub2ind(int n1, int n2, int n3)
     return  n1 + n2*M + n3*M*N;
 }
 
-int sub2ind(Mesh::Point p)
+int sub2ind(Point p)
 {
-  return sub2ind(p.x, p.y, p.z);
+  return sub2ind(p[0], p[1], p[2]);
 }
 
 std::tuple<int,int,int> ind2sub(int n)
@@ -176,13 +198,13 @@ std::tuple<int,int,int> ind2sub(int n)
   return std::make_tuple(x,y,z);
 }
 
-Mesh::Point make_point(int n)
+Point make_point(int n)
 {
   int z = n/(M*N);
   int y = (n-z*M*N)/M;
   int x = n - y*M - z*M*N;
 
-  return Mesh::Point(x,y,z);
+  return Point(x,y,z);
 }
 
 void startTime()
@@ -208,7 +230,7 @@ double endTime(const char* message)
 
 struct SegmentationOutput
 {
-  SegmentationOutput( std::vector<Mesh::Point>& points,
+  SegmentationOutput( std::vector<Point>& points,
                       double& run_time,
                       int& evaluations,
                       double& cost,
@@ -220,7 +242,7 @@ struct SegmentationOutput
     distances(distances)
   {};
 
-  std::vector<Mesh::Point>& points;
+  std::vector<Point>& points;
   double& run_time;
   int& evaluations;
   double& cost;

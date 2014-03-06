@@ -24,11 +24,6 @@ void mex_log_function(const std::string& str)
 	mexPrintf("%s\n", str.c_str());
 }
 
-struct Point
-{
-	double xyz[3];
-};
-
 class Length
 {
 	public:

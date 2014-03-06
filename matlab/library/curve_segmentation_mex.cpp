@@ -149,7 +149,7 @@ void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
   double run_time;
   double cost;
   int evaluations;
-  std::vector<Mesh::Point> points;
+  std::vector<Point> points;
 
   if (verbose)
   {
@@ -189,11 +189,11 @@ void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
   matrix<double>  o_cost(1);
 
   int n_line = 0;
-  for (   auto it = points.begin(); it != points.end(); it++)
+  for ( auto p : points)
   {
-      o_path(n_line, 0) = it->x;
-      o_path(n_line, 1) = it->y;
-      o_path(n_line, 2) = it->z;
+      o_path(n_line, 0) = p[0];
+      o_path(n_line, 1) = p[1];
+      o_path(n_line, 2) = p[2];
       n_line++;
   }
 
