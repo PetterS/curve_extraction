@@ -1,4 +1,6 @@
 #pragma once
+
+template<typename R>
 class Zero_curvature
 {
   public:
@@ -10,11 +12,11 @@ class Zero_curvature
     data_depdent(false)
   {};
 
-  double operator () (double x1, double y1, double z1,
-                      double x2, double y2, double z2,
-                      double x3, double y3, double z3)
+  R operator () ( R x1, R y1, R z1,
+                  R x2, R y2, R z2,
+                  R x3, R y3, R z3)
   {
-    return 0;
+    return R(0);
   }
 
   bool data_depdent;  

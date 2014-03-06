@@ -1,4 +1,6 @@
 #pragma once
+
+template<typename R>
 class Zero_data_cost
 {
 public:
@@ -9,8 +11,8 @@ public:
   ) 
   {};
 
-  double operator () (double x1,double y1,double z1, double x2, double y2, double z2)
+  R operator () (R x1, R y1, R z1, R x2, R y2, R z2)
   {
-    return 0;
+    return R(0);
   }
 };

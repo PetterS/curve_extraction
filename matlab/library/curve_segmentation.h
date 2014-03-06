@@ -206,10 +206,6 @@ double endTime(const char* message)
   return t;
 }
 
-std::tuple<int, int, int>
-points_in_a_edgepair(int edgepair_num, const matrix<int>& connectivity);
-std::vector<Mesh::Point> edgepath_to_points(const std::vector<int>& path, const matrix<int>& connectivity);
-
 struct SegmentationOutput
 {
   SegmentationOutput( std::vector<Mesh::Point>& points,
@@ -232,33 +228,6 @@ struct SegmentationOutput
   matrix<int>& shortest_path_tree;
   matrix<double>& distances;
 };
-
-template<typename Data_cost, typename Length_cost>
-void node_segmentation( const matrix<double>& data,
-                        const matrix<unsigned char>& mesh_map,
-                        const matrix<int>& connectivity,
-                        InstanceSettings& settings,
-                        ShortestPathOptions& options,
-                        SegmentationOutput& output
-                        );
-
-template<typename Data_cost, typename Length_cost, typename Curvature_cost>
-void edge_segmentation( const matrix<double>& data,
-                        const matrix<unsigned char>& mesh_map,
-                        const matrix<int>& connectivity,
-                        InstanceSettings& settings,
-                        ShortestPathOptions& options,
-                        SegmentationOutput& output
-                        );
-
-template<typename Data_cost, typename Length_cost, typename Curvature_cost, typename Torsion_cost>
-void  edgepair_segmentation(  const matrix<double>& data,
-                              const matrix<unsigned char>& mesh_map,
-                              const matrix<int>& connectivity,
-                              InstanceSettings& settings,
-                              ShortestPathOptions& options,
-                              SegmentationOutput& output
-                             );
 
 #include "instances/instances.h"
 #endif

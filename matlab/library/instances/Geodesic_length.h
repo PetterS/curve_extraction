@@ -3,6 +3,7 @@
 #include "Boundary_points.h"
 #include "Depth_corners.h"
 
+template<typename R>
 class Geodesic_length
 {
   public:
@@ -15,17 +16,16 @@ class Geodesic_length
         penalty(penalty),
         data_depdent(true),
         boundary_points(voxel_dimensions, data.M, data.N),
-        euclidean_length(data, voxel_dimensions, penalty),
         depth_corners(voxel_dimensions,data)
    {
    }
 
-    inline double sqr(double x)
+    inline R sqr(R x)
     {
       return x*x;
     }
 
-    double operator () (double x0,double y0,double z0, double x1, double y1, double z1)
+    R operator () (R x0, R y0, R z0, R x1, R y1, R z1)
     {
       using std::abs;
 
@@ -98,6 +98,5 @@ class Geodesic_length
 
   // Functors
   Boundary_points boundary_points;
-  Euclidean_length euclidean_length;
   Depth_corners depth_corners;
 };

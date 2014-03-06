@@ -1,4 +1,6 @@
 #pragma once
+
+template<typename R>
 class Linear_data_cost
 {
   public: 
@@ -9,9 +11,9 @@ class Linear_data_cost
           data_term(data.data, data.M, data.N, data.O, voxel_dimensions)
   {};
 
-  double operator () (double x1,double y1,double z1, double x2, double y2, double z2) 
+  R operator () (R x1, R y1, R z1, R x2, R y2, R z2) 
   {
-    return data_term.evaluate_line_integral<double>(x1,y1,z1, x2,y2,z2);
+    return data_term.evaluate_line_integral<R>(x1,y1,z1, x2,y2,z2);
   }
 
 protected:
