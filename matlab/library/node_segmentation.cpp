@@ -12,8 +12,11 @@ void node_segmentation( const matrix<double>& data,
 {
   Data_cost data_cost(data, connectivity, settings.voxel_dimensions);
   Length_cost length_cost(data, settings.voxel_dimensions, settings.length_penalty);
-  
-  bool cacheable =  !length_cost.data_depdent;
+
+  bool cacheable = true;
+  if ( (length_cost.data_depdent) && (settings.length_penalty > 0) )
+      cacheable = false;
+
   std::vector<double> regularization_cache(connectivity.M);
 
    // Pre-calculate regularization cost for every connectivity

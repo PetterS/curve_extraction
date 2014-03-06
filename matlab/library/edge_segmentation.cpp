@@ -109,8 +109,11 @@ void edge_segmentation( const matrix<double>& data,
   Curvature_cost curvature_cost(data, settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
 
   bool cacheable = true;
-  if (length_cost.data_depdent || curvature_cost.data_depdent) 
-    cacheable = false;
+  if ( (length_cost.data_depdent) && (settings.length_penalty > 0) )
+      cacheable = false;
+
+  if ( (curvature_cost.data_depdent) && (settings.curvature_penalty > 0) )
+      cacheable = false;
 
   // Some notation for the edge graph
   // Elements corresponds to points in the original graph
@@ -128,7 +131,6 @@ void edge_segmentation( const matrix<double>& data,
   std::vector<double> regularization_cache(num_edges_per_point);
 
   int x,y,z, x2,y2,z2,x3,y3,z3, element_number, element_number_2;
-
   if (cacheable)
   {
     for (int i = 0; i < connectivity.M; i++) {
@@ -148,6 +150,7 @@ void edge_segmentation( const matrix<double>& data,
     }
     }
   }
+
   if (verbose)
     mexPrintf("Creating start/end sets...");
 

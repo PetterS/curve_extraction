@@ -3,7 +3,7 @@
 // The indexing:
 // Assume we have M neighbors in connectivity.
 // Then a pair edges starting in node i with edge e1 and e2
-// have index i*M*M + e*M + e2;
+// have index i*M*M + e1*M + e2;
 // where e1,e2 are indices defined by the connectivity matrix.
 
 std::tuple<int,int> decompose_edgepair(int edge_num, const matrix<int>& connectivity)
@@ -127,35 +127,86 @@ void  edgepair_segmentation(  const matrix<double>& data,
                               SegmentationOutput& output
                              )
 {  
-  Data_cost data_cost(data, connectivity, settings.voxel_dimensions);
-  Length_cost length_cost(data,settings.voxel_dimensions, settings.length_penalty);
-  Curvature_cost curvature_cost(data, settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
-  Torsion_cost torsion_cost(data, settings.voxel_dimensions, settings.torsion_penalty, settings.torsion_power);
-
   // Some notation for the edge graph
   // Elements corresponds to points in the original graph
   // Points corresponds to edge pairs  in the original graph
   // Edges correspond to pair of edgepairs in the original graph
 
+  Data_cost data_cost(data, connectivity, settings.voxel_dimensions);
+  Length_cost length_cost(data,settings.voxel_dimensions, settings.length_penalty);
+  Curvature_cost curvature_cost(data, settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
+  Torsion_cost torsion_cost(data, settings.voxel_dimensions, settings.torsion_penalty, settings.torsion_power);
+
   int num_elements = mesh_map.numel();
   int num_points_per_element = connectivity.M*connectivity.M;
+  int num_edges_per_point = connectivity.M*num_points_per_element;
 
   // Total
   int num_edges = num_points_per_element*num_elements;
+  int element_number, element_number_2;
+
+  bool cacheable = true;
+  if ( (length_cost.data_depdent) && (settings.length_penalty > 0) )
+      cacheable = false;
+  if ( (curvature_cost.data_depdent) && (settings.curvature_penalty > 0) )
+      cacheable = false;
+  if ( (torsion_cost.data_depdent) && (settings.torsion_penalty > 0) )
+      cacheable = false;
+
+  typedef std::tuple<int, int, int> cache_index;
+  std::map<cache_index, double>  cached_values;
+
+  auto regularization_cache =
+    [&cached_values, &connectivity, &length_cost, 
+      &curvature_cost, &torsion_cost] 
+        (int e1,int e2,int e3)-> double
+  {   
+    cache_index index(e1,e2,e3);
+    auto itr = cached_values.find( index );
+
+    if (itr != cached_values.end()) 
+    {
+      return itr->second;
+    }
+    else 
+    {
+      int x2,x3,x4;
+      int y2,y3,y4;
+      int z2,z3,z4;
+
+      x2 =      connectivity(e1,0);
+      y2 =      connectivity(e1,1);
+      z2 =      connectivity(e1,2);
+
+      x3 = x2 + connectivity(e2,0);
+      y3 = y2 + connectivity(e2,1),
+      z3 = z2 + connectivity(e2,2);
+
+      x4 = x3 + connectivity(e3,0);
+      y4 = y3 + connectivity(e3,1),
+      z4 = z3 + connectivity(e3,2);
+
+      double  cost =   length_cost(                   x3,y3,z3, x4,y4,z4);
+              cost +=  curvature_cost(     x2,y2,z2,  x3,y3,z3, x4,y4,z4);
+              cost +=  torsion_cost(0,0,0, x2,y2,z2,  x3,y3,z3, x4,y4,z4);
+
+      cached_values[ index ] = cost;
+      return cost;
+    }
+  };     
 
   // Read mesh_map to find end and start set.
   std::set<int> start_set_pairs, end_set_pairs;
 
   int x1,y1,z1,
       x2,y2,z2,
-      x3,y3,z3;
-
+      x3,y3,z3,
+      x4,y4,z4;
   for (int n = 0; n < mesh_map.numel(); ++n)
   {
     tie(x1,y1,z1) = ind2sub(n);
 
-    for (int e1 = 0; e1 < connectivity.M; e1++) 
-    { 
+    for (int e1 = 0; e1 < connectivity.M; e1++) { 
       x2 = x1 + connectivity(e1,0);
       y2 = y1 + connectivity(e1,1);
       z2 = z1 + connectivity(e1,2);
@@ -176,7 +227,7 @@ void  edgepair_segmentation(  const matrix<double>& data,
         if (!validind(x3,y3,z3))
            continue;
 
-        int pair_id = sub2ind(x1,y1,z1)*(connectivity.M*connectivity.M) 
+        int pair_id = sub2ind(x1,y1,z1)*num_points_per_element 
                  + connectivity.M*e1 + e2;
 
         if ( mesh_map( x1, y1, z1) == 2)
@@ -247,7 +298,8 @@ void  edgepair_segmentation(  const matrix<double>& data,
  auto get_neighbors_torsion =
     [&evaluations, &data_cost,
      &e_super, &connectivity, &start_set_pairs,
-     &length_cost, &curvature_cost, &torsion_cost]
+     &length_cost, &curvature_cost, &torsion_cost,
+     &regularization_cache, &cacheable]
     (int ep, std::vector<Neighbor>* neighbors) -> void
   {
     evaluations++;
@@ -326,9 +378,15 @@ void  edgepair_segmentation(  const matrix<double>& data,
         // Unary cost
         cost = data_cost(x3,y3,z3, x4,y4,z4);
 
-        cost += length_cost(x3,y3,z3,x4,y4,z4);
-        cost += torsion_cost(x1,y1,z1, x2,y2,z2, x3,y3,z3, x4,y4,z4);
-        cost += curvature_cost(x2,y2,z2, x3,y3,z3, x4,y4,z4);
+        if (cacheable)
+        {
+          cost += regularization_cache(e1,e2,e3);
+        } else
+        {
+          cost += length_cost(                      x3,y3,z3, x4,y4,z4);
+          cost += curvature_cost(         x2,y2,z2, x3,y3,z3, x4,y4,z4);
+          cost += torsion_cost(x1,y1,z1,  x2,y2,z2, x3,y3,z3, x4,y4,z4);
+        }
 
         // Destination id
         int edge_pair_id = connectivity.M*e2 + e3;

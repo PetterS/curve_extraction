@@ -29,7 +29,7 @@ class Euclidean_torsion
           x2*voxel_dimensions[0], y2*voxel_dimensions[1], z2*voxel_dimensions[2],
           x3*voxel_dimensions[0], y3*voxel_dimensions[1], z3*voxel_dimensions[2],
           x4*voxel_dimensions[0], y4*voxel_dimensions[1], z4*voxel_dimensions[2],
-          power, true);
+          power, false);
     }
   }
 

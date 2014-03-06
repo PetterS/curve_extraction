@@ -28,7 +28,7 @@ class Euclidean_curvature
           (x1*voxel_dimensions[0],y1*voxel_dimensions[1],z1*voxel_dimensions[2],
            x2*voxel_dimensions[0],y2*voxel_dimensions[1],z2*voxel_dimensions[2],
            x3*voxel_dimensions[0],y3*voxel_dimensions[1],z3*voxel_dimensions[2],
-           power, true);
+           power, false);
     }
   }
 
