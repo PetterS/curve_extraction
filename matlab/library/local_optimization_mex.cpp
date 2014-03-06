@@ -223,6 +223,8 @@ void mexFunction(int            nlhs,     /* number of expected outputs */
 
   if (!strcmp(problem_type,"linear_interpolation"))
     local_optimization<Linear_data_cost, Euclidean_length, Euclidean_curvature, Euclidean_torsion>(nlhs, plhs, nrhs, prhs);
+  else if (!strcmp(problem_type,"geodesic"))
+    local_optimization< Zero_data_cost, Geodesic_length, Geodesic_curvature, Zero_torsion>(nlhs, plhs, nrhs, prhs);
   else
     throw runtime_error("Unknown data type");
 }

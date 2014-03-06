@@ -447,8 +447,12 @@ classdef Curve_extraction < handle
 		% by setting obj.curve and then calling this method.
 		function [curve,cost,time] = local_optimization(self)
 
-			if ~strcmp(self.data_type,'linear_interpolation')
-				error('Local optimization is only supported  for linear_interpolation data costs');
+			if strcmp(self.data_type,'linear_interpolation')
+			 %ok
+			elseif strcmp(self.data_type,'geodesic')
+				%ok
+			else
+				error('Local optimization is only supported  for data_type ={linear_interpolation, geodesic}');
 			end
 
 			if isempty(self.curve)

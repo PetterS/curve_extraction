@@ -25,7 +25,6 @@ end
    input_path = [input_path ones(size(input_path,1),1)]; 
 end
 
-problem_type = 'linear_interpolation';
 [optimized_path, solution_cost, solve_time, success] ...
  = local_optimization_mex(problem_type, data, input_path, connectivity, settings);
 
