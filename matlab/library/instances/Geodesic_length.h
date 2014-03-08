@@ -35,9 +35,9 @@ class Geodesic_length
 
       for (int i = 0; i < points.num_pairs(); i++)
       {
-        R x0,y0, x1,y1, dx,dy;
+        R x0,y0, dx,dy;
         double d11,d10,d01;
-        tie(x0,y0,x1,y1,dx,dy, d11,d10,d01) = points.get_pair(i);
+        tie(x0,y0,dx,dy, d11,d10,d01) = points.get_pair(i);
 
         R tolerance = 1e-8;
         if ( (abs(dx) < tolerance) || (abs(dy) < tolerance) || (abs(d11) < tolerance) )

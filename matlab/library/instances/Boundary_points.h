@@ -56,7 +56,7 @@ public:
 		y.push_back(_y);
 	}
 
-	typedef std::tuple<R,R,R,R,R,R, double, double, double> pair_tuple;
+	typedef std::tuple<R,R,R,R, double, double, double> pair_tuple;
 	pair_tuple get_pair(int pair)
 	{
 		int y_int = linear_indices[pair]/data.M;
@@ -71,16 +71,13 @@ public:
 		double d10 = (i10 - i00)/(vd[0]*vd[1]);
 		double d01 = (i01 - i00)/(vd[0]*vd[1]);
 
+		R dx = (x[pair+1] - x[pair])*vd[0];
+    R dy = (y[pair+1] - y[pair])*vd[1];
+
 	  R x0 = (x[pair] - x_int)	*vd[0];
-    R x1 = (x[pair+1] - x_int)*vd[0];
-
   	R y0 = (y[pair] - y_int)	*vd[1];
-  	R y1 = (y[pair+1] - y_int)*vd[1];
 
-    R dx = (x1-x0);
-    R dy = (y1-y0);
-
-    return pair_tuple(x0,y0,x1,y1,dx,dy, d11, d10, d01);
+    return pair_tuple(x0,y0,dx,dy, d11, d10, d01);
 	}
 
 	// All subsequent points
