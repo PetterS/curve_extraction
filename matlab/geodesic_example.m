@@ -24,7 +24,7 @@ C = Curve_extraction('geodesic', depth, start_set, end_set);
 % A very large number gives a shortest pathfollowing the 
 % level sets of the surface.
 C.voxel_dimensions(3) = 100;
-C.set_connectivity_by_radius(4);
+C.set_connectivity_by_radius(3);
 C.length_penalty = 5; 
 C.curvature_penalty = 0;
 
@@ -36,6 +36,7 @@ plot(x,y,'-.');
 
 %% Local optimization
 figure(2);
+C.local_optimzation_max_curve_segment_length = 0.5;
 C.local_optimization;
 C.plot_curve;
 plot(x,y,'-.');

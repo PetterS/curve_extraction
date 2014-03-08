@@ -86,6 +86,10 @@ classdef Curve_extraction < handle
 
 		% Settings local optimization
 		local_optimization_maxiter = 1000;
+		
+		% When performing local optimization addtional points are interpolated
+		% s.t. each curve segment is at most this long
+		local_optimzation_max_curve_segment_length = 1;
 		descent_method = 'lbfgs';
 
 		% The length of each voxel side
@@ -118,6 +122,7 @@ classdef Curve_extraction < handle
 		cached_cost;
 		cached_info;
 		mesh_map = [];
+		performed_local_optimization = false;
 
 		% Default settings when methods are not called with an explicit argument.
 		default_connectivity_radius = 3;
@@ -455,6 +460,14 @@ classdef Curve_extraction < handle
 				error('Local optimization is only supported  for data_type ={linear_interpolation, geodesic}');
 			end
 
+			% Add more points first time
+			if ~self.performed_local_optimization
+				curve = interpolate_more_points(self, self.curve, self.local_optimzation_max_curve_segment_length);
+				self.performed_local_optimization = true;
+			else
+				curve = self.curve;
+			end
+
 			if isempty(self.curve)
 				fprintf('No curve stored, running the shortest_path \n');
 				self.shortest_path()
@@ -465,7 +478,7 @@ classdef Curve_extraction < handle
 			end
 
 			settings = gather_settings(self);
-			[curve, ~, time, success] = local_optimization(	self.data_type, self.curve, self.mesh_map, ...
+			[curve, ~, time, success] = local_optimization(	self.data_type, curve, self.mesh_map, ...
 																											self.data, self.connectivity, settings);
 
 			if (~success)
@@ -556,7 +569,30 @@ classdef Curve_extraction < handle
 				fprintf('No solution stored, please run obj.shortest_path() \n');
 			end
 		end
-
+		
+		% Take a curve and add points s.t. each line segment is at most
+		% max_length long
+		function new_curve = interpolate_more_points(self, curve,max_length)
+						
+			new_curve = curve(1,:);
+			for iter = 2:size(self.curve,1)
+				s = self.curve(iter-1,:);
+				e = self.curve(iter,:);
+				v = e-s;
+				
+				d = norm(v);
+				
+				% points between s and e (including s,e)
+				np = ceil(d/max_length)+1;
+				kl = linspace(0,1,np);
+				kl = kl(2:end);
+				
+				for k = kl
+					new_curve = [new_curve; s+v*k];
+				end
+			end
+		end
+		
 		%% Set functions
 		% This function updates to connectivity to consist of
 		% every edge with a unique angle whose length is <= radius.
@@ -873,7 +909,6 @@ classdef Curve_extraction < handle
 			self.local_optimization_maxiter = iterations;
 		end
 
-
 		function set.supergradient_iterations(self, iterations)
 			if (iterations < 0)
 				error('Iterations >= 0.');
@@ -890,6 +925,14 @@ classdef Curve_extraction < handle
 			self.supergradient_max_duality_gap = rel_gap;
 		end
 
+		function set.local_optimzation_max_curve_segment_length(self, length)
+			if (length <= 0)
+				error('Length > 0')
+			end
+			
+			self.local_optimzation_max_curve_segment_length = length;
+		end
+		
 		% Given a curve this function calculates the total cost
 		% of the curve given the current parameters and data cost
 		% and stores it in cost.
