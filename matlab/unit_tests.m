@@ -405,10 +405,10 @@ classdef unit_tests < matlab.unittest.TestCase
 			end_set(end-10,end-10) = true;
 			assert(depth(start_set) == depth(end_set));
 			C = Curve_extraction('geodesic', depth, start_set, end_set);
-			C.set_connectivity_by_radius(2);
+			C.set_connectivity_by_radius(4);
 
 			Cr = Curve_extraction('geodesic', depth, end_set,start_set);
-			Cr.set_connectivity_by_radius(2);
+			Cr.set_connectivity_by_radius(4);
 
 			r = sqrt(2)*(25-10);
 			max_dist = @(curve) max(sqrt((curve(:,1)-25).^2 + (curve(:,2)-25).^2));
