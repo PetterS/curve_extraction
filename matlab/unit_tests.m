@@ -387,6 +387,94 @@ classdef unit_tests < matlab.unittest.TestCase
  			C.torsion_penalty = 1e-100;
   		test_visit_tree(obj, C);
   	end
+
+  	%
+  	function geodesic(obj)
+  		problem_size = [50 50];
+			[xx,yy] = meshgrid(1:problem_size(1),1:problem_size(2));
+			depth = sqrt((xx-25).^2 + (yy-25).^2);
+
+			start_set = false(problem_size);
+			end_set = false(problem_size);
+
+			start_set(10,10) = true;
+			end_set(end-10,end-10) = true;
+			assert(depth(start_set) == depth(end_set));
+
+			start_set(10,10) = true;
+			end_set(end-10,end-10) = true;
+			assert(depth(start_set) == depth(end_set));
+			C = Curve_extraction('geodesic', depth, start_set, end_set);
+
+			r = sqrt(2)*(25-10);
+			max_dist = @(curve) max(sqrt((curve(:,1)-25).^2 + (curve(:,2)-25).^2));
+
+			import matlab.unittest.constraints.*;
+
+		  % Optimal curve for large enough height corresponds to great arc around the middle point.
+			for vd3 = [0 0.1 0.5 1 5 10 100]
+				C.voxel_dimensions(3) = 100;
+				C.shortest_path();
+				obj.verifyThat(max_dist(C.curve), IsLessThanOrEqualTo(r+0.5));
+
+				C.local_optimization();
+				obj.verifyThat(max_dist(C.curve), IsLessThanOrEqualTo(r+0.5));
+			end
+		end
+
+		function explicit_data_term(obj)
+			linear_data = rand(50,50);
+
+			% Define local connectivity
+			dims = ndims(linear_data);
+			radius = 1; % 4-conn
+			connectivity = get_all_directions(radius,dims);
+
+			% Simple edge cost: 1/2 current + 1/2 target voxel value
+			data = inf([size(linear_data) size(connectivity,1)]);
+			problem_size = size(linear_data);
+
+			for x = 1:size(data,1);
+				for y = 1:size(data,2)
+					for c= 1:size(connectivity,1);		
+						tx = x + connectivity(c,1);
+						ty = y + connectivity(c,2);
+						
+						if ((tx < 1) || (tx > problem_size(1)))
+							continue;
+						end
+						
+						if ((ty < 1) || (ty > problem_size(2)))
+							continue;
+						end
+						
+						data(x,y,c) = (linear_data(x,y)+ linear_data(tx,ty))/2;
+
+					end
+				end
+			end
+
+			%
+			start_set = false(problem_size);
+			end_set = false(problem_size);
+
+			start_set(:,1) = true;
+			end_set(:,end) = true;
+
+			%% Compare to linear interpolation
+			C = Curve_extraction('edge', data, connectivity, start_set, end_set);
+			C.shortest_path();
+			C1 = C.curve;
+
+			%% The connectivity is chosen such that the edge cost will be exactly the same
+			% as the explicitly given data costs.
+			Cl = Curve_extraction('linear_interpolation', linear_data, start_set, end_set);
+			Cl.set_connectivity_by_radius(radius);
+			Cl.shortest_path();
+
+			C2 = C.curve;
+			obj.verifyTrue(all(C1(:) == C2(:)));
+		end
 	end
 end
 
