@@ -223,7 +223,7 @@ classdef unit_tests < matlab.unittest.TestCase
 			[curve,cost] = C.shortest_path();
 			obj.switch_start_and_end_set(C);
 			[s_curve,s_cost] = C.shortest_path();
-			obj.verifyEqual(numel(curve),numel(s_curve));
+			obj.verifyTrue( all(all( curve == s_curve )) );
 			obj.verifyEqual(cost.total, s_cost.total, 'AbsTol', tol);
 			
 			%% Curvature
@@ -405,20 +405,32 @@ classdef unit_tests < matlab.unittest.TestCase
 			end_set(end-10,end-10) = true;
 			assert(depth(start_set) == depth(end_set));
 			C = Curve_extraction('geodesic', depth, start_set, end_set);
+			C.set_connectivity_by_radius(2);
+
+			Cr = Curve_extraction('geodesic', depth, end_set,start_set);
+			Cr.set_connectivity_by_radius(2);
 
 			r = sqrt(2)*(25-10);
 			max_dist = @(curve) max(sqrt((curve(:,1)-25).^2 + (curve(:,2)-25).^2));
 
 			import matlab.unittest.constraints.*;
 
-		  % Optimal curve for large enough height corresponds to great arc around the middle point.
-			for vd3 = [0 0.1 0.5 1 5 10 100]
-				C.voxel_dimensions(3) = 100;
+			for vd3 = [0.1 0.8 0.9 1 1.1 1.2 1.3 5 10];
+				C.voxel_dimensions(3) = vd3;
 				C.shortest_path();
-				obj.verifyThat(max_dist(C.curve), IsLessThanOrEqualTo(r+0.5));
+				
+				% Optimal curve for large enough height corresponds to great arc around the middle point.
+				obj.verifyThat(max_dist(C.curve), IsLessThanOrEqualTo(r+1));
+					
+				% Start and stop set flipped.
+				Cr.voxel_dimensions(3) = vd3;
+				Cr.shortest_path();
 
+				% Reverse problem have equal solution
+				obj.verifyTrue(all(all(flipdim(Cr.curve,1) == C.curve)));
+				
 				C.local_optimization();
-				obj.verifyThat(max_dist(C.curve), IsLessThanOrEqualTo(r+0.5));
+				obj.verifyThat(max_dist(C.curve), IsLessThanOrEqualTo(r+1));
 			end
 		end
 
