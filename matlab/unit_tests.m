@@ -223,7 +223,7 @@ classdef unit_tests < matlab.unittest.TestCase
 			[curve,cost] = C.shortest_path();
 			obj.switch_start_and_end_set(C);
 			[s_curve,s_cost] = C.shortest_path();
-			obj.verifyTrue( all(all( curve == s_curve )) );
+			obj.verifyTrue( all(all( curve == flipdim(s_curve,1) )) );
 			obj.verifyEqual(cost.total, s_cost.total, 'AbsTol', tol);
 			
 			%% Curvature
@@ -231,7 +231,7 @@ classdef unit_tests < matlab.unittest.TestCase
 			[curve,cost] = C.shortest_path();
 			obj.switch_start_and_end_set(C);
 			[s_curve,s_cost] = C.shortest_path();
-			obj.verifyEqual(numel(curve),numel(s_curve));
+			obj.verifyTrue( all(all( curve == flipdim(s_curve,1) )) );
 			obj.verifyEqual(cost.total, s_cost.total, 'AbsTol', tol);
 			
 			%% Torsion
@@ -239,7 +239,7 @@ classdef unit_tests < matlab.unittest.TestCase
 			[curve,cost] = C.shortest_path();
 			obj.switch_start_and_end_set(C);
 			[s_curve,s_cost] = C.shortest_path();
-			obj.verifyEqual(numel(curve),numel(s_curve));
+			obj.verifyTrue( all(all( curve == flipdim(s_curve,1) )) );
 			obj.verifyEqual(cost.total, s_cost.total, 'AbsTol', tol);
 			
 			obj.switch_start_and_end_set(C);
