@@ -77,8 +77,8 @@ public:
   	R y0 = (y[pair] - y_int)	*vd[1];
   	R y1 = (y[pair+1] - y_int)*vd[1];
 
-    R dx = (x0-x1);
-    R dy = (y0-y1);
+    R dx = (x1-x0);
+    R dy = (y1-y0);
 
     return pair_tuple(x0,y0,x1,y1,dx,dy, d11, d10, d01);
 	}

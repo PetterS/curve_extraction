@@ -46,7 +46,7 @@ class Geodesic_length
         } else
         {
           R a = 2*d11*dx*dy;
-          R b = (y0*dx+x0*dy)/(2*dx*dy) + (d01*dy+d10*dx)/a;
+          R b = (y0*dx+x0*dy)/(2*dx*dy) + (d10*dx+d01*dy)/a;
           R c = (sqr(dx)+sqr(dy))/(sqr(a));
           R f = sqr(b)+c;
           R g = 1+2*b+f;
