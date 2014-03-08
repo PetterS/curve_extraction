@@ -27,6 +27,14 @@ F<F<double, n>, n> abs(F<F<double, n>, n> x)
 }
 }
 
+template<typename R> 
+R fractional_part(R x) 
+{
+	double integer_part;
+	modf(spii::to_double(x), &integer_part);
+	return x - integer_part;
+}
+
 // Container
 template<typename R>
 class Boundary_points
@@ -38,57 +46,49 @@ public:
 
 	int num_pairs()
 	{
-		return v_d11.size();
+		return linear_indices.size();
 	}
 
 	// First point
 	void add(R _x, R _y)
 	{
-		v_x.push_back(_x);
-		v_y.push_back(_y);
-
+		x.push_back(_x);
+		y.push_back(_y);
 	}
 
 	typedef std::tuple<R,R,R,R,R,R, double, double, double> pair_tuple;
-
 	pair_tuple get_pair(int pair)
 	{
-	  R x0 = v_x[pair];
-    R x1 = v_x[pair+1];
+		int y_int = linear_indices[pair]/data.M;
+		int x_int = linear_indices[pair] - y_int*data.M;
 
-  	R y0 = v_y[pair];
-  	R y1 = v_y[pair+1];
+		double i00 = data_value(x_int + 0, y_int + 0)*vd[2];
+		double i01 = data_value(x_int + 0, y_int + 1)*vd[2];
+		double i10 = data_value(x_int + 1, y_int + 0)*vd[2];
+		double i11 = data_value(x_int + 1, y_int + 1)*vd[2];
 
-    R dx = (x0-x1)*vd[0];
-    R dy = (y0-y1)*vd[1];
+		double d11 = (i00 + i11 - i10- i01)/(vd[0]*vd[1]);
+		double d10 = (i10 - i00)/(vd[0]*vd[1]);
+		double d01 = (i01 - i00)/(vd[0]*vd[1]);
 
-    // Fractional part
-    x1 = (x1-std::floor( spii::to_double(x0) ))*vd[0];
-    y1 = (y1-std::floor( spii::to_double(y0) ))*vd[1];
+	  R x0 = (x[pair] - x_int)	*vd[0];
+    R x1 = (x[pair+1] - x_int)*vd[0];
 
-    x0 = (x0-std::floor( spii::to_double(x0) ))*vd[0];
-    y0 = (y0-std::floor( spii::to_double(y0) ))*vd[1];
+  	R y0 = (y[pair] - y_int)	*vd[1];
+  	R y1 = (y[pair+1] - y_int)*vd[1];
 
-    return pair_tuple(x0,y0,x1,y1,dx,dy, v_d11[pair], v_d10[pair], v_d01[pair]);
+    R dx = (x0-x1);
+    R dy = (y0-y1);
+
+    return pair_tuple(x0,y0,x1,y1,dx,dy, d11, d10, d01);
 	}
 
 	// All subsequent points
 	void add(R _x, R _y, int linear_index) 
 	{
-		int y0 = linear_index/data.M;
-		int x0 = linear_index - y0*data.M;
-
-		double i00 = data_value(x0 + 0, y0 + 0)*vd[2];
-		double i01 = data_value(x0 + 0, y0 + 1)*vd[2];
-		double i10 = data_value(x0 + 1, y0 + 0)*vd[2];
-		double i11 = data_value(x0 + 1, y0 + 1)*vd[2];
-
-		v_d11.push_back( (i00 + i11 - i10- i01)/(vd[0]*vd[1]) );
-		v_d10.push_back( (i10 - i00)/(vd[0]*vd[1]) );
-		v_d01.push_back( (i01 - i00)/(vd[0]*vd[1]) );
-
-		v_x.push_back(_x);
-		v_y.push_back(_y);
+		x.push_back(_x);
+		y.push_back(_y);
+		linear_indices.push_back(linear_index);
   }
 
   // Sample data or closest point inside data.
@@ -112,12 +112,9 @@ public:
   }
 
 protected:
-	std::vector<R> v_x;
-	std::vector<R> v_y;
-
-	std::vector<double> v_d11;
-	std::vector<double> v_d01;
-	std::vector<double> v_d10;
+	std::vector<R> x;
+	std::vector<R> y;
+	std::vector<int> linear_indices;
 
 	const matrix<double> data;
 	const vector<double> vd;
@@ -151,7 +148,7 @@ class Boundary_points_calculator
 		{
 			R k = dx/line_length;
 
-			if (abs(spii::to_double(k)) <= 1e-4f)
+			if (abs(k) < 1e-6)
 				return;
 
 			R current;
@@ -165,10 +162,8 @@ class Boundary_points_calculator
 				index_change = -index_change;
 			}
 
-			if (current < 1e-6)
-				current = current +1;
-
-			for (; current <= abs(dx) - 1e-6; current = current +1)
+			// -eps to avoid adding last point
+			for (; current < abs(dx) - 1e-6; current = current +1)
 				crossings.push_back( crossing( abs(current/dx) , index_change) );
 		};
 
@@ -184,14 +179,9 @@ class Boundary_points_calculator
 		#endif
 
 		int source_id =  int( spii::to_double(sx) )  + int( spii::to_double(sy) )*M;
-		if ((dx < 0) && (fractional_part(dx) < 1e-6))
-			source_id -= 1;
-
-		if ((dy < 0) && (fractional_part(dy) < 1e-6))
-			source_id -= M;
 
 		scratch_space->clear();
-		scratch_space->push_back( crossing(0, 0) );
+		scratch_space->push_back( crossing(R(-1e-100), 0) );
 		intersection(1,line_length, dx, sx, *scratch_space);
 		intersection(M,line_length, dy, sy, *scratch_space);
 		std::sort(scratch_space->begin(), scratch_space->end());
@@ -205,7 +195,8 @@ class Boundary_points_calculator
 		next++;
 		for (; next != scratch_space->end(); prev++, next++)
 		{
-			if (abs(next->first - prev->first) > 1e-6)
+			// (Sorted)
+			if ( (next->first - prev->first) > 1e-6)
 			{				
 				R xc = sx + (next->first)*dx;
 				R yc = sy + (next->first)*dy;
@@ -217,14 +208,6 @@ class Boundary_points_calculator
 
 		points.add(ex,ey, source_id);
 		return points;
-	}
-
-	template<typename R> 
-	R fractional_part(R x) const
-	{
-		double integer_part;
-		modf(spii::to_double(x), &integer_part);
-		return x - integer_part;
 	}
 
   const matrix<double> data;
