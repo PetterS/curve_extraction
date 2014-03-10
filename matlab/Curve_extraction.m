@@ -122,7 +122,7 @@ classdef Curve_extraction < handle
 		cached_cost;
 		cached_info;
 		mesh_map = [];
-		performed_local_optimization = false;
+		checked_max_curve_segment_length = false;
 
 		% Default settings when methods are not called with an explicit argument.
 		default_connectivity_radius = 3;
@@ -452,6 +452,11 @@ classdef Curve_extraction < handle
 		% by setting obj.curve and then calling this method.
 		function [curve,cost,time] = local_optimization(self)
 
+			if isempty(self.curve)
+				fprintf('No curve stored, running the shortest_path \n');
+				self.shortest_path()
+			end
+
 			if strcmp(self.data_type,'linear_interpolation')
 			 %ok
 			elseif strcmp(self.data_type,'geodesic')
@@ -461,16 +466,10 @@ classdef Curve_extraction < handle
 			end
 
 			% Add more points first time
-			if ~self.performed_local_optimization
+			if ~self.checked_max_curve_segment_length
 				curve = interpolate_more_points(self, self.curve, self.local_optimzation_max_curve_segment_length);
-				self.performed_local_optimization = true;
 			else
 				curve = self.curve;
-			end
-
-			if isempty(self.curve)
-				fprintf('No curve stored, running the shortest_path \n');
-				self.shortest_path()
 			end
 
 			if (~any(self.mesh_map(:) == 3))
@@ -480,7 +479,6 @@ classdef Curve_extraction < handle
 			settings = gather_settings(self);
 			[curve, ~, time, success] = local_optimization(	self.data_type, curve, self.mesh_map, ...
 																											self.data, self.connectivity, settings);
-
 			if (~success)
 				if (self.verbose)
 					warning('Unable to find a better local optima. Keeping the old solution.');
@@ -493,6 +491,8 @@ classdef Curve_extraction < handle
 				self.curve = curve;
 				cost = self.cost;
 			end
+
+			self.checked_max_curve_segment_length = true;
 		end
 
 		% Show information about the stored shortest path and settings.
@@ -839,6 +839,7 @@ classdef Curve_extraction < handle
 
 			assert(size(curve,2) == length(self.problem_size));
 			self.curve = curve;
+			self.checked_max_curve_segment_length = false;
 			self.reset_solution();
 		end
 
