@@ -453,8 +453,7 @@ classdef Curve_extraction < handle
 		function [curve,cost,time] = local_optimization(self)
 
 			if isempty(self.curve)
-				fprintf('No curve stored, running the shortest_path \n');
-				self.shortest_path()
+				error('No curve stored, please set obj.curve or run obj.shortest_path()');
 			end
 
 			if strcmp(self.data_type,'linear_interpolation')

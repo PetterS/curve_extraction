@@ -366,12 +366,6 @@ classdef unit_tests < matlab.unittest.TestCase
 			obj.verifyEqual(num_points_2, num_points_5);
 		end
 
-		function local_optimization_empty_curve(obj)
-			C = obj.linear_obj;
-			[curve, ~] = C.local_optimization();
-			obj.verifyFalse(isempty(curve));
-		end
-
 		%% Constrained Shortest Paths
 		function limits(obj)
 			import matlab.unittest.constraints.*;
