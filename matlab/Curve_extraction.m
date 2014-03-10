@@ -461,21 +461,21 @@ classdef Curve_extraction < handle
 				error('Local optimization is only supported  for data_type ={linear_interpolation, geodesic}');
 			end
 
+			if isempty(self.curve)
+				fprintf('No curve stored, running the shortest_path \n');
+				self.shortest_path();
+			end
+
+			if (~any(self.mesh_map(:) == 3))
+				error('The problem has no end set.');
+			end
+
 			% Add more points first time
 			if ~self.performed_local_optimization
 				curve = interpolate_more_points(self, self.curve, self.local_optimzation_max_curve_segment_length);
 				self.performed_local_optimization = true;
 			else
 				curve = self.curve;
-			end
-
-			if isempty(self.curve)
-				fprintf('No curve stored, running the shortest_path \n');
-				self.shortest_path()
-			end
-
-			if (~any(self.mesh_map(:) == 3))
-				error('The problem has no end set.');
 			end
 
 			settings = gather_settings(self);
