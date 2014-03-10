@@ -346,6 +346,11 @@ classdef unit_tests < matlab.unittest.TestCase
 			num_points_2 = length(curve2);
 			obj.verifyGreaterThan(num_points_2, num_points_1);
 
+			for i = 2:size(curve2, 1)
+				d = norm(curve2(i-1, :) - curve2(i, :));
+				obj.verifyLessThanOrEqual(d, 1.0001*max_segment_length);
+			end
+
 			C.local_optimzation_max_curve_segment_length = max_segment_length;
 			[curve3, lcost] = C.local_optimization();
 			num_points_3 = length(curve3);
