@@ -7,7 +7,6 @@
 #include "Euclidean_torsion.h"
 
 #include "Geodesic_length.h"
-#include "Geodesic_curvature.h"
 
 #include "Zero_data_cost.h"
 #include "Zero_length.h"
