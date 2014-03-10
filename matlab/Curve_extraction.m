@@ -322,7 +322,11 @@ classdef Curve_extraction < handle
 				if iter > 1
 					% Determine which point on the dual function to evaluate.
 					options = optimset('Display','none');
-					x = linprog(c, A, b, [], [], lb, ub,[], options);
+					[x,~,exitflag] = linprog(c, A, b, [], [], lb, ub,[], options);
+					
+					if (exitflag < 0)
+						error('err:constrained_linprog','Unable to solve a linear program inside constrained shortest path');
+					end
 
 					projected_cost = x(1);
 
