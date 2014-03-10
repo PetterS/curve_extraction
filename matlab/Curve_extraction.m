@@ -268,6 +268,7 @@ classdef Curve_extraction < handle
 			% Saving solution
 			self.curve = curve;
 			self.visit_map = visit_map;
+			self.performed_local_optimization = false;
 
 			% When self.curve is set the cost is automatically updated with detailed info
 			cost = self.cost;
