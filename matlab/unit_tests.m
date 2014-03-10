@@ -330,6 +330,48 @@ classdef unit_tests < matlab.unittest.TestCase
 			obj.verifyThat( cost.total, IsGreaterThanOrEqualTo(lcost.total) );
 		end
 		
+		% Test that local optimization interploated new points.
+		function local_optimization_interpolates_points(obj)
+			C = obj.linear_obj;
+			C.length_penalty = 1;
+			C.curvature_penalty = 1;
+
+			[curve1, cost] = C.shortest_path();
+			num_points_1 = length(curve1);
+
+			max_segment_length = 0.1;
+			C.local_optimzation_max_curve_segment_length = max_segment_length;
+
+			[curve2, lcost] = C.local_optimization();
+			num_points_2 = length(curve2);
+			obj.verifyGreaterThan(num_points_2, num_points_1);
+
+			for i = 2:size(curve2, 1)
+				d = norm(curve2(i-1, :) - curve2(i, :));
+				obj.verifyLessThanOrEqual(d, 1.0001*max_segment_length);
+			end
+
+			C.local_optimzation_max_curve_segment_length = max_segment_length;
+			[curve3, lcost] = C.local_optimization();
+			num_points_3 = length(curve3);
+			obj.verifyEqual(num_points_2, num_points_3);
+
+			[curve4, cost] = C.shortest_path();
+			num_points_4 = length(curve4);
+			obj.verifyEqual(num_points_1, num_points_4);
+
+			C.local_optimzation_max_curve_segment_length = max_segment_length;
+			[curve5, lcost] = C.local_optimization();
+			num_points_5 = length(curve5);
+			obj.verifyEqual(num_points_2, num_points_5);
+		end
+
+		function local_optimization_empty_curve(obj)
+			C = obj.linear_obj;
+			[curve, ~] = C.local_optimization();
+			obj.verifyFalse(isempty(curve));
+		end
+
 		%% Constrained Shortest Paths
 		function limits(obj)
 			import matlab.unittest.constraints.*;
@@ -376,21 +418,21 @@ classdef unit_tests < matlab.unittest.TestCase
 
 		 %% Test the API for computing the visit tree.
  		function compute_visit_tree(obj)
-  		C = obj.linear_obj;
- 			C.set_connectivity_by_radius(3);
- 			C.length_penalty = 1.1;
- 			C.curvature_penalty = 0;
-  		C.torsion_penalty = 0;
+			C = obj.linear_obj;
+			C.set_connectivity_by_radius(3);
+			C.length_penalty = 1.1;
+			C.curvature_penalty = 0;
+			C.torsion_penalty = 0;
 			test_visit_tree(obj, C);
-  		C.curvature_penalty = 1e-100;
- 			test_visit_tree(obj, C);
- 			C.torsion_penalty = 1e-100;
-  		test_visit_tree(obj, C);
-  	end
+			C.curvature_penalty = 1e-100;
+			test_visit_tree(obj, C);
+			C.torsion_penalty = 1e-100;
+			test_visit_tree(obj, C);
+		end
 
-  	%
-  	function geodesic(obj)
-  		problem_size = [50 50];
+		%
+		function geodesic(obj)
+			problem_size = [50 50];
 			[xx,yy] = meshgrid(1:problem_size(1),1:problem_size(2));
 			depth = sqrt((xx-25).^2 + (yy-25).^2);
 
@@ -486,7 +528,7 @@ classdef unit_tests < matlab.unittest.TestCase
 
 			C2 = C.curve;
 			obj.verifyTrue(all(C1(:) == C2(:)));
-		end
+		end	
 	end
 end
 

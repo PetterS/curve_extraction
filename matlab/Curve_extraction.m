@@ -479,6 +479,7 @@ classdef Curve_extraction < handle
 			settings = gather_settings(self);
 			[curve, ~, time, success] = local_optimization(	self.data_type, curve, self.mesh_map, ...
 																											self.data, self.connectivity, settings);
+
 			if (~success)
 				if (self.verbose)
 					warning('Unable to find a better local optima. Keeping the old solution.');
