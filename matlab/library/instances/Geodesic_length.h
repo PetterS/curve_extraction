@@ -9,13 +9,10 @@ class Geodesic_length
       const matrix<double>& data,
       const vector<double>& voxel_dimensions,
       double penalty)
-      : data(data),
-        vd(voxel_dimensions),
-        penalty(penalty),
+      : penalty(penalty),
         data_depdent(true),
         boundary_points_calculator(data, voxel_dimensions)
-   {
-   }
+   {}
 
     template<typename R>
     inline R sqr(R x) const
@@ -64,8 +61,6 @@ class Geodesic_length
 
   // Data
   bool data_depdent;
-  const matrix<double> data;
-  vector<double> vd;
   double penalty;
 
   Boundary_points_calculator boundary_points_calculator;

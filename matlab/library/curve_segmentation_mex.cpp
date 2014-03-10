@@ -6,12 +6,15 @@
 #include "edge_segmentation.cpp"
 #include "edgepair_segmentaion.cpp"
 
+// Calls main_function
+#include "instances/mex_wrapper_shortest_path.h"
+
 // Data_cost: Any function of two points.
 // Length_cost any function of two points.
 // Curvature_cost any function of three points.
-// Torsion_ocst any function of four points.
+// Torsion_ocst any function of four points. 
 template<typename Data_cost, typename Length_cost, typename Curvature_cost, typename Torsion_cost>
-void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+void main_function(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   startTime();
 
@@ -209,24 +212,4 @@ void curve_segmentation(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
   plhs[4] = o_visit_map;
   plhs[5] = o_shortest_path_tree;
   plhs[6] = o_distances;
-}
-
-// Wrapper data from MATLAB.
-void mexFunction(int            nlhs,     /* number of expected outputs */
-                 mxArray        *plhs[],  /* mxArray output pointer array */
-                 int            nrhs,     /* number of inputs */
-                 const mxArray  *prhs[]   /* mxArray input pointer array */)
-{
- char problem_type[1024];
- if (mxGetString(prhs[0], problem_type, 1024))
-   throw runtime_error("First argument must be a string.");
-
-  if (!strcmp(problem_type,"linear_interpolation"))
-    curve_segmentation< Linear_data_cost, Euclidean_length, Euclidean_curvature, Euclidean_torsion>(nlhs, plhs, nrhs, prhs);
-  else if (!strcmp(problem_type,"edge"))
-    curve_segmentation< Edge_data_cost, Euclidean_length, Euclidean_curvature, Euclidean_torsion>(nlhs, plhs, nrhs, prhs); 
-  else if (!strcmp(problem_type,"geodesic"))
-    curve_segmentation< Zero_data_cost, Geodesic_length, Geodesic_curvature, Zero_torsion>(nlhs, plhs, nrhs, prhs);
-  else
-    throw runtime_error("Unknown data type");
 }

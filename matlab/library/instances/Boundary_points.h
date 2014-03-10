@@ -40,20 +40,40 @@ template<typename R>
 class Boundary_points
 {
 public:
-	Boundary_points(const matrix<double>& data, const vector<double>& vd) 
+	Boundary_points(const matrix<double>& data, const vector<double>& vd, R _x, R _y) 
 	: data(data), vd(vd)
-	{};
+	{
+		x.push_back(_x);
+		y.push_back(_y);
+	};
+
+	int num_triplets()
+	{
+		return num_pairs()-1;
+	}
 
 	int num_pairs()
 	{
 		return linear_indices.size();
 	}
 
-	// First point
-	void add(R _x, R _y)
-	{
-		x.push_back(_x);
-		y.push_back(_y);
+	typedef std::tuple<R,R,R,R,R,R, double, double, double> triplet_tuple;
+	triplet_tuple get_triplet(int triplet)
+	{	
+		int y_int = linear_indices[triplet + 1]/data.M;
+		int x_int = linear_indices[triplet + 1] - y_int*data.M;
+
+		double d11,d10,d01;
+		tie(d11,d10,d01) = get_coefficents(x_int,y_int);
+
+		R x1 = x[triplet + 0];
+		R x2 = x[triplet + 1];
+		R x3 = x[triplet + 2];
+		R y1 = y[triplet + 0];
+		R y2 = y[triplet + 1];
+		R y3 = y[triplet + 2]; 
+
+		return triplet_tuple(x1,x2,x3,y1,y2,y3,d11,d10,d01);
 	}
 
 	typedef std::tuple<R,R,R,R, double, double, double> pair_tuple;
@@ -62,6 +82,21 @@ public:
 		int y_int = linear_indices[pair]/data.M;
 		int x_int = linear_indices[pair] - y_int*data.M;
 
+		double d11,d10,d01;
+		tie(d11,d10,d01) = get_coefficents(x_int,y_int);
+
+		R dx = (x[pair+1] - x[pair])*vd[0];
+    R dy = (y[pair+1] - y[pair])*vd[1];
+
+	  R x0 = (x[pair] - x_int)	*vd[0];
+  	R y0 = (y[pair] - y_int)	*vd[1];
+
+    return pair_tuple(x0,y0,dx,dy, d11, d10, d01);
+	}
+
+	typedef std::tuple<double, double, double> coefficents;
+	coefficents get_coefficents(int x_int, int y_int)
+	{
 		double i00 = data_value(x_int + 0, y_int + 0)*vd[2];
 		double i01 = data_value(x_int + 0, y_int + 1)*vd[2];
 		double i10 = data_value(x_int + 1, y_int + 0)*vd[2];
@@ -71,13 +106,7 @@ public:
 		double d10 = (i10 - i00)/(vd[0]*vd[1]);
 		double d01 = (i01 - i00)/(vd[0]*vd[1]);
 
-		R dx = (x[pair+1] - x[pair])*vd[0];
-    R dy = (y[pair+1] - y[pair])*vd[1];
-
-	  R x0 = (x[pair] - x_int)	*vd[0];
-  	R y0 = (y[pair] - y_int)	*vd[1];
-
-    return pair_tuple(x0,y0,dx,dy, d11, d10, d01);
+		return coefficents(d11,d10,d01);
 	}
 
 	// All subsequent points
@@ -124,9 +153,31 @@ class Boundary_points_calculator
 	    :  data(data), vd(vd), M(data.M), N(data.N)
 	 {}
 
+	 // Triplets
+	 template<typename R>
+	 Boundary_points<R> operator () (R x0, R y0, R x1, R y1, R x2, R y2) const 
+	 {
+	 		Boundary_points<R> points(data, vd, x0, y0);
+	 		add_points_along_a_line_segment(x0, y0, x1, y1, points);
+	 		add_points_along_a_line_segment(x1, y1, x2, y2, points);
+
+	 		return points;
+	 }
+
+	 // Pair
+	 template<typename R>
+	 Boundary_points<R> operator () (R x0, R y0, R x1, R y1) const 
+	 {
+	 		Boundary_points<R> points(data, vd, x0, y0);
+			add_points_along_a_line_segment(x0, y0, x1, y1, points);
+
+			return points;
+	 }
+
 	// This is similar to evaluate_line_integral
+	// For pair of points
 	template<typename R>
-	Boundary_points<R> operator () (R sx, R sy, R ex, R ey) const
+	void add_points_along_a_line_segment(R sx, R sy, R ex, R ey, Boundary_points<R>& points) const
 	{
 		using std::abs;
 		using std::sqrt;
@@ -183,9 +234,6 @@ class Boundary_points_calculator
 		intersection(M,line_length, dy, sy, *scratch_space);
 		std::sort(scratch_space->begin(), scratch_space->end());
 
-		Boundary_points<R> points(data, vd);
-		points.add(sx,sy);
-
 		// Remove small increments
 		auto prev = scratch_space->begin();
 		auto next = scratch_space->begin();
@@ -204,7 +252,6 @@ class Boundary_points_calculator
 		}
 
 		points.add(ex,ey, source_id);
-		return points;
 	}
 
   const matrix<double> data;

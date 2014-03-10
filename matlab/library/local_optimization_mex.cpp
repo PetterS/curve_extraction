@@ -13,7 +13,6 @@
 #include <spii/transformations.h>
 #include <spii/solver.h>
 
-// Mex
 #include "curve_segmentation.h"
 
 using namespace spii;
@@ -24,8 +23,11 @@ void mex_log_function(const std::string& str)
 	mexPrintf("%s\n", str.c_str());
 }
 
+// Calls main_function
+#include "instances/mex_wrapper_local_optimization.h"
+
 template<typename Data_cost, typename Length_cost, typename Curvature_cost, typename Torsion_cost>
-void local_optimization(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+void main_function(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
 	double start_time = ::get_wtime();
 
@@ -209,22 +211,4 @@ void local_optimization(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
 	plhs[1] = o_cost;
 	plhs[2] = o_time;
 	plhs[3] = o_successful;
-}
-
-// Wrapper data from MATLAB.
-void mexFunction(int            nlhs,     /* number of expected outputs */
-                 mxArray        *plhs[],  /* mxArray output pointer array */
-                 int            nrhs,     /* number of inputs */
-                 const mxArray  *prhs[]   /* mxArray input pointer array */)
-{
- char problem_type[1024];
- if (mxGetString(prhs[0], problem_type, 1024))
-   throw runtime_error("First argument must be a string.");
-
-  if (!strcmp(problem_type,"linear_interpolation"))
-    local_optimization<Linear_data_cost, Euclidean_length, Euclidean_curvature, Euclidean_torsion>(nlhs, plhs, nrhs, prhs);
-  else if (!strcmp(problem_type,"geodesic"))
-    local_optimization< Zero_data_cost, Geodesic_length, Geodesic_curvature, Zero_torsion>(nlhs, plhs, nrhs, prhs);
-  else
-    throw runtime_error("Unknown data type");
 }

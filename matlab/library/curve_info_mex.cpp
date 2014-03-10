@@ -3,8 +3,11 @@
 // It also return the length, curvature and torsion of the curve itself.
 #include "curve_segmentation.h"
 
+// Calls main_function
+#include "instances/mex_wrapper_shortest_path.h"
+
 template<typename Data_cost, typename Length_cost, typename Curvature_cost, typename Torsion_cost>
-void curve_info(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+void main_function(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
 	ASSERT(nlhs == 8);
 	ASSERT(nrhs == 4 || nrhs == 5);
@@ -108,23 +111,4 @@ void curve_info(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     total_torsion_cost(0) = 0;
 
   total_cost(0) = total_data_cost(0) + total_length_cost(0) + total_curvature_cost(0) + total_torsion_cost(0);
-}
-
-void mexFunction(int            nlhs,     /* number of expected outputs */
-                 mxArray        *plhs[],  /* mxArray output pointer array */
-                 int            nrhs,     /* number of inputs */
-                 const mxArray  *prhs[]   /* mxArray input pointer array */)
-{
- char problem_type[1024];
- if (mxGetString(prhs[0], problem_type, 1024)) 
-   throw runtime_error("First argument must be a string.");
-
-  if (!strcmp(problem_type,"linear_interpolation"))
-    curve_info<Linear_data_cost, Euclidean_length, Euclidean_curvature, Euclidean_torsion>(nlhs, plhs, nrhs, prhs);
-  else if (!strcmp(problem_type,"edge"))
-    curve_info<Edge_data_cost, Euclidean_length, Euclidean_curvature, Euclidean_torsion>(nlhs, plhs, nrhs, prhs); 
-  else if (!strcmp(problem_type,"geodesic"))
-    curve_info< Zero_data_cost, Geodesic_length, Geodesic_curvature, Zero_torsion>(nlhs, plhs, nrhs, prhs);
-  else
-    throw runtime_error("Unknown data type");
 }
