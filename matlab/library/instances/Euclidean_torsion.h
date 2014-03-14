@@ -27,8 +27,8 @@ class Euclidean_torsion
             power, false);
   }
 
-  bool data_depdent;
   const std::vector<double> dims;
   double penalty;
   double power;
+  bool data_depdent;
 };

@@ -139,11 +139,9 @@ void  edgepair_segmentation(  const matrix<double>& data,
 
   int num_elements = mesh_map.numel();
   int num_points_per_element = connectivity.M*connectivity.M;
-  int num_edges_per_point = connectivity.M*num_points_per_element;
 
   // Total
   int num_edges = num_points_per_element*num_elements;
-  int element_number, element_number_2;
 
   bool cacheable = true;
   if ( (length_cost.data_depdent) && (settings.length_penalty > 0) )

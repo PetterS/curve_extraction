@@ -59,9 +59,7 @@ class Geodesic_length
       return penalty*cost;
     }
 
-  // Data
-  bool data_depdent;
   double penalty;
-
+  bool data_depdent;
   Boundary_points_calculator boundary_points_calculator;
 };

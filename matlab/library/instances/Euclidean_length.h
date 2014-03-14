@@ -22,7 +22,7 @@ class Euclidean_length
       return  penalty*sqrt(dx*dx + dy*dy + dz*dz);
     }
 
-    bool data_depdent;     // Can we cache this cost or not?
     vector<double> dims;
     double penalty;
+    bool data_depdent;  
 };

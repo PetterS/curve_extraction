@@ -131,7 +131,7 @@ void edge_segmentation( const matrix<double>& data,
   // connectivity.M is the number of edges from each  each node
   std::vector<double> regularization_cache(num_edges_per_point);
 
-  int x,y,z, x2,y2,z2,x3,y3,z3, element_number, element_number_2;
+  int x,y,z, x2,y2,z2, element_number, element_number_2;
   if (cacheable)
   {
     Point p1 = make_point(0);

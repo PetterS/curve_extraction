@@ -30,8 +30,8 @@ class Euclidean_curvature
     }
   }
 
-  bool data_depdent;  
   const vector<double> dims;
   double penalty;
   double power;
+  bool data_depdent;  
 };
