@@ -14,6 +14,10 @@ void node_segmentation( const matrix<double>& data,
   Length_cost length_cost(data, settings.voxel_dimensions, settings.length_penalty);
   Delta_point delta_point(connectivity);
 
+  // Check overflow
+  if (max_index < data.numel())
+    mexErrMsgTxt("Problem is too large, index will overflow.");
+
   bool cacheable = true;
   if ( (length_cost.data_depdent) && (settings.length_penalty > 0) )
       cacheable = false;
