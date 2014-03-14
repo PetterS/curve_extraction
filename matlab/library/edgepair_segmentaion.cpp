@@ -141,7 +141,7 @@ void  edgepair_segmentation(  const matrix<double>& data,
   int num_points_per_element = connectivity.M*connectivity.M;
 
   if (max_index < mesh_map.numel()*num_points_per_element)
-      mexErrMsgTxt("Problem is too large, index will overflow. Try to remove torsion penalty.");
+      mexErrMsgTxt("Problem is too large, index will overflow. Try to remove torsion penalty or lower connectivity.");
 
   // Total
   int num_edges = num_points_per_element*num_elements;
