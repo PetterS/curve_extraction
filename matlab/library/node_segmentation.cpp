@@ -66,7 +66,7 @@ void node_segmentation( const matrix<double>& data,
     }
   };
 
-  if (verbose)
+  if (settings.verbose)
     mexPrintf("Creating start/end sets without mesh...");
 
   // start and end set
@@ -81,7 +81,7 @@ void node_segmentation( const matrix<double>& data,
           start_set.insert(i);
   }
 
-  if (verbose)
+  if (settings.verbose)
     mexPrintf("Computing shortest distance ...");
 
   std::vector<int> path_nodes;
@@ -126,7 +126,7 @@ void node_segmentation( const matrix<double>& data,
 
   output.evaluations = evaluations;
 
-  if (verbose)
+  if (settings.verbose)
   {
     mexPrintf("done. \n");
     mexPrintf("Running time:  %g (s), ", output.run_time);

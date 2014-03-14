@@ -149,7 +149,7 @@ void edge_segmentation( const matrix<double>& data,
     }
   }
 
-  if (verbose)
+  if (settings.verbose)
     mexPrintf("Creating start/end sets...");
 
   // start and end set
@@ -202,7 +202,7 @@ void edge_segmentation( const matrix<double>& data,
   std::set<int> super_edge;
   super_edge.insert(e_super);
 
-  if (verbose)
+  if (settings.verbose)
     mexPrintf("done.\n");
 
   int evaluations = 0;
@@ -325,7 +325,7 @@ void edge_segmentation( const matrix<double>& data,
     lower_bound_pointer = &lower_bound;
   }
 
-  if (verbose)
+  if (settings.verbose)
     mexPrintf("Computing shortest curvature ...");
 
   std::vector<int> path_edges;
@@ -358,7 +358,7 @@ void edge_segmentation( const matrix<double>& data,
   output.points = edgepath_to_points(path_edges, connectivity);
 
   output.evaluations = evaluations;
-  if (verbose)
+  if (settings.verbose)
   {
     mexPrintf("done.\n");
     mexPrintf("Running time:  %g (s), ", output.run_time);

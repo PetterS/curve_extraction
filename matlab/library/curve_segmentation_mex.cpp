@@ -75,10 +75,10 @@ void main_function(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (!use_edges && !use_pairs)
     settings.use_a_star = false;
 
-  if (verbose)
+  if (settings.verbose)
     mexPrintf("Connectivity size is %d. \n", connectivity.M);
 
-  if (verbose)
+  if (settings.verbose)
     endTime("Reading data");
 
   #ifdef USE_OPENMP
@@ -88,7 +88,7 @@ void main_function(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
     omp_set_num_threads(max_threads);
     int current_num_threads = -1;
-    if (verbose) {
+    if (settings.verbose) {
       #pragma omp parallel for
       for (int i = 0; i < 1000; ++i)
       {
@@ -154,7 +154,7 @@ void main_function(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int evaluations;
   std::vector<Point> points;
 
-  if (verbose)
+  if (settings.verbose)
   {
     mexPrintf("Regularization coefficients. Length: %g Curvature: %g Torsion: %g \n",
               settings.length_penalty, settings.curvature_penalty, settings.torsion_penalty);

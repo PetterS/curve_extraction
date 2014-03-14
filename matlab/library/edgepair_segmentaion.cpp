@@ -368,7 +368,7 @@ void  edgepair_segmentation(  const matrix<double>& data,
     options.store_visited = true;
   options.store_parents = false;
 
-  if (verbose)
+  if (settings.verbose)
     mexPrintf("Computing shortest distance ...");
 
   double start_time = ::get_wtime();
@@ -389,7 +389,7 @@ void  edgepair_segmentation(  const matrix<double>& data,
   output.points = pairpath_to_points(path_pairs, connectivity);
 
   output.evaluations = evaluations;
-  if (verbose)
+  if (settings.verbose)
   {
     mexPrintf("done. \n");
     mexPrintf("Running time:  %g seconds,", output.run_time);

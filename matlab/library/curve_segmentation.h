@@ -41,7 +41,6 @@ int M = 1;
 int N = 1;
 int O = 1;
 
-bool verbose;
 enum Descent_method {lbfgs, nelder_mead};
 
 struct Point
