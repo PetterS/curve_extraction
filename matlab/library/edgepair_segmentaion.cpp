@@ -136,6 +136,8 @@ void  edgepair_segmentation(  const matrix<double>& data,
   Curvature_cost curvature_cost(data, settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
   Torsion_cost torsion_cost(data, settings.voxel_dimensions, settings.torsion_penalty, settings.torsion_power);
   Delta_point delta_point(connectivity);
+  Delta_point_reverse delta_point_reverse(connectivity);
+
 
   int num_elements = mesh_map.numel();
   int num_points_per_element = connectivity.M*connectivity.M;
@@ -189,37 +191,64 @@ void  edgepair_segmentation(  const matrix<double>& data,
   std::set<int> start_set_pairs, end_set_pairs;
 
 
+  // Takes any point start or end point in the mesh
+  // and grows out all edgepairs to add them to the start
+  // or end set.
   for (int n = 0; n < mesh_map.numel(); ++n)
   {
     Point p1 = make_point(n);
 
-    for (int e1 = 0; e1 < connectivity.M; e1++) { 
-
-      Point p2 = delta_point(p1,e1);
-      if (!valid_point(p2))
-        continue;
-
-      for (int e2 = 0; e2 < connectivity.M; e2++) 
-      {
-        Point p3 = delta_point(p2,e2);
-
-        // Symmetric neighborhood leads to useless pair going back to itself.
-        if (p1 == p3)
+    // Start set
+    if ( mesh_map(p1[0], p1[1], p1[2]) == 2)
+    {
+      for (int e1 = 0; e1 < connectivity.M; e1++) { 
+        Point p2 = delta_point(p1,e1);
+        if (!valid_point(p2))
           continue;
 
-        if (!valid_point(p3))
-           continue;
+        for (int e2 = 0; e2 < connectivity.M; e2++) 
+        {
+          Point p3 = delta_point(p2,e2);
 
-        int pair_id = n*num_points_per_element + connectivity.M*e1 + e2;
+          // Symmetric neighborhood leads to useless pair going back to itself.
+          if (p1 == p3)
+            continue;
 
-        if ( mesh_map(p1[0], p1[1], p1[2]) == 2)
+          if (!valid_point(p3))
+             continue;
+
+          int pair_id = n*num_points_per_element + connectivity.M*e1 + e2;
           start_set_pairs.insert(pair_id);
+        }
+      }
+    }
 
-        if ( mesh_map(p3[0], p3[1], p3[2]) == 3)
+    // End set
+    if ( mesh_map(p1[0], p1[1], p1[2]) == 3)
+    {
+      for (int e1 = 0; e1 < connectivity.M; e1++) { 
+        Point p2 = delta_point_reverse(p1,e1);
+        if (!valid_point(p2))
+          continue;
+
+        for (int e2 = 0; e2 < connectivity.M; e2++) 
+        {
+          Point p3 = delta_point_reverse(p2,e2);
+          if (p1 == p3)
+            continue;
+
+          if (!valid_point(p3))
+             continue;
+
+          int element_number = point2ind(p3); 
+
+          int pair_id = element_number*num_points_per_element + connectivity.M*e1 + e2;
           end_set_pairs.insert(pair_id);
+        }
       }
     }
   }
+ 
 
   // Note:
   // A* lower bound is calculated on the node-graph

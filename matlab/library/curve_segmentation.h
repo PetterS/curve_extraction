@@ -40,7 +40,7 @@ double timer;
 int M = 1;
 int N = 1;
 int O = 1;
-
+const int max_index = std::numeric_limits<int>::max();
 enum Descent_method {lbfgs, nelder_mead};
 
 struct Point
@@ -80,6 +80,26 @@ class Delta_point
     p[0] = root[0] + connectivity(k,0);
     p[1] = root[1] + connectivity(k,1);
     p[2] = root[2] + connectivity(k,2);
+
+    return p;
+  }
+
+  const matrix<int> connectivity;  
+};
+
+class Delta_point_reverse
+{
+  public:
+    Delta_point_reverse (const matrix<int>& connectivity) :
+    connectivity(connectivity)
+  {};
+
+  Point operator() (Point& root, int k) 
+  {
+    Point p;
+    p[0] = root[0] - connectivity(k,0);
+    p[1] = root[1] - connectivity(k,1);
+    p[2] = root[2] - connectivity(k,2);
 
     return p;
   }

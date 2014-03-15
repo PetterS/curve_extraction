@@ -108,6 +108,7 @@ void edge_segmentation( const matrix<double>& data,
   Length_cost length_cost(data, settings.voxel_dimensions, settings.length_penalty);
   Curvature_cost curvature_cost(data, settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
   Delta_point delta_point(connectivity);
+  Delta_point_reverse delta_point_reverse(connectivity);
 
   bool cacheable = true;
   if ( (length_cost.data_depdent) && (settings.length_penalty > 0) )
@@ -155,50 +156,37 @@ void edge_segmentation( const matrix<double>& data,
   if (settings.verbose)
     mexPrintf("Creating start/end sets...");
 
-  // start and end set
   std::set<int> start_set, end_set;
 
   // Add edges according to mesh_map
-  for (x = 0; x < M; x++) {
-  for (y = 0; y < N; y++) {
-  for (z = 0; z < O; z++) {
+  for (int n = 0; n < mesh_map.numel(); ++n)
+  {
+    Point p1 = make_point(n);
 
-    // Add all edges
-    if (mesh_map(x,y,z) ==2)
+    // Start set
+    if ( mesh_map(p1[0], p1[1], p1[2]) == 2)
     {
-        element_number = sub2ind(x,y,z);
+      for (int e1 = 0; e1 < connectivity.M; e1++) 
+      { 
 
-        for (int k = 0; k < num_points_per_element; k++)
-        {
-          if ( validind(x + connectivity(k,0),
-                        y + connectivity(k,1),
-                        z + connectivity(k,2)))
-          {
-              start_set.insert(element_number*num_points_per_element + k);
-          }
-        }
+        Point p2 = delta_point(p1,e1);
+        if (valid_point(p2))
+          start_set.insert(n*num_points_per_element + e1);
+
+      }
     }
 
     // End set, check which edges goes into this one
-    if (mesh_map(x,y,z) == 3)
+    if ( mesh_map(p1[0], p1[1], p1[2]) == 3)
     {
-        for (int k = 0; k < connectivity.M; k++)
-        {
-          x2 = x - connectivity(k,0);
-          y2 = y - connectivity(k,1);
-          z2 = z - connectivity(k,2);
+      for (int e1 = 0; e1 < connectivity.M; e1++) 
+      { 
 
-          // The edge with head at n has root at n2
-          // it's edge number k.
-          if ( validind(x2,y2,z2) )
-          {
-            element_number_2 = sub2ind(x2,y2,z2);
-            end_set.insert(element_number_2*num_points_per_element + k);
-          }
-        }
+        Point p2 = delta_point_reverse(p1,e1);
+        if (valid_point(p2))
+          end_set.insert(point2ind(p2)*num_points_per_element + e1);
       }
-  }
-  }
+    }
   }
 
   int e_super = num_edges;
