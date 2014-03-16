@@ -161,7 +161,7 @@ int main_function()
 			for (int dj = -1; dj <= +1; ++dj) {
 			if (di != 0 || dj != 0) {
 				if (field.at(i + di).at(j + dj) != 'X') {
-					start_set.emplace(coord_to_line_graph_node(i, j, i+di, j+dj));
+					start_set.insert(coord_to_line_graph_node(i, j, i+di, j+dj));
 				}
 			}}}
 		}
@@ -175,7 +175,7 @@ int main_function()
 			for (int dj = -1; dj <= +1; ++dj) {
 			if (di != 0 || dj != 0) {
 				if (field.at(i + di).at(j + dj) != 'X') {
-					end_set.emplace(coord_to_line_graph_node(i+di, j+dj, i, j));
+					end_set.insert(coord_to_line_graph_node(i+di, j+dj, i, j));
 				}
 			}}}
 		}
