@@ -48,24 +48,33 @@ void node_segmentation( const matrix<double>& data,
 
     if (valid_point(p1))
     {
+      neighbors->resize(connectivity.M);
+
+      #ifdef USE_OPENMP
+      #pragma omp parallel for
+      #endif
       for (int k = 0; k < connectivity.M; k++)
       {
         Point p2 = delta_point(p1,k);
+        int dest = point2ind(p2);
+        double cost;
+
         if (valid_point(p2))
         {
           // Unary
-          double cost = data_cost(p1.xyz, p2.xyz);
+          cost = data_cost(p1.xyz, p2.xyz);
 
           // Length reg;
           if (cacheable)
             cost += regularization_cache[k];
           else
             cost += length_cost(p1.xyz,p2.xyz);
-
-          int dest = point2ind(p2);
-
-          neighbors->push_back(Neighbor(dest, cost));
+        } else
+        {
+          cost = std::numeric_limits<double>::infinity();
         }
+
+        (*neighbors)[k] = Neighbor(dest, cost);
       }
     }
   };
@@ -78,6 +87,7 @@ void node_segmentation( const matrix<double>& data,
 
   for (int i = 0; i < mesh_map.numel(); i++)
   {
+
       if ( mesh_map(i) == 3 )
           end_set.insert(i);
 
