@@ -41,8 +41,12 @@ if ~ispc
 
     extra_args{end+1} = ['CXXFLAGS="\$CXXFLAGS ' CXXFLAGS '"'];
 
-elseif (use_openmp)
-    extra_args{end+1} = 'COMPFLAGS="$COMPFLAGS /openmp"'; 
+else
+	% NOMINMAX fixes windows.h if it gets included.
+	extra_args{end+1} = '-DNOMINMAX=1';
+	if (use_openmp)
+		extra_args{end+1} = 'COMPFLAGS="$COMPFLAGS /openmp"';
+	end
 end
 
 if (use_openmp)
