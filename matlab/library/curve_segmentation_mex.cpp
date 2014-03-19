@@ -2,9 +2,9 @@
 #include "curve_segmentation.h"
 
 // Avoid explicit instantiation.
-#include "node_segmentation.cpp"
-#include "edge_segmentation.cpp"
-#include "edgepair_segmentaion.cpp"
+#include "node_segmentation.h"
+#include "edge_segmentation.h"
+#include "edgepair_segmentaion.h"
 
 // Calls main_function
 #include "instances/mex_wrapper_shortest_path.h"
