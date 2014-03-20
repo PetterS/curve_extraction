@@ -231,44 +231,41 @@ void edge_segmentation( const matrix<double>& data,
       Point p1 = make_point(root);
       Point p2 = delta_point(p1, edge_id_1);
       
-      if (valid_point(p2))
+      neighbors->resize(num_points_per_element);
+
+      #ifdef USE_OPENMP
+      #pragma omp parallel for
+      #endif
+
+      for (int edge_id_2 = 0; edge_id_2 < num_points_per_element; ++edge_id_2)
       {
-        neighbors->resize(num_points_per_element);
+        Point p3 = delta_point(p2, edge_id_2);
+        int dest;
+        double cost;
 
-        #ifdef USE_OPENMP
-        #pragma omp parallel for
-        #endif
-
-        for (int edge_id_2 = 0; edge_id_2 < num_points_per_element; ++edge_id_2)
+        if (valid_point(p3))
         {
-          Point p3 = delta_point(p2, edge_id_2);
-          int dest;
-          double cost;
+          dest = point2ind(p2)*num_points_per_element + edge_id_2;
+          cost = data_cost(p2.xyz, p3.xyz);
 
-          if (valid_point(p3))
+          if (cacheable)
           {
-            dest = point2ind(p2)*num_points_per_element + edge_id_2;
-            cost = data_cost(p2.xyz, p3.xyz);
-
-            if (cacheable)
-            {
-              // Lookup id
-              int edge_type =  edge_id_1*num_points_per_element + edge_id_2;
-              cost += regularization_cache[edge_type];
-            } else
-            {
-              cost += curvature_cost(p1.xyz,p2.xyz, p3.xyz);
-              cost += length_cost   (       p2.xyz, p3.xyz);
-            }
+            // Lookup id
+            int edge_type =  edge_id_1*num_points_per_element + edge_id_2;
+            cost += regularization_cache[edge_type];
+          } else
+          {
+            cost += curvature_cost(p1.xyz,p2.xyz, p3.xyz);
+            cost += length_cost   (       p2.xyz, p3.xyz);
           }
-
-          else {
-            cost = std::numeric_limits<double>::infinity();
-            dest = 0;
-          }
-
-          (*neighbors)[edge_id_2] = Neighbor(dest, cost);
         }
+
+        else {
+          cost = std::numeric_limits<double>::infinity();
+          dest = 0;
+        }
+
+        (*neighbors)[edge_id_2] = Neighbor(dest, cost);
       }
     }
   };
