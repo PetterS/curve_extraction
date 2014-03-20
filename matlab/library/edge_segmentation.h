@@ -242,14 +242,12 @@ void edge_segmentation( const matrix<double>& data,
         for (int edge_id_2 = 0; edge_id_2 < num_points_per_element; ++edge_id_2)
         {
           Point p3 = delta_point(p2, edge_id_2);
-
-           // Id of destination, (element_number*num_points_per_element + edge_id)
-          int dest = point2ind(p2)*num_points_per_element + edge_id_2;
+          int dest;
           double cost;
 
           if (valid_point(p3))
           {
-            // Adjacency id
+            dest = point2ind(p2)*num_points_per_element + edge_id_2;
             cost = data_cost(p2.xyz, p3.xyz);
 
             if (cacheable)
@@ -266,6 +264,7 @@ void edge_segmentation( const matrix<double>& data,
 
           else {
             cost = std::numeric_limits<double>::infinity();
+            dest = 0;
           }
 
           (*neighbors)[edge_id_2] = Neighbor(dest, cost);

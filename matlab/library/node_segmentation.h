@@ -56,12 +56,12 @@ void node_segmentation( const matrix<double>& data,
       for (int k = 0; k < connectivity.M; k++)
       {
         Point p2 = delta_point(p1,k);
-        int dest = point2ind(p2);
+        int dest;
         double cost;
 
         if (valid_point(p2))
         {
-          // Unary
+          dest =  point2ind(p2);
           cost = data_cost(p1.xyz, p2.xyz);
 
           // Length reg;
@@ -69,9 +69,10 @@ void node_segmentation( const matrix<double>& data,
             cost += regularization_cache[k];
           else
             cost += length_cost(p1.xyz,p2.xyz);
-        } else
-        {
+        } 
+        else {
           cost = std::numeric_limits<double>::infinity();
+          dest = 0;
         }
 
         (*neighbors)[k] = Neighbor(dest, cost);
