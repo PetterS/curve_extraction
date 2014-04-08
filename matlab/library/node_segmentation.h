@@ -1,7 +1,7 @@
 #include "curve_segmentation.h"
 
 // Main nodes (start and end set flipped to accommodate for A*)
-template<typename Data_cost, typename Length_cost>
+template<typename Data_cost, typename Pair_cost>
 void node_segmentation( const matrix<double>& data,
                         const matrix<unsigned char>& mesh_map,
                         const matrix<int>& connectivity,
@@ -10,8 +10,8 @@ void node_segmentation( const matrix<double>& data,
                         SegmentationOutput& output
                       )
 {
-  Data_cost data_cost(data, connectivity, settings.voxel_dimensions);
-  Length_cost length_cost(data, settings.voxel_dimensions, settings.length_penalty);
+  Data_cost data_cost(data, connectivity, settings);
+  Pair_cost pair_cost(data, settings);
   Delta_point delta_point(connectivity);
 
   // Check overflow
@@ -19,7 +19,7 @@ void node_segmentation( const matrix<double>& data,
     mexErrMsgTxt("Problem is too large, index will overflow.");
 
   bool cacheable = true;
-  if ( (length_cost.data_depdent) && (settings.length_penalty > 0) )
+  if ( (pair_cost.data_dependent) && (settings.penalty[0] > 0) )
       cacheable = false;
 
   std::vector<double> regularization_cache(connectivity.M);
@@ -32,7 +32,7 @@ void node_segmentation( const matrix<double>& data,
     for (int k = 0; k < connectivity.M; k++)
     {
       Point p2 = delta_point(p1,k);
-      regularization_cache[k] = length_cost(p1.xyz, p2.xyz);
+      regularization_cache[k] = pair_cost(p1.xyz, p2.xyz);
     }
   }
 
@@ -40,7 +40,7 @@ void node_segmentation( const matrix<double>& data,
   auto get_neighbors =
     [&evaluations, &data_cost, &connectivity, 
       &regularization_cache, &cacheable, 
-      &length_cost, &delta_point]
+      &pair_cost, &delta_point]
     (int n, std::vector<Neighbor>* neighbors) -> void
   {
     evaluations++;
@@ -66,7 +66,7 @@ void node_segmentation( const matrix<double>& data,
         if (cacheable)
           cost += regularization_cache[k];
         else
-          cost += length_cost(p1.xyz,p2.xyz);
+          cost += pair_cost(p1.xyz,p2.xyz);
       } 
       else {
         cost = std::numeric_limits<double>::infinity();

@@ -7,11 +7,10 @@ class Geodesic_length
   public:
     Geodesic_length (
       const matrix<double>& data,
-      const vector<double>& voxel_dimensions,
-      double penalty)
-      : penalty(penalty),
-        data_depdent(true),
-        boundary_points_calculator(data, voxel_dimensions)
+      const InstanceSettings& settings)
+      : penalty(settings.penalty[0]),
+        data_dependent(true),
+        boundary_points_calculator(data, settings.voxel_dimensions)
    {}
 
     template<typename R>
@@ -60,6 +59,6 @@ class Geodesic_length
     }
 
   double penalty;
-  bool data_depdent;
+  bool data_dependent;
   Boundary_points_calculator boundary_points_calculator;
 };

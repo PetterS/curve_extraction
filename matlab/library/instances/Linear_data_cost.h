@@ -6,8 +6,8 @@ class Linear_data_cost
     Linear_data_cost(
           const matrix<double>& data, 
           const matrix<int>& connectivity,
-          const std::vector<double>& voxel_dimensions) :
-          data_term(data.data, data.M, data.N, data.O, voxel_dimensions)
+          const InstanceSettings& settings) :
+          data_term(data.data, data.M, data.N, data.O, settings.voxel_dimensions)
   {};
 
   template<typename R>

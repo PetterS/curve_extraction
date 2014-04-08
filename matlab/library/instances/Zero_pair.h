@@ -1,13 +1,12 @@
 #pragma once
 
-class Zero_length
+class Zero_pair
 {
   public:
-    Zero_length (
+    Zero_pair (
       const matrix<double>& data, 
-      const vector<double>& voxel_dimensions, 
-      double penalty)
-      : data_depdent(false)
+      const InstanceSettings& settings)
+      : data_dependent(false)
    {};
 
     template<typename R>
@@ -16,5 +15,5 @@ class Zero_length
       return R(0);
     }
 
-    bool data_depdent;     // Can we cache this cost or not?
+    bool data_dependent;     
 };

@@ -1,14 +1,12 @@
 #pragma once
 
-class Zero_torsion
+class Zero_quad
 {
   public:
-    Zero_torsion (
+    Zero_quad (
       const matrix<double>& data, 
-      const std::vector<double>& voxel_dimensions, 
-      double penalty, 
-      double power)
-      :  data_depdent(false) {};
+      const InstanceSettings& settings)
+      :  data_dependent(false) {};
 
   template<typename R>    
   R operator()(const R* const point1, const R* const point2, const R* const point3, const R* const point4) const
@@ -16,5 +14,5 @@ class Zero_torsion
     return R(0);
   }
 
-  bool data_depdent;  
+  bool data_dependent;  
 };

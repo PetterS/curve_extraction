@@ -9,6 +9,7 @@
 #include "Geodesic_length.h"
 
 #include "Zero_data_cost.h"
-#include "Zero_length.h"
-#include "Zero_curvature.h"
-#include "Zero_torsion.h"
+#include "Zero_pair.h"
+#include "Zero_triplet.h"
+#include "Zero_quad.h"
+#include "Zero_pentuple.h"

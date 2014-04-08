@@ -117,7 +117,7 @@ void store_results_edgepair(matrix<nodeT>& node_container, std::vector<edgepairT
     }
   }
 }
-template<typename Data_cost, typename Length_cost, typename Curvature_cost, typename Torsion_cost>
+template<typename Data_cost, typename Pair_cost, typename Triplet_cost, typename Quad_cost>
 void  edgepair_segmentation(  const matrix<double>& data,
                               const matrix<unsigned char>& mesh_map,
                               const matrix<int>& connectivity,
@@ -130,11 +130,11 @@ void  edgepair_segmentation(  const matrix<double>& data,
   // Elements corresponds to points in the original graph
   // Points corresponds to edge pairs  in the original graph
   // Edges correspond to pair of edgepairs in the original graph
+  Data_cost data_cost(data, connectivity, settings);
+  Pair_cost pair_cost(data,settings);
+  Triplet_cost triplet_cost(data, settings);
+  Quad_cost quad_cost(data, settings);
 
-  Data_cost data_cost(data, connectivity, settings.voxel_dimensions);
-  Length_cost length_cost(data,settings.voxel_dimensions, settings.length_penalty);
-  Curvature_cost curvature_cost(data, settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
-  Torsion_cost torsion_cost(data, settings.voxel_dimensions, settings.torsion_penalty, settings.torsion_power);
   Delta_point delta_point(connectivity);
   Delta_point_reverse delta_point_reverse(connectivity);
 
@@ -149,11 +149,11 @@ void  edgepair_segmentation(  const matrix<double>& data,
   int num_edges = num_points_per_element*num_elements;
 
   bool cacheable = true;
-  if ( (length_cost.data_depdent) && (settings.length_penalty > 0) )
+  if ( (pair_cost.data_dependent) && (settings.penalty[0] > 0) )
       cacheable = false;
-  if ( (curvature_cost.data_depdent) && (settings.curvature_penalty > 0) )
+  if ( (triplet_cost.data_dependent) && (settings.penalty[1] > 0) )
       cacheable = false;
-  if ( (torsion_cost.data_depdent) && (settings.torsion_penalty > 0) )
+  if ( (quad_cost.data_dependent) && (settings.penalty[2] > 0) )
       cacheable = false;
 
   typedef std::tuple<int, int, int> cache_index;
@@ -161,8 +161,8 @@ void  edgepair_segmentation(  const matrix<double>& data,
   Point p1 = make_point(0);
 
   auto regularization_cache =
-    [&cached_values, &connectivity, &length_cost, 
-      &curvature_cost, &torsion_cost, &p1, &delta_point] 
+    [&cached_values, &connectivity, &pair_cost, 
+      &triplet_cost, &quad_cost, &p1, &delta_point] 
         (int e1,int e2,int e3)-> double
   {   
     cache_index index(e1,e2,e3);
@@ -178,9 +178,9 @@ void  edgepair_segmentation(  const matrix<double>& data,
       Point p3 = delta_point(p2,e2);
       Point p4 = delta_point(p3,e3);
 
-      double  cost =   length_cost(                 p3.xyz, p4.xyz);
-              cost +=  curvature_cost(      p2.xyz, p3.xyz, p4.xyz);
-              cost +=  torsion_cost(p1.xyz, p2.xyz, p3.xyz, p4.xyz);
+      double  cost =   pair_cost(                 p3.xyz, p4.xyz);
+              cost +=  triplet_cost(      p2.xyz, p3.xyz, p4.xyz);
+              cost +=  quad_cost(p1.xyz, p2.xyz, p3.xyz, p4.xyz);
 
       cached_values[ index ] = cost;
       return cost;
@@ -288,7 +288,7 @@ void  edgepair_segmentation(  const matrix<double>& data,
     SegmentationOutput heuristic_output
     (output.points, heuristic_runtime, heuristic_evaluations, heuristic_cost, output.visit_time, empty_matrix, empty_double_matrix);
 
-    node_segmentation<Data_cost, Length_cost>
+    node_segmentation<Data_cost, Pair_cost>
                      (data,
                       mesh_map,
                       connectivity,
@@ -309,7 +309,7 @@ void  edgepair_segmentation(  const matrix<double>& data,
  auto get_neighbors_torsion =
     [&evaluations, &data_cost,
      &e_super, &connectivity, &start_set_pairs,
-     &length_cost, &curvature_cost, &torsion_cost,
+     &pair_cost, &triplet_cost, &quad_cost,
      &regularization_cache, &cacheable, &delta_point]
     (int ep, std::vector<Neighbor>* neighbors) -> void
   {
@@ -332,9 +332,9 @@ void  edgepair_segmentation(  const matrix<double>& data,
         double  cost  = data_cost(p2.xyz, p3.xyz);
                 cost += data_cost(p3.xyz, p4.xyz);
 
-        cost += curvature_cost(p2.xyz,  p3.xyz,p4.xyz);
-        cost += length_cost(            p2.xyz,p3.xyz);
-        cost += length_cost(            p3.xyz,p4.xyz);
+        cost += triplet_cost(p2.xyz,  p3.xyz,p4.xyz);
+        cost += pair_cost(            p2.xyz,p3.xyz);
+        cost += pair_cost(            p3.xyz,p4.xyz);
 
         neighbors->push_back(Neighbor(*itr, cost));
       }
@@ -377,9 +377,9 @@ void  edgepair_segmentation(  const matrix<double>& data,
           cost += regularization_cache(e1,e2,e3);
         } else
         {
-          cost += length_cost(                  p3.xyz, p4.xyz);
-          cost += curvature_cost(       p2.xyz, p3.xyz, p4.xyz);
-          cost += torsion_cost(p1.xyz,  p2.xyz, p3.xyz, p4.xyz);
+          cost += pair_cost(                  p3.xyz, p4.xyz);
+          cost += triplet_cost(       p2.xyz, p3.xyz, p4.xyz);
+          cost += quad_cost( p1.xyz,  p2.xyz, p3.xyz, p4.xyz);
         }
 
         // Destination id

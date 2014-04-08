@@ -65,8 +65,7 @@ classdef unit_tests < matlab.unittest.TestCase
 			start_set(:,:,1) = true;
 			end_set(:,:,end) = true;
 			
-			data_type = 'linear_interpolation';
-			testCase.linear_obj_large = Curve_extraction(data_type,data, start_set, end_set);
+			testCase.linear_obj_large = Curve_extraction(data, start_set, end_set);
 			
 		end
 		
@@ -84,8 +83,7 @@ classdef unit_tests < matlab.unittest.TestCase
 			end_set(5:6,5:6,end) = true;
 			disallowed_set(rand(testCase.problem_size) < 0.2) = 1;		
 
-			data_type = 'linear_interpolation';
-			testCase.linear_obj = Curve_extraction(data_type,data, start_set, end_set, disallowed_set);
+			testCase.linear_obj = Curve_extraction(data, start_set, end_set, disallowed_set);
 		end
 	end
 	
@@ -114,8 +112,7 @@ classdef unit_tests < matlab.unittest.TestCase
 			obj.verifyEqual(cost.curvature, 0, 'AbsTol', tol);
 			obj.verifyEqual(cost.torsion, 0, 'AbsTol', tol);
 			obj.verifyEqual(size(curve,1), 5);
-
-
+			
 			%% |curvature|^2
 			C.curvature_power = 2;
 			C.curvature_penalty = 0.05;
@@ -382,19 +379,19 @@ classdef unit_tests < matlab.unittest.TestCase
 			% Check that current solution does not fulfill limit
 			% and enforce length.
 			obj.verifyThat(C.info.length, IsGreaterThan(length_max));
-			C.length_limit = length_max;
+			C.length_global_limit = length_max;
 			C.shortest_path();		
 			obj.verifyThat(C.info.length, IsLessThanOrEqualTo(length_max));
 			
 			% Enforce curvature.
 			obj.verifyThat(C.info.curvature, IsGreaterThan(curvature_max));
-			C.curvature_limit = curvature_max;
+			C.curvature_global_limit = curvature_max;
 			C.shortest_path();
 			obj.verifyThat(C.info.curvature, IsLessThanOrEqualTo(curvature_max));
 
 			% Reset
-			C.length_limit = inf;
-			C.curvature_limit = inf;
+			C.length_global_limit = inf;
+			C.curvature_global_limit = inf;
 			
 			% Smaller problem for torsion
 			C = obj.linear_obj;
@@ -403,11 +400,11 @@ classdef unit_tests < matlab.unittest.TestCase
 
 			% Enforce torsion.
 			obj.verifyThat(C.info.curvature, IsGreaterThan(torsion_max));
-			C.torsion_limit = torsion_max;
+			C.torsion_global_limit = torsion_max;
 			C.shortest_path();
 			obj.verifyThat(C.info.curvature, IsLessThanOrEqualTo(torsion_max));
 			
-			C.torsion_limit = inf;
+			C.torsion_global_limit = inf;
 		end
 
 		 %% Test the API for computing the visit tree.
@@ -440,10 +437,10 @@ classdef unit_tests < matlab.unittest.TestCase
 			start_set(10,10) = true;
 			end_set(end-10,end-10) = true;
 			assert(depth(start_set) == depth(end_set));
-			C = Curve_extraction('geodesic', depth, start_set, end_set);
+			C = Geodesic_shortest_path(depth, start_set, end_set);
 			C.set_connectivity_by_radius(4);
 
-			Cr = Curve_extraction('geodesic', depth, end_set,start_set);
+			Cr = Geodesic_shortest_path(depth, end_set,start_set);
 			Cr.set_connectivity_by_radius(4);
 
 			r = sqrt(2)*(25-10);
@@ -510,13 +507,13 @@ classdef unit_tests < matlab.unittest.TestCase
 			end_set(:,end) = true;
 
 			%% Compare to linear interpolation
-			C = Curve_extraction('edge', data, connectivity, start_set, end_set);
+			C = Curve_extraction_edge(data, connectivity, start_set, end_set);
 			C.shortest_path();
 			C1 = C.curve;
 
 			%% The connectivity is chosen such that the edge cost will be exactly the same
 			% as the explicitly given data costs.
-			Cl = Curve_extraction('linear_interpolation', linear_data, start_set, end_set);
+			Cl = Curve_extraction(linear_data, start_set, end_set);
 			Cl.set_connectivity_by_radius(radius);
 			Cl.shortest_path();
 

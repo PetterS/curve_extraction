@@ -5,13 +5,11 @@ class Euclidean_torsion
   public:
     Euclidean_torsion (
       const matrix<double>& data, 
-      const std::vector<double>& voxel_dimensions, 
-      double penalty, 
-      double power)
-      : dims(voxel_dimensions), 
-        penalty(penalty), 
-        power(power),
-        data_depdent(false) {};
+      const InstanceSettings& settings)
+      : dims(settings.voxel_dimensions), 
+        penalty(settings.penalty[2]),
+        power(settings.power[2]),
+        data_dependent(false) {};
 
   template<typename R>      
   R operator()(const R* const point1,
@@ -30,5 +28,5 @@ class Euclidean_torsion
   const std::vector<double> dims;
   double penalty;
   double power;
-  bool data_depdent;
+  bool data_dependent;
 };

@@ -5,13 +5,11 @@ class Euclidean_curvature
   public:
     Euclidean_curvature (
       const matrix<double>& data, 
-      const vector<double>& voxel_dimensions, 
-      double penalty, 
-      double power)
-      : dims(voxel_dimensions), 
-        penalty(penalty), 
-        power(power),
-        data_depdent(false) 
+      const InstanceSettings& settings)
+      : dims(settings.voxel_dimensions), 
+        penalty(settings.penalty[1]),
+        power(settings.power[1]),
+        data_dependent(false) 
   {};
 
   template<typename R>
@@ -33,5 +31,5 @@ class Euclidean_curvature
   const vector<double> dims;
   double penalty;
   double power;
-  bool data_depdent;  
+  bool data_dependent;  
 };

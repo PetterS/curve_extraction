@@ -4,11 +4,10 @@ class Euclidean_length
   public:
     Euclidean_length (
       const matrix<double>& data, 
-      const vector<double>& voxel_dimensions, 
-      double penalty)
-      : dims(voxel_dimensions), 
-        penalty(penalty),
-        data_depdent(false)
+      const InstanceSettings& settings)
+      : dims(settings.voxel_dimensions), 
+        penalty(settings.penalty[0]),
+        data_dependent(false)
    {};
 
     template<typename R>
@@ -24,5 +23,5 @@ class Euclidean_length
 
     vector<double> dims;
     double penalty;
-    bool data_depdent;  
+    bool data_dependent;  
 };

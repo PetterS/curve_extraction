@@ -10,10 +10,10 @@
 #include "instances/mex_wrapper_shortest_path.h"
 
 // Data_cost: Any function of two points.
-// Length_cost any function of two points.
-// Curvature_cost any function of three points.
-// Torsion_ocst any function of four points. 
-template<typename Data_cost, typename Length_cost, typename Curvature_cost, typename Torsion_cost>
+// Pair_cost any function of two points.
+// Triplet_cost any function of three points.
+// Quad_cost any function of four points. 
+template<typename Data_cost, typename Pair_cost, typename Triplet_cost, typename Quad_cost>
 void main_function(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   startTime();
@@ -46,27 +46,12 @@ void main_function(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   MexParams params(nrhs-curarg, prhs+curarg); //Structure to hold and parse additional parameters
   InstanceSettings settings = parse_settings(params);
 
-  // Check input
-  ASSERT(settings.voxel_dimensions.size() == 3);
-  ASSERT(settings.regularization_radius > 0);
-  ASSERT(settings.length_penalty >= 0);
-  ASSERT(settings.curvature_penalty >= 0);
-  ASSERT(settings.torsion_penalty >= 0);
-
-  // No torsion for 2D
-  if ((mesh_map.ndim() == 2) && (settings.torsion_penalty != 0))
-  {
-    mexPrintf("Torsion is always zero in a plane. \n");
-    settings.torsion_penalty = 0;
-  }
-
   bool use_pairs = false;
   bool use_edges = false;
 
-  // If torsion regularization is nonzero we need to use pairs
-  if (settings.torsion_penalty != 0) {
+  if (settings.penalty[2] != 0) {
     use_pairs = true;
-  } else if (settings.curvature_penalty != 0)
+  } else if (settings.penalty[1] != 0)
   {
     use_edges = true;
   }
@@ -156,49 +141,59 @@ void main_function(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   if (settings.verbose)
   {
-    mexPrintf("Regularization coefficients. Length: %g Curvature: %g Torsion: %g \n",
-              settings.length_penalty, settings.curvature_penalty, settings.torsion_penalty);
-    mexPrintf("Regularization powers: curvature: %g torsion %g \n",
-              settings.curvature_power, settings.torsion_power);
+    mexPrintf("Regularization coefficients. Pair: %g Triplet: %g Quad: %g. \n",
+              settings.penalty[0], settings.penalty[1], settings.penalty[2]);
+    mexPrintf("Regularization powers: Pair: %g Triplet: %g Quad %g. \n",
+              settings.power[0], settings.power[1], settings.power[2]);
   }
 
   // What kind of variables will be used in the graph?
-  // Torsion: Pair of edges.
-  // Curvature: Edges.
-  // Length: Nodes.
+  // Quad: Pair of edges.
+  // Triplet: Edges.
+  // Pair: Nodes.
   SegmentationOutput output(points, run_time, evaluations, cost, o_visit_map, o_shortest_path_tree, o_distances);
 
-  // Curvature and Length can be calculated on Pair of Edges but this is overkill.
-  // Same goes for Length on edges.
+  // Triplet and Pair can be calculated on Pair of Edges but this is overkill.
+  // Same goes for Pair on edges.
   if (use_pairs)
   {
-    edgepair_segmentation<Data_cost, Length_cost, Curvature_cost, Torsion_cost>
+    edgepair_segmentation<Data_cost, Pair_cost, Triplet_cost, Quad_cost>
     (data, mesh_map, connectivity, settings, options, output);
   }
   else if (use_edges)
   {
-    edge_segmentation<Data_cost, Length_cost, Curvature_cost>
+    edge_segmentation<Data_cost, Pair_cost, Triplet_cost>
     (data, mesh_map, connectivity, settings, options, output);
   }
   else
   {
-    node_segmentation<Data_cost, Length_cost>
+    node_segmentation<Data_cost, Pair_cost>
     (data, mesh_map, connectivity, settings, options, output);
   }
 
-  matrix<double>  o_path(points.size(),3);
   matrix<double>  o_time(1);
   matrix<int>     o_eval(1);
   matrix<double>  o_cost(1);
 
+  int max_dim = 2;
+  if (O > 1)
+    max_dim = 3;
+  
+  matrix<double>  o_path(points.size(),max_dim);
+
   int n_line = 0;
   for ( auto p : points)
   {
-      o_path(n_line, 0) = p[0];
-      o_path(n_line, 1) = p[1];
-      o_path(n_line, 2) = p[2];
-      n_line++;
+    // +1 matlab index
+    for (int dim = 0; dim < max_dim; dim++)
+      o_path(n_line, dim) = p[dim] + 1;
+
+    n_line++;
   }
+
+  for (int i = 0; i < o_shortest_path_tree.numel(); i++)
+    o_shortest_path_tree(i)++;
+  
 
   o_time(0) = output.run_time;
   o_eval(0) = output.evaluations;

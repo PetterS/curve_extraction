@@ -6,7 +6,7 @@ public:
   Zero_data_cost(
     const matrix<double>& data,
     const matrix<int>& connectivity,
-    const std::vector<double>& voxel_dimensions
+    const InstanceSettings& settings
   ) 
   {};
 

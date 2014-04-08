@@ -1,6 +1,6 @@
 #pragma once
 
-template<typename Data_cost, typename Length_cost, typename Curvature_cost, typename Torsion_cost>
+template<typename Data_cost, typename Pair_cost, typename Triplet_cost, typename Quad_cost>
 void main_function(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]);
 
 void mexFunction(int            nlhs,     /* number of expected outputs */
@@ -17,7 +17,7 @@ void mexFunction(int            nlhs,     /* number of expected outputs */
   else if (!strcmp(problem_type,"edge"))
     main_function< Edge_data_cost, Euclidean_length, Euclidean_curvature, Euclidean_torsion>(nlhs, plhs, nrhs, prhs); 
   else if (!strcmp(problem_type,"geodesic"))
-    main_function< Zero_data_cost, Geodesic_length, Zero_curvature, Zero_torsion>(nlhs, plhs, nrhs, prhs);
+    main_function< Zero_data_cost, Geodesic_length, Zero_triplet, Zero_quad>(nlhs, plhs, nrhs, prhs);
   else
     throw runtime_error("Unknown data type");
 }

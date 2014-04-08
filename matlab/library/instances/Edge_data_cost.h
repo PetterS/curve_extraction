@@ -7,7 +7,7 @@ public:
   Edge_data_cost(
     const matrix<double>& data,
     const matrix<int>& connectivity,
-    const std::vector<double>& voxel_dimensions
+    const InstanceSettings& settings
   ) : data(data), connectivity(connectivity)
   {
     dims = data.ndim() -1;

@@ -26,7 +26,7 @@ void mex_log_function(const std::string& str)
 // Calls main_function
 #include "instances/mex_wrapper_local_optimization.h"
 
-template<typename Data_cost, typename Length_cost, typename Curvature_cost, typename Torsion_cost>
+template<typename Data_cost, typename Pair_cost, typename Triplet_cost, typename Quad_cost, typename Pentuple_cost>
 void main_function(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
 	double start_time = ::get_wtime();
@@ -37,16 +37,30 @@ void main_function(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 	int curarg = 1;
 	const matrix<double> data_matrix(prhs[curarg++]);
-	const matrix<double> path(prhs[curarg++]);
+	const matrix<double> input_path(prhs[curarg++]);
 	const matrix<int> connectivity(prhs[curarg++]);
 
 	MexParams params(nrhs-curarg, prhs+curarg);
 	InstanceSettings settings = parse_settings(params);
 
-	const int n = path.M;
-	const int dim = path.N;
+	const int n = input_path.M;
+	const int dim = input_path.N;
 
 	ASSERT( (dim == 2) || (dim == 3) );
+
+  // Pad to 3D
+  matrix<double> path(n,3);
+  for (int i = 0; i < n; i++)
+  {
+     path(i,0) = input_path(i,0);
+     path(i,1) = input_path(i,1);
+
+     if (dim == 2)
+      path(i,2) == 1;
+     else
+      path(i,2) = input_path(i,2); 
+  }
+
 
 	if (settings.verbose)
 	{
@@ -90,29 +104,30 @@ void main_function(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 	// Adding data cost
 	 auto data = std::make_shared<AutoDiffTerm<Data_cost, 3, 3>>
-	 			(data_matrix, connectivity, settings.voxel_dimensions);
+	 			(data_matrix, connectivity, settings);
 
 	for (int i = 1; i < n; ++i)
 		f.add_term(data, points[i-1].xyz, points[i].xyz);
 
 
 	// Functor for each type of regularization penalty
-	auto length = std::make_shared<AutoDiffTerm<Length_cost, 3, 3>>
-				(data_matrix, settings.voxel_dimensions, settings.length_penalty);
-	auto curvature = std::make_shared<AutoDiffTerm<Curvature_cost, 3, 3, 3>>
-				(data_matrix, settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
-	auto torsion = std::make_shared<AutoDiffTerm<Torsion_cost, 3, 3, 3, 3>>
-				(data_matrix, settings.voxel_dimensions, settings.torsion_penalty, settings.torsion_power);
+	auto length = std::make_shared<AutoDiffTerm<Pair_cost, 3, 3>>
+				(data_matrix, settings);
+	auto curvature = std::make_shared<AutoDiffTerm<Triplet_cost, 3, 3, 3>>
+				(data_matrix, settings);
+	auto torsion = std::make_shared<AutoDiffTerm<Quad_cost, 3, 3, 3, 3>>
+				(data_matrix, settings);
+	auto jounce = std::make_shared<AutoDiffTerm<Pentuple_cost, 3, 3, 3, 3, 3>>
+				(data_matrix, settings);
 
-	// Adding length cost
-	if (settings.length_penalty > 0)
+
+	if (settings.penalty[0] > 0)
 	{
 		for (int i = 1; i < n; ++i)
 			f.add_term(length, points[i-1].xyz, points[i].xyz);
 	}
 
-	// Add curvature cost
-	if (settings.curvature_penalty > 0)
+	if (settings.penalty[1] > 0)
 	{
 		for (int i = 2; i < n; ++i)
 		{
@@ -125,8 +140,7 @@ void main_function(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		}
 	}
 
-	// Adding torsion cost
-	if (settings.torsion_penalty > 0)
+	if (settings.penalty[2] > 0)
 	{
 		for (int i = 3; i < n; ++i)
 		{
@@ -137,6 +151,21 @@ void main_function(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			args.push_back(points[i].xyz);
 
 			f.add_term(torsion, args);
+		}
+	}
+
+	if (settings.penalty[3] > 0)
+	{
+		for (int i = 4; i < n; ++i)
+		{
+			vector<double*> args;
+			args.push_back(points[i-4].xyz);
+			args.push_back(points[i-3].xyz);
+			args.push_back(points[i-2].xyz);
+			args.push_back(points[i-1].xyz);
+			args.push_back(points[i].xyz);
+
+			f.add_term(jounce, args);
 		}
 	}
 
@@ -188,11 +217,8 @@ void main_function(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 	matrix<double> resulting_path(points.size(), dim);
 	for (int i = 0; i <n; i++)
-	{
-		resulting_path(i,0) = points[i].xyz[0] + 1;
-		resulting_path(i,1) = points[i].xyz[1] + 1;
-		resulting_path(i,2) = points[i].xyz[2] + 1;
-	}
+		for (int d = 0; d < dim; d++)
+			resulting_path(i,d) = points[i].xyz[d] + 1;
 
 	plhs[0] = resulting_path;
 

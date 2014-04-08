@@ -96,25 +96,26 @@ void store_results_edge(matrix<nodeT>& node_container, std::vector<edgeT>& edge_
 
 
 
-template<typename Data_cost, typename Length_cost, typename Curvature_cost>
+template<typename Data_cost, typename Pair_cost, typename Triplet_cost>
 void edge_segmentation( const matrix<double>& data,
                         const matrix<unsigned char>& mesh_map,
                         const matrix<int>& connectivity,
                         InstanceSettings& settings,
-                        ShortestPathOptions& options,
-                        SegmentationOutput& output)
+                        ShortestPathOptions& options
+,                        SegmentationOutput& output)
 {
-  Data_cost data_cost(data, connectivity, settings.voxel_dimensions);
-  Length_cost length_cost(data, settings.voxel_dimensions, settings.length_penalty);
-  Curvature_cost curvature_cost(data, settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
+  Data_cost data_cost(data, connectivity, settings);
+  Pair_cost pair_cost(data, settings);
+  Triplet_cost triplet_cost(data, settings);
+
   Delta_point delta_point(connectivity);
   Delta_point_reverse delta_point_reverse(connectivity);
 
   bool cacheable = true;
-  if ( (length_cost.data_depdent) && (settings.length_penalty > 0) )
+  if ( (pair_cost.data_dependent) && (settings.penalty[0] > 0) )
       cacheable = false;
 
-  if ( (curvature_cost.data_depdent) && (settings.curvature_penalty > 0) )
+  if ( (triplet_cost.data_dependent) && (settings.penalty[1] > 0) )
       cacheable = false;
 
   // Some notation for the edge graph
@@ -147,8 +148,8 @@ void edge_segmentation( const matrix<double>& data,
       Point p3 = delta_point(p2,j);
       int n = i*num_points_per_element +j;
 
-      regularization_cache[n] = curvature_cost( p1.xyz, p2.xyz, p3.xyz)
-                              + length_cost(            p2.xyz, p3.xyz);
+      regularization_cache[n] = triplet_cost( p1.xyz, p2.xyz, p3.xyz)
+                              + pair_cost(    p2.xyz, p3.xyz);
     }
     }
   }
@@ -199,8 +200,8 @@ void edge_segmentation( const matrix<double>& data,
   int evaluations = 0;
   auto get_neighbors =
     [ &evaluations, &data_cost, &num_points_per_element, &regularization_cache,
-      &e_super, &start_set, &connectivity, &length_cost, 
-      &cacheable, &curvature_cost, &delta_point]
+      &e_super, &start_set, &connectivity, &pair_cost, 
+      &cacheable, &triplet_cost, &delta_point]
     (int e, std::vector<Neighbor>* neighbors) -> void
   {
     evaluations++;
@@ -218,7 +219,7 @@ void edge_segmentation( const matrix<double>& data,
         Point p2 = delta_point(p1, k);
 
         double cost  = data_cost(   p1.xyz, p2.xyz);
-        cost        += length_cost( p1.xyz, p2.xyz);
+        cost        += pair_cost( p1.xyz, p2.xyz);
 
         neighbors->push_back(Neighbor(*itr, cost));
       }
@@ -255,8 +256,8 @@ void edge_segmentation( const matrix<double>& data,
             cost += regularization_cache[edge_type];
           } else
           {
-            cost += curvature_cost(p1.xyz,p2.xyz, p3.xyz);
-            cost += length_cost   (       p2.xyz, p3.xyz);
+            cost += triplet_cost(p1.xyz,p2.xyz, p3.xyz);
+            cost += pair_cost   (       p2.xyz, p3.xyz);
           }
         }
 
@@ -301,7 +302,7 @@ void edge_segmentation( const matrix<double>& data,
     SegmentationOutput heuristic_output
     (output.points, heuristic_runtime, heuristic_evaluations, heuristic_cost, output.visit_time, empty_matrix, empty_double_matrix);
 
-    node_segmentation<Data_cost, Length_cost>
+    node_segmentation<Data_cost, Pair_cost>
                      (data,
                       mesh_map,
                       connectivity,

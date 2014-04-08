@@ -1,14 +1,12 @@
 #pragma once
 
-class Zero_curvature
+class Zero_triplet
 {
   public:
-    Zero_curvature (
+    Zero_triplet (
       const matrix<double>& data, 
-      const vector<double>& voxel_dimensions, 
-      double penalty, 
-      double power) :
-    data_depdent(false)
+      const InstanceSettings& settings) :
+    data_dependent(false)
   {};
 
   template<typename R>
@@ -17,5 +15,5 @@ class Zero_curvature
     return R(0);
   }
 
-  bool data_depdent;  
+  bool data_dependent;  
 };

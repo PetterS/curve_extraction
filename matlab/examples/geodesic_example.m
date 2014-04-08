@@ -1,5 +1,5 @@
-clc; close all; clear all;
-addpath([fileparts(mfilename('fullpath')) filesep 'library']);
+close all; clear all;
+addpath([fileparts(mfilename('fullpath')) filesep '..']);
 
 problem_size = [50 50];
 [xx,yy] = meshgrid(1:problem_size(1),1:problem_size(2));
@@ -17,16 +17,15 @@ m = [25 25];
 x = r*cos(linspace(0,2*pi,100))+m(1);
 y = r*sin(linspace(0,2*pi,100))+m(2);
 
-C = Curve_extraction('geodesic', depth, start_set, end_set);
+C = Geodesic_shortest_path(depth, start_set, end_set);
 
 % voxel_dimenions(3):
 % A small number leads to a almost flat surface
 % A very large number gives a shortest pathfollowing the 
 % level sets of the surface.
-C.voxel_dimensions(3) = 100;
+C.voxel_dimensions(3:4) = 10;
 C.set_connectivity_by_radius(3);
-C.length_penalty = 5; 
-C.curvature_penalty = 0;
+
 
 %% Shortest path
 figure(1);

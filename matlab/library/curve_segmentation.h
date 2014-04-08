@@ -109,17 +109,18 @@ class Delta_point_reverse
 
 struct InstanceSettings
 {
-  InstanceSettings()
+  InstanceSettings() :
+  penalty(4,0.0),
+  power(4,1.0),
+  local_limit(4, std::numeric_limits<double>::infinity())
   { }
 
-  double length_penalty;
-  double curvature_penalty;
-  double torsion_penalty;
-
-  double curvature_power;
-  double torsion_power;
-
-  double regularization_radius;
+  // penalty[0]: e.g. length
+  // penalty[1]: e.g. curvature
+  // penalty[2]: e.g. torsion
+  std::vector<double> penalty;
+  std::vector<double> power;
+  std::vector<double> local_limit;
 
   bool use_a_star;
   bool verbose;
@@ -136,6 +137,12 @@ struct InstanceSettings
 
   double function_improvement_tolerance;
   double argument_improvement_tolerance;
+
+  double length_local_limit;
+  double curvature_local_limit;
+  double torsion_local_limit;
+  double jounce_local_limit;
+
   int num_threads;
   int maxiter;
 
@@ -147,17 +154,22 @@ InstanceSettings parse_settings(MexParams params)
 {
   InstanceSettings settings;
 
+
   settings.verbose = params.get<bool>("verbose",false); // Debug messages
-  settings.regularization_radius = params.get<double>("regularization_radius", 4.0);
 
-  // Regularization coefficients
-  settings.length_penalty    = params.get<double>("length_penalty", 0.0);
-  settings.curvature_penalty = params.get<double>("curvature_penalty", 0.0);
-  settings.torsion_penalty   = params.get<double>("torsion_penalty", 0.0);
+  settings.penalty = params.get< vector<double> >("penalty");
+  settings.power = params.get< vector<double> >("power");
+  settings.local_limit = params.get< vector<double> >("local_limit");
+  settings.voxel_dimensions = params.get< vector<double> >("voxel_dimensions");
 
-  // Regularization is (curvature)^curvature_power.
-  settings.curvature_power = params.get<double>("curvature_power", 2.0);
-  settings.torsion_power = params.get<double>("torsion_power", 2.0);
+  for (double& p : settings.penalty)
+    ASSERT(p >= 0);
+
+  for (double& p : settings.power)
+    ASSERT(p >= 0);
+
+  for (double& p : settings.local_limit)
+    ASSERT(p >= 0);
 
   // Whether A* should be used for curvature.
   settings.use_a_star = params.get<bool>("use_a_star", false);
@@ -180,6 +192,7 @@ InstanceSettings parse_settings(MexParams params)
   settings.num_threads = params.get<int>("num_threads", -1);
   settings.maxiter = params.get<int>("maxiter", 1000);
 
+
   settings.descent_method_str = params.get<string>("descent_method","lbfgs");
 
   if (settings.descent_method_str == "lbfgs")
@@ -187,17 +200,10 @@ InstanceSettings parse_settings(MexParams params)
   else if (settings.descent_method_str == "nelder-mead")
     settings.descent_method = nelder_mead;
   else
-    throw runtime_error("Unknown descent_method");
+    throw runtime_error("Unknown descent method");
 
   settings.data_type_str = params.get<string>("data_type", "linear_interpolation");
-  settings.voxel_dimensions = params.get< vector<double> >("voxel_dimensions");
 
-  if (settings.voxel_dimensions.empty())
-  {
-    settings.voxel_dimensions.push_back(1.0);
-    settings.voxel_dimensions.push_back(1.0);
-    settings.voxel_dimensions.push_back(1.0);
-  }
 
   return settings;
 }
