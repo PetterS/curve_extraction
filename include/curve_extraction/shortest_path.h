@@ -97,6 +97,21 @@ double shortest_path(int n,
                      const std::function<double(int)>& get_lower_bound,
                      const ShortestPathOptions& options = ShortestPathOptions());
 
+
+double bidirectional_shortest_path(
+                                   // The number of nodes in the graph.
+                                   int n,
+                                   // The set of nodes from which to compute the
+                                   // path.
+                                   const std::set<int>& start_set,
+                                   // The set of nodes where the path can end.
+                                   const std::set<int>& end_set,
+                                   // Oracle which returns the set of neighbors of
+                                   // a given node, along with their distances.
+                                   const std::function<void(int, std::vector<Neighbor>* neighbors)>& get_neighbors,
+                                   // (output) Recieves the shortest path.
+                                   std::vector<int>* path);
+
 //
 // Same functionality as above, but will use less memory per node added
 // to the priority queue. On the other hand, it will always allocate
