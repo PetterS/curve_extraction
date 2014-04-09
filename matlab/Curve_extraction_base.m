@@ -572,6 +572,7 @@ classdef (Abstract) Curve_extraction_base < handle
 			end
 
 			self.penalty = penalty;
+			self.reset_solution();
 		end
 
 		function set.power(self, power)
@@ -580,6 +581,7 @@ classdef (Abstract) Curve_extraction_base < handle
 			end
 
 			self.power = power;
+			self.reset_solution();
 		end
 
 		function set.local_limit(self, local_limit)
@@ -588,6 +590,7 @@ classdef (Abstract) Curve_extraction_base < handle
 			end
 
 			self.local_limit = local_limit;
+			self.reset_solution();
 		end
 
 		function set.global_limit(self, global_limit)
@@ -596,6 +599,7 @@ classdef (Abstract) Curve_extraction_base < handle
 			end
 
 			self.global_limit = global_limit;
+			self.reset_solution();
 		end
 
 		function set.verbose(self, verbose)
@@ -639,7 +643,7 @@ classdef (Abstract) Curve_extraction_base < handle
 			info = self.cached_info;
 		end
 
-		% Keeping the cuvre
+		% Keeping the curve
 		function reset_solution(self)
 			self.cached_cost = [];
 		end
