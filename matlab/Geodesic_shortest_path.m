@@ -38,6 +38,9 @@ classdef Geodesic_shortest_path < Curve_extraction_base
 			self.set_connectivity_by_radius(self.default_connectivity_radius);
 
 			self.penalty(1) = 1;
+			
+			% No caching, parallelization is effective.
+			self.num_threads = int32(feature('numThreads'));
 		end
 
 			function display(self)

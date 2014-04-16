@@ -40,7 +40,7 @@ classdef (Abstract) Curve_extraction_base < handle
 		% 1. All costs in a neighborhood.
 		% 2. Linearly interpolation a data cost.
 		% 3. Local optimization.
-		num_threads = int32(min(2,feature('numThreads')));
+		num_threads = int32(1);
 
 		data =  [];
 
