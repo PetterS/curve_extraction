@@ -70,40 +70,53 @@ struct Point
 class Delta_point
 {
   public:
-    Delta_point (const matrix<int>& connectivity) :
-    connectivity(connectivity)
-  {};
+    Delta_point (const matrix<int>& connectivity, bool reverse_connectivity = false) :
+    connectivity(connectivity), reverse_connectivity(reverse_connectivity)
+  {}
 
-  Point operator() (Point& root, int k) 
+  Point operator () (Point& root, int k) 
   {
     Point p;
-    p[0] = root[0] + connectivity(k,0);
-    p[1] = root[1] + connectivity(k,1);
-    p[2] = root[2] + connectivity(k,2);
+    if (!reverse_connectivity)
+    {
+      p[0] = root[0] + connectivity(k,0);
+      p[1] = root[1] + connectivity(k,1);
+      p[2] = root[2] + connectivity(k,2);
+    } else
+    {
+      p[0] = root[0] - connectivity(k,0);
+      p[1] = root[1] - connectivity(k,1);
+      p[2] = root[2] - connectivity(k,2);   
+    }
 
     return p;
   }
 
-  const matrix<int> connectivity;  
-};
-
-class Delta_point_reverse
-{
-  public:
-    Delta_point_reverse (const matrix<int>& connectivity) :
-    connectivity(connectivity)
-  {};
-
-  Point operator() (Point& root, int k) 
+  Point reverse(Point& root, int k) 
   {
     Point p;
-    p[0] = root[0] - connectivity(k,0);
-    p[1] = root[1] - connectivity(k,1);
-    p[2] = root[2] - connectivity(k,2);
-
+    if (!reverse_connectivity)
+    {
+      p[0] = root[0] - connectivity(k,0);
+      p[1] = root[1] - connectivity(k,1);
+      p[2] = root[2] - connectivity(k,2);
+    } else
+    {
+      p[0] = root[0] + connectivity(k,0);
+      p[1] = root[1] + connectivity(k,1);
+      p[2] = root[2] + connectivity(k,2);   
+    }
     return p;
   }
 
+  int size()
+  {
+    return connectivity.M;
+  }
+
+
+protected:
+  bool reverse_connectivity;
   const matrix<int> connectivity;  
 };
 

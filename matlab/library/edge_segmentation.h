@@ -109,7 +109,6 @@ void edge_segmentation( const matrix<double>& data,
   Triplet_cost triplet_cost(data, settings);
 
   Delta_point delta_point(connectivity);
-  Delta_point_reverse delta_point_reverse(connectivity);
 
   bool cacheable = true;
   if ( (pair_cost.data_dependent) && (settings.penalty[0] > 0) )
@@ -141,10 +140,10 @@ void edge_segmentation( const matrix<double>& data,
   {
     Point p1 = make_point(0);
 
-    for (int i = 0; i < connectivity.M; i++) {
+    for (int i = 0; i < delta_point.size(); i++) {
       Point p2 = delta_point(p1,i);
 
-    for (int j = 0; j < connectivity.M; j++) {
+    for (int j = 0; j < delta_point.size(); j++) {
       Point p3 = delta_point(p2,j);
       int n = i*num_points_per_element +j;
 
@@ -154,11 +153,13 @@ void edge_segmentation( const matrix<double>& data,
     }
   }
 
+
   if (settings.verbose)
     mexPrintf("Creating start/end sets...");
 
   std::set<int> start_set, end_set;
 
+  
   // Add edges according to mesh_map
   for (int n = 0; n < mesh_map.numel(); ++n)
   {
@@ -167,25 +168,41 @@ void edge_segmentation( const matrix<double>& data,
     // Start set
     if ( mesh_map(p1[0], p1[1], p1[2]) == 2)
     {
-      for (int e1 = 0; e1 < connectivity.M; e1++) 
+      for (int e1 = 0; e1 < delta_point.size(); e1++) 
       { 
 
         Point p2 = delta_point(p1,e1);
         if (valid_point(p2))
-          start_set.insert(n*num_points_per_element + e1);
+        {
+          int edge_id = n*num_points_per_element + e1;
+          bool add = true;
 
+          // Only add edges _fully_ contained in the start and end set
+          if (settings.fully_contained_set)
+            if (mesh_map(p2[0], p2[1], p2[2]) != 2) 
+              continue;
+          
+          start_set.insert(edge_id);
+        }
       }
     }
 
     // End set, check which edges goes into this one
     if ( mesh_map(p1[0], p1[1], p1[2]) == 3)
     {
-      for (int e1 = 0; e1 < connectivity.M; e1++) 
+      for (int e1 = 0; e1 < delta_point.size(); e1++) 
       { 
-
-        Point p2 = delta_point_reverse(p1,e1);
+        Point p2 = delta_point.reverse(p1,e1);
         if (valid_point(p2))
-          end_set.insert(point2ind(p2)*num_points_per_element + e1);
+        {
+          int edge_id = point2ind(p2)*num_points_per_element + e1;
+
+          if (settings.fully_contained_set)
+            if (mesh_map(p2[0], p2[1], p2[2]) != 3) 
+              continue;
+
+          end_set.insert(edge_id);
+        }
       }
     }
   }

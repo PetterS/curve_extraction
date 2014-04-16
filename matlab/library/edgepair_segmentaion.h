@@ -136,7 +136,6 @@ void  edgepair_segmentation(  const matrix<double>& data,
   Quad_cost quad_cost(data, settings);
 
   Delta_point delta_point(connectivity);
-  Delta_point_reverse delta_point_reverse(connectivity);
 
 
   int num_elements = mesh_map.numel();
@@ -201,12 +200,16 @@ void  edgepair_segmentation(  const matrix<double>& data,
     // Start set
     if ( mesh_map(p1[0], p1[1], p1[2]) == 2)
     {
-      for (int e1 = 0; e1 < connectivity.M; e1++) { 
+      for (int e1 = 0; e1 < delta_point.size(); e1++) { 
         Point p2 = delta_point(p1,e1);
         if (!valid_point(p2))
           continue;
 
-        for (int e2 = 0; e2 < connectivity.M; e2++) 
+        if (settings.fully_contained_set)
+          if (mesh_map(p2[0], p2[1], p2[2]) != 2) 
+            continue;
+
+        for (int e2 = 0; e2 < delta_point.size(); e2++) 
         {
           Point p3 = delta_point(p2,e2);
 
@@ -217,7 +220,11 @@ void  edgepair_segmentation(  const matrix<double>& data,
           if (!valid_point(p3))
              continue;
 
-          int pair_id = n*num_points_per_element + connectivity.M*e1 + e2;
+          if (settings.fully_contained_set)
+            if (mesh_map(p3[0], p3[1], p3[2]) != 2) 
+              continue;
+
+          int pair_id = n*num_points_per_element + delta_point.size()*e1 + e2;
           start_set_pairs.insert(pair_id);
         }
       }
@@ -226,23 +233,31 @@ void  edgepair_segmentation(  const matrix<double>& data,
     // End set
     if ( mesh_map(p1[0], p1[1], p1[2]) == 3)
     {
-      for (int e1 = 0; e1 < connectivity.M; e1++) { 
-        Point p2 = delta_point_reverse(p1,e1);
+      for (int e1 = 0; e1 < delta_point.size(); e1++) { 
+        Point p2 = delta_point.reverse(p1,e1);
         if (!valid_point(p2))
           continue;
 
-        for (int e2 = 0; e2 < connectivity.M; e2++) 
+        if (settings.fully_contained_set)
+          if (mesh_map(p2[0], p2[1], p2[2]) != 3) 
+            continue;
+
+        for (int e2 = 0; e2 < delta_point.size(); e2++) 
         {
-          Point p3 = delta_point_reverse(p2,e2);
+          Point p3 = delta_point.reverse(p2,e2);
           if (p1 == p3)
             continue;
 
           if (!valid_point(p3))
              continue;
 
+          if (settings.fully_contained_set)
+            if (mesh_map(p3[0], p3[1], p3[2]) != 3) 
+              continue;
+
           int element_number = point2ind(p3); 
 
-          int pair_id = element_number*num_points_per_element + connectivity.M*e1 + e2;
+          int pair_id = element_number*num_points_per_element + delta_point.size()*e1 + e2;
           end_set_pairs.insert(pair_id);
         }
       }
@@ -358,7 +373,7 @@ void  edgepair_segmentation(  const matrix<double>& data,
       Point p2 = delta_point(p1,e1);
       Point p3 = delta_point(p2,e2);
 
-      for (int e3 = 0; e3 < connectivity.M; e3++) 
+      for (int e3 = 0; e3 < delta_point.size(); e3++) 
       {
         Point p4 = delta_point(p3,e3);
 
@@ -383,10 +398,10 @@ void  edgepair_segmentation(  const matrix<double>& data,
         }
 
         // Destination id
-        int edge_pair_id = connectivity.M*e2 + e3;
+        int edge_pair_id = delta_point.size()*e2 + e3;
 
         // Index of neighboring edgepair.
-        int dest = point2ind(p2)*(connectivity.M*connectivity.M) + edge_pair_id;
+        int dest = point2ind(p2)*(delta_point.size()*delta_point.size()) + edge_pair_id;
         neighbors->push_back(Neighbor(dest, cost));
       }
     }
