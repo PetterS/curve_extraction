@@ -141,9 +141,9 @@ void main_function(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   if (settings.verbose)
   {
-    mexPrintf("Regularization coefficients. Pair: %g Triplet: %g Quad: %g. \n",
+    mexPrintf("Regularization coefficients Pair: %g Triplet: %g Quad: %g. \n",
               settings.penalty[0], settings.penalty[1], settings.penalty[2]);
-    mexPrintf("Regularization powers: Pair: %g Triplet: %g Quad %g. \n",
+    mexPrintf("Regularization powers Pair: %g Triplet: %g Quad: %g. \n",
               settings.power[0], settings.power[1], settings.power[2]);
   }
 
