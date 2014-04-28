@@ -27,8 +27,8 @@ classdef Curve_extraction < handle
 		% + curvature_penalty | curvature of curve |^curvature_power
 		% + torsion_penalty |torsion of curve|^torsion_power
 		length_penalty = 0;
-		curvature_penalty = 0,
-		torsion_penalty = 0,
+		curvature_penalty = 0;
+		torsion_penalty = 0;
 		curvature_power = 2.0;
 		torsion_power = 2.0;
 
