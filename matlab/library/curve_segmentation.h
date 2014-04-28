@@ -144,6 +144,8 @@ struct InstanceSettings
 
   bool compute_all_distances;
 
+  bool fully_contained_set;
+  
   string data_type_str;
 
   vector<double> voxel_dimensions;
@@ -204,6 +206,10 @@ InstanceSettings parse_settings(MexParams params)
   settings.argument_improvement_tolerance = params.get<double>("argument_improvement_tolerance", 1e-12);
   settings.num_threads = params.get<int>("num_threads", -1);
   settings.maxiter = params.get<int>("maxiter", 1000);
+
+  // Only add edges _fully_ contained in the start and end set
+  // At the moment only used for dubins path
+  settings.fully_contained_set = params.get<bool>("fully_contained_set", false);
 
 
   settings.descent_method_str = params.get<string>("descent_method","lbfgs");
