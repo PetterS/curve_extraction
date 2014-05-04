@@ -18,21 +18,14 @@ x = r*cos(linspace(0,2*pi,100))+m(1);
 y = r*sin(linspace(0,2*pi,100))+m(2);
 
 C = Geodesic_shortest_path(depth, start_set, end_set);
-
-% voxel_dimenions(3):
-% A small number leads to a almost flat surface
-% A very large number gives a shortest pathfollowing the 
-% level sets of the surface.
-C.voxel_dimensions(3:4) = 10;
-C.set_connectivity_by_radius(3);
+C.set_connectivity_by_radius(5);
 
 
 %% Shortest path
 figure(1);
 C.shortest_path();
 C.plot_curve();
-fprintf('Length accordning to C++ code: %g\n', C.cost);
-fprintf('Calculated length:             %g\n', C.length());
+title(sprintf('Curve length: %g\nHalf-circle length: %g\n', C.length(), r*pi));
 plot(x,y,'-.');
 
 %% Local optimization
@@ -40,10 +33,9 @@ figure(2);
 C.local_optimzation_max_curve_segment_length = 0.5;
 C.local_optimization;
 C.plot_curve;
-fprintf('Length accordning to C++ code: %g\n', C.cost);
-fprintf('Calculated length:             %g\n', C.length());
+title(sprintf('Curve length: %g\nHalf-circle length: %g\n', C.length(), r*pi));
 plot(x,y,'-.');
 
 
-fprintf('Half-circle: %g\n', r * pi);
+
 

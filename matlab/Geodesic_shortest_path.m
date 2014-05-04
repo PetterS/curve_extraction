@@ -4,7 +4,7 @@
 % The surface is defined as the function graph of discrete depth map.
 %
 classdef Geodesic_shortest_path < Curve_extraction_base
-
+	
 	properties (SetAccess = protected)
 		cost;
 		info;
@@ -56,18 +56,6 @@ classdef Geodesic_shortest_path < Curve_extraction_base
 			clf; hold on;
 			msgs = {};
 
-			% if (~isempty(curve))
-			% 	msgs{end+1} = sprintf('Cost; total: %g data: %g, length: %g curvature: %g, torsion %g.', ...
-			% 		self.cost.total, self.cost.data, self.cost.length, self.cost.curvature, self.cost.torsion);
-			% end
-
-			% msgs{end+1} = sprintf('Cost function; data + %g|length| + %g|curvature|^{%g} + %g|torsion|^{%g}.', ...
-			% 		self.length_penalty, self.curvature_penalty, self.curvature_power, self.torsion_penalty, self.torsion_power);
-
-			% if (~isempty(curve))
-			% 	msgs{end+1} = sprintf('Curve info: Length: %g |curvature|^{%g}: %g  |torsion|^{%g}: %g', ...
-			% 		self.info.length,  self.curvature_power, self.info.curvature,  self.torsion_power, self.info.torsion);
-			% end
 
 			cost_im = self.data;
 			cost_im(self.mesh_map ~= 1) = -1;
@@ -79,6 +67,8 @@ classdef Geodesic_shortest_path < Curve_extraction_base
 			if (~isempty(curve))
 				title({msgs{:}});
 				cmap = jet(3);
+
+				title(sprintf('Curve length: %g.', self.length()));
 
 				plot(curve(:,2),curve(:,1),'r-' , 'linewidth',2)
 				plot(curve(1,2),curve(1,1),'ko','MarkerFaceColor', cmap(2,:), 'MarkerSize',5);
@@ -96,18 +86,7 @@ classdef Geodesic_shortest_path < Curve_extraction_base
 				self.curve = self.interpolate_more_points(self.curve, self.local_optimzation_max_curve_segment_length);
 			end
 
-			L = 0;
-			for ind = 1:size(self.curve, 1)-1
-				x1 = self.curve(ind, 1);
-				y1 = self.curve(ind, 2);
-				z1 = interp2(self.data, x1, y1, 'linear');
-				
-				x2 = self.curve(ind+1, 1);
-				y2 = self.curve(ind+1, 2);
-				z2 = interp2(self.data, x2, y2, 'linear');
-
-				L = L + norm([x1-x2; y1-y2; z1-z2]);
-			end
+			L = self.info;
 		end
 	end
 end
