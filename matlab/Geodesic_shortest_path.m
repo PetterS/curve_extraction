@@ -43,7 +43,7 @@ classdef Geodesic_shortest_path < Curve_extraction_base
 			self.num_threads = int32(feature('numThreads'));
 		end
 
-			function display(self)
+		function display(self)
 			details(self);
 			self.plot_curve(self.curve);
 		end
@@ -87,6 +87,26 @@ classdef Geodesic_shortest_path < Curve_extraction_base
 				legend('Curve','Start','End','Location', 'EastOutside');
 			else
 				fprintf('No solution stored, please run obj.shortest_path() \n');
+			end
+		end
+
+		function L = length(self)
+			% Add more points first time
+			if ~self.checked_max_curve_segment_length
+				self.curve = self.interpolate_more_points(self.curve, self.local_optimzation_max_curve_segment_length);
+			end
+
+			L = 0;
+			for ind = 1:size(self.curve, 1)-1
+				x1 = self.curve(ind, 1);
+				y1 = self.curve(ind, 2);
+				z1 = interp2(self.data, x1, y1, 'linear');
+				
+				x2 = self.curve(ind+1, 1);
+				y2 = self.curve(ind+1, 2);
+				z2 = interp2(self.data, x2, y2, 'linear');
+
+				L = L + norm([x1-x2; y1-y2; z1-z2]);
 			end
 		end
 	end

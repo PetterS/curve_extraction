@@ -3,7 +3,7 @@ addpath([fileparts(mfilename('fullpath')) filesep '..']);
 
 problem_size = [50 50];
 [xx,yy] = meshgrid(1:problem_size(1),1:problem_size(2));
-depth = sqrt((xx-25).^2 + (yy-25).^2);
+depth = 10 * sqrt((xx-25).^2 + (yy-25).^2);
 
 start_set = false(problem_size);
 end_set = false(problem_size);
@@ -31,6 +31,8 @@ C.set_connectivity_by_radius(3);
 figure(1);
 C.shortest_path();
 C.plot_curve();
+fprintf('Length accordning to C++ code: %g\n', C.cost);
+fprintf('Calculated length:             %g\n', C.length());
 plot(x,y,'-.');
 
 %% Local optimization
@@ -38,4 +40,10 @@ figure(2);
 C.local_optimzation_max_curve_segment_length = 0.5;
 C.local_optimization;
 C.plot_curve;
+fprintf('Length accordning to C++ code: %g\n', C.cost);
+fprintf('Calculated length:             %g\n', C.length());
 plot(x,y,'-.');
+
+
+fprintf('Half-circle: %g\n', r * pi);
+
