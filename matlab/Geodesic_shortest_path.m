@@ -80,6 +80,35 @@ classdef Geodesic_shortest_path < Curve_extraction_base
 			end
 		end
 
+		function plot_3d(self, style)
+			% Add more points first time
+			if ~self.checked_max_curve_segment_length
+				self.curve = self.interpolate_more_points(self.curve, self.local_optimzation_max_curve_segment_length);
+			end
+
+			if isempty(self.curve)
+				fprintf('No solution stored, please run obj.shortest_path() \n');
+				return;
+			end
+
+			title(sprintf('Curve length: %g.', self.length()));
+			curve3d = self.curve;
+
+			for ind = 1:size(self.curve, 1)
+				x = self.curve(ind, 1);
+				y = self.curve(ind, 2);
+				z = self.voxel_dimensions(3) * interp2(self.data, x, y, 'linear');
+				curve3d(ind, 3) = z;
+			end
+
+			cmap = jet(3);
+			plot3(curve3d(:,1), curve3d(:,2), curve3d(:,3), style , 'linewidth',2)
+			plot3(curve3d(1,1), curve3d(1,2), curve3d(1,3), 'ko','MarkerFaceColor', cmap(2,:), 'MarkerSize',5);
+			plot3(curve3d(end,1), curve3d(end,2), curve3d(end,3), 'ko','MarkerFaceColor', cmap(3,:), 'MarkerSize',5);
+
+			legend('Curve','Start','End','Location', 'EastOutside');
+		end
+
 		function L = length(self)
 			% Add more points first time
 			if ~self.checked_max_curve_segment_length

@@ -20,6 +20,8 @@ y = r*sin(linspace(0,2*pi,100))+m(2);
 C = Geodesic_shortest_path(depth, start_set, end_set);
 C.set_connectivity_by_radius(5);
 
+figure(3); clf;
+hold on;
 
 %% Shortest path
 figure(1);
@@ -27,6 +29,9 @@ C.shortest_path();
 C.plot_curve();
 title(sprintf('Curve length: %g\nHalf-circle length: %g\n', C.length(), r*pi));
 plot(x,y,'-.');
+
+figure(3);
+C.plot_3d('r-');
 
 %% Local optimization
 figure(2);
@@ -36,6 +41,11 @@ C.plot_curve;
 title(sprintf('Curve length: %g\nHalf-circle length: %g\n', C.length(), r*pi));
 plot(x,y,'-.');
 
+figure(3);
+C.plot_3d('b-');
 
+mesh(xx, yy, C.voxel_dimensions(3) * depth);
+colormap([0 0 0]);
+axis equal
 
 
