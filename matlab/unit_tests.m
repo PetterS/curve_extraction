@@ -8,6 +8,7 @@ classdef unit_tests < matlab.unittest.TestCase
 	properties
 		linear_obj;
 		linear_obj_large;
+		geodesic_obj;
 		edge_obj;
 		
 		rng_seed = 0;
@@ -16,6 +17,26 @@ classdef unit_tests < matlab.unittest.TestCase
 	end
 	
 	methods
+
+		function L = geodesic_linear_length(~, curve_obj)
+			% Add more points first time
+			if ~curve_obj.checked_max_curve_segment_length
+				curve_obj.curve = curve_obj.interpolate_more_points(curve_obj.curve, curve_obj.local_optimzation_max_curve_segment_length);
+			end
+			L = 0;
+			for ind = 1:size(curve_obj.curve, 1)-1
+				x1 = curve_obj.curve(ind, 1);
+				y1 = curve_obj.curve(ind, 2);
+				z1 = curve_obj.voxel_dimensions(3)*interp2(curve_obj.data, x1, y1, 'linear');
+				
+				x2 = curve_obj.curve(ind+1, 1);
+				y2 = curve_obj.curve(ind+1, 2);
+				z2 = curve_obj.voxel_dimensions(3)*interp2(curve_obj.data, x2, y2, 'linear');
+				
+				L = L + norm([x1-x2; y1-y2; z1-z2]);
+			end
+		end
+
 		function switch_start_and_end_set(~, curve_obj)
 			tmp = curve_obj.start_set;
 			curve_obj.start_set = curve_obj.end_set;
@@ -69,6 +90,7 @@ classdef unit_tests < matlab.unittest.TestCase
 			
 		end
 		
+
 		function create_linear_obj(testCase)
 			
 			% Generate random data
@@ -85,12 +107,32 @@ classdef unit_tests < matlab.unittest.TestCase
 
 			testCase.linear_obj = Curve_extraction(data, start_set, end_set, disallowed_set);
 		end
+
+		function create_geodeisc_obj(testCase)
+			problem_size = [50 50];
+			[xx,yy] = meshgrid(1:problem_size(1),1:problem_size(2));
+			depth = sqrt((xx-25).^2 + (yy-25).^2);
+
+			start_set = false(problem_size);
+			end_set = false(problem_size);
+
+			start_set(10,10) = true;
+			end_set(end-10,end-10) = true;
+			assert(depth(start_set) == depth(end_set));
+
+			C = Geodesic_shortest_path(depth, start_set, end_set);
+			C.set_connectivity_by_radius(4);
+
+			testCase.geodesic_obj = C;
+		end
 	end
 	
 	methods (TestMethodTeardown)
 		function delete_objs(obj)
 			clear obj.linear_obj;
 			clear obj.linear_obj_large;
+			clear obj.geodesic_obj;
+			clear obj.edge_obj;
 		end
 	end
 	
@@ -423,24 +465,9 @@ classdef unit_tests < matlab.unittest.TestCase
 
 		%
 		function geodesic(obj)
-			problem_size = [50 50];
-			[xx,yy] = meshgrid(1:problem_size(1),1:problem_size(2));
-			depth = sqrt((xx-25).^2 + (yy-25).^2);
+			C = obj.geodesic_obj;
 
-			start_set = false(problem_size);
-			end_set = false(problem_size);
-
-			start_set(10,10) = true;
-			end_set(end-10,end-10) = true;
-			assert(depth(start_set) == depth(end_set));
-
-			start_set(10,10) = true;
-			end_set(end-10,end-10) = true;
-			assert(depth(start_set) == depth(end_set));
-			C = Geodesic_shortest_path(depth, start_set, end_set);
-			C.set_connectivity_by_radius(4);
-
-			Cr = Geodesic_shortest_path(depth, end_set,start_set);
+			Cr = Geodesic_shortest_path(C.data, C.end_set, C.start_set);
 			Cr.set_connectivity_by_radius(4);
 
 			r = sqrt(2)*(25-10);
@@ -465,6 +492,37 @@ classdef unit_tests < matlab.unittest.TestCase
 				C.local_optimization();
 				obj.verifyThat(max_dist(C.curve), IsLessThanOrEqualTo(r+1));
 			end
+		end
+
+		% Compare estimated length with linear and bilinear interplation
+		function geodesic_length(obj)
+
+			C = obj.geodesic_obj;
+			import matlab.unittest.constraints.*;
+		
+			% Should be almost equal.
+			C.shortest_path;
+			diff = C.length - obj.geodesic_linear_length(C);
+			obj.verifyThat(diff, IsLessThanOrEqualTo(1e-2));
+
+			for e = 11:2:20
+				C.curve = [10 10; e e];
+				
+				diff = C.length - obj.geodesic_linear_length(C);
+				obj.verifyThat(diff, IsLessThanOrEqualTo(1e-3));
+			end
+			
+			% For straight lines i x or y direction
+			% the approximation are equal and should be equal up to numerical 
+			% errors.
+			for e = 11:2:20
+				C.curve = [5 5; 5 e];
+				
+				diff = C.length - obj.geodesic_linear_length(C);
+				obj.verifyThat(diff, IsLessThanOrEqualTo(1e-10));
+			end	
+
+			
 		end
 
 		function explicit_data_term(obj)
@@ -520,6 +578,7 @@ classdef unit_tests < matlab.unittest.TestCase
 			C2 = C.curve;
 			obj.verifyTrue(all(C1(:) == C2(:)));
 		end	
+
 	end
 end
 
