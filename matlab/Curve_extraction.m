@@ -207,7 +207,5 @@ classdef Curve_extraction < Curve_extraction_base
 				fprintf('No solution stored, please run obj.shortest_path() \n');
 			end
 		end
-		
 	end
 end
-
