@@ -6,17 +6,19 @@
 % On Windows, it will need help to find Eigen includes. Use the same
 % version of Eigen as when compiling Spii.
 %
-function compile(base_path, base_name, sources, extra_args)
+function compile(base_name, sources, extra_args)
 
 % Recompiles if any file(s) have been edited.
 % This is useful during development.
 compile_on_edit = false;
 
-if nargin < 3
+base_path = [fileparts(mfilename('fullpath')) filesep 'library'];       
+
+if nargin < 2
 	sources = {};
 end
 
-if nargin < 4
+if nargin < 3
 	extra_args = {};
 end
 
@@ -41,8 +43,12 @@ if ~ispc
 
     extra_args{end+1} = ['CXXFLAGS="\$CXXFLAGS ' CXXFLAGS '"'];
 
-elseif (use_openmp)
-    extra_args{end+1} = 'COMPFLAGS="$COMPFLAGS /openmp"'; 
+else
+	% NOMINMAX fixes windows.h if it gets included.
+	extra_args{end+1} = '-DNOMINMAX=1';
+	if (use_openmp)
+		extra_args{end+1} = 'COMPFLAGS="$COMPFLAGS /openmp"';
+	end
 end
 
 if (use_openmp)
@@ -80,7 +86,6 @@ extra_args{end+1} = '-lspii';
 extra_args{end+1} = '-lcurve_extraction';
 
 
-m_file_name   = [base_path filesep base_name '.m'];
 mex_file_name = [base_path filesep base_name '_mex.' mexext];
 cpp_file_name = [base_path filesep base_name '_mex.cpp'];
 
@@ -91,7 +96,6 @@ if (isempty(cpp_file_name))
 end
 
 
-m_file   = dir(m_file_name);
 mex_file = dir(mex_file_name);
 cpp_file = dir(cpp_file_name);
 
@@ -101,7 +105,6 @@ else
     mex_modified = 0;
 end
 
-m_modified   = m_file.datenum;
 cpp_modified = cpp_file.datenum;
 
 % If modified or not existant compile
@@ -115,9 +118,6 @@ end
 if (compile_on_edit)
 	if  mex_modified < cpp_modified
 		disp('C++ file modfied later than Mex file; recompiling...');
-		compile_file = true;
-	elseif mex_modified < m_modified
-		disp('M-file modfied later than Mex file; recompiling...');
 		compile_file = true;
 	end
 end

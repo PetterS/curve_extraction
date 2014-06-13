@@ -1,6 +1,6 @@
 % This script reproduces Figure 6 in
 % Shortest Paths with Curvature and Torsion
-% Petter Strandmark, Johannes Ul�n, Fredrik Kahl, Leo Grady. 
+% Petter Strandmark, Johannes Ulén, Fredrik Kahl, Leo Grady. 
 % International Conference on Computer Vision. 2013.
 %
 % Windows note:
@@ -9,6 +9,7 @@
 % http://www.microsoft.com/en-us/download/details.aspx?id=40784
 close all
 clear all
+addpath([fileparts(mfilename('fullpath')) filesep '..']);
 
 % Regularizations
 use_a_star = true;
@@ -64,8 +65,7 @@ end
 data = data/1e3;
 
 % Setup the problem instance
-data_type = 'linear_interpolation';
-C = Curve_extraction(data_type, data, start_set, end_set);
+C = Curve_extraction(data, start_set, end_set);
 
 C.num_threads = min(feature('numThreads'),2);
 C.descent_method = 'lbfgs';

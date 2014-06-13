@@ -50,7 +50,7 @@ Paths can be changed in compile.m.
 1. Install curve_extraction and spii using instruction above.
 2. Install Eigen3 in /usr/local/include/eigen3.
 
-You can now run /matlab/simple_3D.m all files compiles on demand.
+You can now run /matlab/examples/simple_3D.m all files compiles on demand.
 
 ### Windows ###
 1. Use CMake to build SPII and curve_extraction.
@@ -63,7 +63,7 @@ You can now run /matlab/simple_3D.m all files compiles on demand.
 8. If your version of MATLAB does not support Visual Studio 2013 follow the instructions [http://www.mathworks.com/matlabcentral/fileexchange/44408-matlab-mex-support-for-visual-studio-2013-and-mbuild](http://www.mathworks.com/matlabcentral/fileexchange/44408-matlab-mex-support-for-visual-studio-2013-and-mbuild).
 9. Add C:\Program Files\SPII\lib to your system path.
 
-You can now run /matlab/simple_3D.m all files compiles on demand.
+You can now run /matlab/examples/simple_3D.m all files compiles on demand.
 
 Video
 ====

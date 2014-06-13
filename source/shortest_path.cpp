@@ -229,6 +229,187 @@ double shortest_path(int n, const std::set<int>& start_set, const std::set<int>&
 	return shortest_path(n, start_set, end_set, neighbors, path, &get_lower_bound, options);
 }
 
+double bidirectional_shortest_path(
+	// The number of nodes in the graph.
+	int n,
+	// The set of nodes from which to compute the
+	// path.
+	const std::set<int>& start_set,
+	// The set of nodes where the path can end.
+	const std::set<int>& end_set,
+	// Oracle which returns the set of neighbors of
+	// a given node, along with their distances.
+	const std::function<void(int, std::vector<Neighbor>* neighbors)>& get_neighbors,
+	// (output) Recieves the shortest path.
+	std::vector<int>* path)
+{
+	using namespace std;
+	typedef float queue_cost;
+	const queue_cost infinity = numeric_limits<queue_cost>::max();
+
+	vector<queue_cost> source_distance(n, infinity);
+	vector<int> source_previous(n, -1);
+	set<pair<queue_cost, int> > source_prio_queue;
+
+	vector<queue_cost> sink_distance(n, infinity);
+	vector<int> sink_previous(n, -1);
+	set<pair<queue_cost, int> > sink_prio_queue;
+
+	// Check and put the start set into the queue.
+	if (start_set.size() == 0) {
+		throw std::runtime_error("bidirectional_shortest_path: empty start set");
+	}
+	for (auto itr = start_set.begin(); itr != start_set.end(); ++itr) {
+		if (*itr < 0 || *itr >= n) {
+			throw std::runtime_error("bidirectional_shortest_path: Invalid start set.");
+		}
+		source_distance[*itr] = 0;
+		source_prio_queue.insert(std::make_pair(0, *itr));
+	}
+
+	// Check end_set.
+	if (start_set.size() == 0) {
+		throw std::runtime_error("bidirectional_shortest_path: empty end set");
+	}
+	for (auto itr = end_set.begin(); itr != end_set.end(); ++itr) {
+		if (*itr < 0 || *itr >= n) {
+			throw std::runtime_error("bidirectional_shortest_path: Invalid end set.");
+		}
+		sink_distance[*itr] = 0;
+		sink_prio_queue.insert(std::make_pair(0, *itr));
+	}
+
+	std::vector<Neighbor> neighbor_storage;
+	neighbor_storage.reserve(100);
+
+	while (!source_prio_queue.empty() && !sink_prio_queue.empty()) {
+		int i = source_prio_queue.begin()->second;
+		source_prio_queue.erase(source_prio_queue.begin());
+
+		// Have the two paths met?
+		if (sink_distance[i] < infinity) {
+			// Add the path from source to i
+			if (source_distance[i] > 0) {
+				int j = i;
+				path->clear();
+				while (source_distance[j] > 0) {
+					path->push_back(j);
+					j = source_previous[j];
+				}
+				path->push_back(j);
+				// Store the shortest path from the start to
+				// the end.
+				std::reverse(path->begin(), path->end());
+			}
+
+			// Add the path from i to sink
+			if (sink_distance[i] > 0) {
+				int j = sink_previous[i];
+				while (sink_distance[j] > 0) {
+					path->push_back(j);
+					j = sink_previous[j];
+				}
+				path->push_back(j);
+			}
+
+			return source_distance[i] + sink_distance[i];
+		}
+
+		// Get all neighbors of node i using the oracle.
+		neighbor_storage.clear();
+		get_neighbors(i, &neighbor_storage);
+
+		for (auto itr = neighbor_storage.begin(); itr != neighbor_storage.end(); ++itr) {
+			// Debug check.
+			if (itr->distance < 0) {
+				throw std::runtime_error("bidirectional_shortest_path: Negative const encountered.");
+			}
+			// Index of the neighbor.
+			int j = itr->destination;
+			// Distance from the start to j via node i.
+			double new_dist = source_distance[i] + itr->distance;
+			// Previously known best distance from the start
+			// to node j.
+			double old_dist = source_distance[itr->destination];
+
+			// Did we find a better path to j?
+			if (new_dist < old_dist) {
+				// Remove j from the queue (if present).
+				source_prio_queue.erase(std::make_pair(old_dist, j));
+				// Update the best distance to j.
+				source_distance[j] = new_dist;
+				source_previous[j] = i;
+				// Add j with the new priority.
+				source_prio_queue.insert(std::make_pair(new_dist, j));
+			}
+		}
+
+		i = sink_prio_queue.begin()->second;
+		sink_prio_queue.erase(sink_prio_queue.begin());
+
+		// Have the two paths met?
+		if (source_distance[i] < infinity) {
+
+			// Add the path from source to i
+			if (source_distance[i] > 0) {
+				int j = i;
+				path->clear();
+				while (source_distance[j] > 0) {
+					path->push_back(j);
+					j = source_previous[j];
+				}
+				path->push_back(j);
+				// Store the shortest path from the start to
+				// the end.
+				std::reverse(path->begin(), path->end());
+			}
+
+			// Add the path from i to sink
+			if (sink_distance[i] > 0) {
+				int j = sink_previous[i];
+				while (sink_distance[j] > 0) {
+					path->push_back(j);
+					j = sink_previous[j];
+				}
+				path->push_back(j);
+			}
+
+			return source_distance[i] + sink_distance[i];
+		}
+
+		// Get all neighbors of node i using the oracle.
+		neighbor_storage.clear();
+		get_neighbors(i, &neighbor_storage);
+
+		for (auto itr = neighbor_storage.begin(); itr != neighbor_storage.end(); ++itr) {
+			// Debug check.
+			if (itr->distance < 0) {
+				throw std::runtime_error("bidirectional_shortest_path: Negative const encountered.");
+			}
+			// Index of the neighbor.
+			int j = itr->destination;
+			// Distance from the start to j via node i.
+			double new_dist = sink_distance[i] + itr->distance;
+			// Previously known best distance from the start
+			// to node j.
+			double old_dist = sink_distance[itr->destination];
+
+			// Did we find a better path to j?
+			if (new_dist < old_dist) {
+				// Remove j from the queue (if present).
+				sink_prio_queue.erase(std::make_pair(old_dist, j));
+				// Update the best distance to j.
+				sink_distance[j] = new_dist;
+				sink_previous[j] = i;
+				// Add j with the new priority.
+				sink_prio_queue.insert(std::make_pair(new_dist, j));
+			}
+		}
+	}
+
+	throw std::runtime_error("bidirectional_shortest_path: No path found.");
+	return 0;
+}
 
 #if 0
 double shortest_path_memory_efficient(

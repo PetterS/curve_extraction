@@ -17,7 +17,7 @@ std::tuple<int,int> root_and_edge(int edge_num, const matrix<int>& connectivity)
 }
 
 // Gives tail of the edge
-Mesh::Point  tail_of_edge(int edge_num, const matrix<int>& connectivity)
+Point  tail_of_edge(int edge_num, const matrix<int>& connectivity)
 {
   int num_points_per_element =  connectivity.M;
   int tail    = edge_num / num_points_per_element;
@@ -26,32 +26,32 @@ Mesh::Point  tail_of_edge(int edge_num, const matrix<int>& connectivity)
 }
 
 // Gives head and tail of the edge
-Mesh::Point  head_of_edge(int edge_num, const matrix<int>& connectivity)
+Point  head_of_edge(int edge_num, const matrix<int>& connectivity)
 {
   int num_points_per_element =  connectivity.M;
   int edgeid = edge_num % num_points_per_element;
 
-  Mesh::Point tail_point = tail_of_edge(edge_num, connectivity);
+  Point tail_point = tail_of_edge(edge_num, connectivity);
 
-  return Mesh::Point( tail_point.x + connectivity(edgeid,0),
-                      tail_point.y + connectivity(edgeid,1),
-                      tail_point.z + connectivity(edgeid,2));
+  return Point( tail_point[0] + connectivity(edgeid,0),
+                tail_point[1] + connectivity(edgeid,1),
+                tail_point[2] + connectivity(edgeid,2));
 }
 
 
-std::vector<Mesh::Point>  edgepath_to_points(const std::vector<int>& path, const matrix<int>& connectivity)
+std::vector<Point>  edgepath_to_points(const std::vector<int>& path, const matrix<int>& connectivity)
 {
-  std::vector<Mesh::Point> point_vector;
-  Mesh::Point first();
+  std::vector<Point> point_vector;
+  Point first();
 
   // Start point
   if (path.size() > 0) {
-     Mesh::Point tail = tail_of_edge(path[0], connectivity);
+     Point tail = tail_of_edge(path[0], connectivity);
      point_vector.push_back(tail);
   }
 
   for (int i = 0; i < path.size(); i++) {
-     Mesh::Point head = head_of_edge(path[i], connectivity);
+     Point head = head_of_edge(path[i], connectivity);
      point_vector.push_back(head);
   }
 
@@ -67,7 +67,7 @@ void store_results_edge(matrix<nodeT>& node_container, std::vector<edgeT>& edge_
 
   // Go through each each edge stored in visit time
   // if it has been visited then it's != -1
-  std::vector<Mesh::Point> point_vector(2, make_point(0));
+  std::vector<Point> point_vector(2, make_point(0));
   for (int i = 0; i < edge_container.size(); i++)
   {
     if (edge_container[i] == -1)
@@ -76,17 +76,17 @@ void store_results_edge(matrix<nodeT>& node_container, std::vector<edgeT>& edge_
     point_vector[0] = tail_of_edge(i, connectivity);
     point_vector[1] = head_of_edge(i, connectivity);
 
-    for (Mesh::Point p : point_vector)
+    for (Point p : point_vector)
     {
-      if (!validind(p))
+      if (!valid_point(p))
         continue;
 
-      nodeT visit_value = node_container(p.x, p.y, p.z);
+      nodeT visit_value = node_container(p[0], p[1], p[2]);
 
       if ( (visit_value == -1) ||
           ( (visit_value >= 0) && (visit_value > edge_container[i]) ) )
       {
-        node_container(p.x, p.y, p.z) = edge_container[i];
+        node_container(p[0], p[1], p[2]) = edge_container[i];
       }
     }
   }
@@ -96,21 +96,26 @@ void store_results_edge(matrix<nodeT>& node_container, std::vector<edgeT>& edge_
 
 
 
-template<typename Data_cost, typename Length_cost, typename Curvature_cost>
+template<typename Data_cost, typename Pair_cost, typename Triplet_cost>
 void edge_segmentation( const matrix<double>& data,
                         const matrix<unsigned char>& mesh_map,
                         const matrix<int>& connectivity,
                         InstanceSettings& settings,
-                        ShortestPathOptions& options,
-                        SegmentationOutput& output)
+                        ShortestPathOptions& options
+,                        SegmentationOutput& output)
 {
-  Data_cost data_cost(data, connectivity, settings.voxel_dimensions);
-  Length_cost length_cost(data, settings.voxel_dimensions, settings.length_penalty);
-  Curvature_cost curvature_cost(data, settings.voxel_dimensions, settings.curvature_penalty, settings.curvature_power);
+  Data_cost data_cost(data, connectivity, settings);
+  Pair_cost pair_cost(data, settings);
+  Triplet_cost triplet_cost(data, settings);
+
+  Delta_point delta_point(connectivity);
 
   bool cacheable = true;
-  if (length_cost.data_depdent || curvature_cost.data_depdent) 
-    cacheable = false;
+  if ( (pair_cost.data_dependent) && (settings.penalty[0] > 0) )
+      cacheable = false;
+
+  if ( (triplet_cost.data_dependent) && (settings.penalty[1] > 0) )
+      cacheable = false;
 
   // Some notation for the edge graph
   // Elements corresponds to points in the original graph
@@ -120,6 +125,9 @@ void edge_segmentation( const matrix<double>& data,
   int num_points_per_element = connectivity.M;
   int num_edges_per_point = num_points_per_element*num_points_per_element;
 
+  if (max_index < mesh_map.numel()*num_points_per_element)
+      mexErrMsgTxt("Problem is too large, index will overflow. Try to remove curvature penalty or lower connectivity.");
+
   // Total
   int num_edges = num_points_per_element*num_elements;
 
@@ -127,87 +135,90 @@ void edge_segmentation( const matrix<double>& data,
   // connectivity.M is the number of edges from each  each node
   std::vector<double> regularization_cache(num_edges_per_point);
 
-  int x,y,z, x2,y2,z2,x3,y3,z3, element_number, element_number_2;
-
+  int x,y,z, x2,y2,z2, element_number, element_number_2;
   if (cacheable)
   {
-    for (int i = 0; i < connectivity.M; i++) {
-      x2 = connectivity(i,0);
-      y2 = connectivity(i,1);
-      z2 = connectivity(i,2);
+    Point p1 = make_point(0);
 
-    for (int j = 0; j < connectivity.M; j++) {
-      x3 = x2 + connectivity(j,0);
-      y3 = y2 + connectivity(j,1);
-      z3 = z2 + connectivity(j,2);
+    for (int i = 0; i < delta_point.size(); i++) {
+      Point p2 = delta_point(p1,i);
 
+    for (int j = 0; j < delta_point.size(); j++) {
+      Point p3 = delta_point(p2,j);
       int n = i*num_points_per_element +j;
 
-       regularization_cache[n] = curvature_cost(0,0,0,x2,y2,z2,x3,y3,z3)
-                              + length_cost(x2,y2,z2,x3,y3,z3);
+      regularization_cache[n] = triplet_cost( p1.xyz, p2.xyz, p3.xyz)
+                              + pair_cost(    p2.xyz, p3.xyz);
     }
     }
   }
-  if (verbose)
+
+
+  if (settings.verbose)
     mexPrintf("Creating start/end sets...");
 
-  // start and end set
   std::set<int> start_set, end_set;
 
+  
   // Add edges according to mesh_map
-  for (x = 0; x < M; x++) {
-  for (y = 0; y < N; y++) {
-  for (z = 0; z < O; z++) {
+  for (int n = 0; n < mesh_map.numel(); ++n)
+  {
+    Point p1 = make_point(n);
 
-    // Add all edges
-    if (mesh_map(x,y,z) ==2)
+    // Start set
+    if ( mesh_map(p1[0], p1[1], p1[2]) == 2)
     {
-        element_number = sub2ind(x,y,z);
+      for (int e1 = 0; e1 < delta_point.size(); e1++) 
+      { 
 
-        for (int k = 0; k < num_points_per_element; k++)
+        Point p2 = delta_point(p1,e1);
+        if (valid_point(p2))
         {
-          if ( validind(x + connectivity(k,0),
-                        y + connectivity(k,1),
-                        z + connectivity(k,2)))
-          {
-              start_set.insert(element_number*num_points_per_element + k);
-          }
+          int edge_id = n*num_points_per_element + e1;
+          bool add = true;
+
+          // Only add edges _fully_ contained in the start and end set
+          if (settings.fully_contained_set)
+            if (mesh_map(p2[0], p2[1], p2[2]) != 2) 
+              continue;
+          
+          start_set.insert(edge_id);
         }
+      }
     }
 
     // End set, check which edges goes into this one
-    if (mesh_map(x,y,z) == 3)
+    if ( mesh_map(p1[0], p1[1], p1[2]) == 3)
     {
-        for (int k = 0; k < connectivity.M; k++)
+      for (int e1 = 0; e1 < delta_point.size(); e1++) 
+      { 
+        Point p2 = delta_point.reverse(p1,e1);
+        if (valid_point(p2))
         {
-          x2 = x - connectivity(k,0);
-          y2 = y - connectivity(k,1);
-          z2 = z - connectivity(k,2);
+          int edge_id = point2ind(p2)*num_points_per_element + e1;
 
-          // The edge with head at n has root at n2
-          // it's edge number k.
-          if ( validind(x2,y2,z2) )
-          {
-            element_number_2 = sub2ind(x2,y2,z2);
-            end_set.insert(element_number_2*num_points_per_element + k);
-          }
+          if (settings.fully_contained_set)
+            if (mesh_map(p2[0], p2[1], p2[2]) != 3) 
+              continue;
+
+          end_set.insert(edge_id);
         }
       }
-  }
-  }
+    }
   }
 
   int e_super = num_edges;
   std::set<int> super_edge;
   super_edge.insert(e_super);
 
-  if (verbose)
+  if (settings.verbose)
     mexPrintf("done.\n");
 
   int evaluations = 0;
   auto get_neighbors =
     [ &evaluations, &data_cost, &num_points_per_element, &regularization_cache,
-      &e_super, &start_set, &connectivity, &length_cost, &cacheable, &curvature_cost]
+      &e_super, &start_set, &connectivity, &pair_cost, 
+      &cacheable, &triplet_cost, &delta_point]
     (int e, std::vector<Neighbor>* neighbors) -> void
   {
     evaluations++;
@@ -221,17 +232,11 @@ void edge_segmentation( const matrix<double>& data,
         int root, k;
         tie(root, k) = root_and_edge(*itr, connectivity);
 
-        int x1,y1,z1,
-            x2,y2,z2;
+        Point p1 = make_point(root);
+        Point p2 = delta_point(p1, k);
 
-        tie(x1,y1,z1) = ind2sub(root);
-
-        x2 = x1 + connectivity(k,0);
-        y2 = y1 + connectivity(k,1);
-        z2 = z1 + connectivity(k,2);
-
-        double cost = data_cost(x1, y1, z1, x2, y2, z2);
-        cost += length_cost(x1,y1,z1,x2,y2,z2);
+        double cost  = data_cost(   p1.xyz, p2.xyz);
+        cost        += pair_cost( p1.xyz, p2.xyz);
 
         neighbors->push_back(Neighbor(*itr, cost));
       }
@@ -241,70 +246,59 @@ void edge_segmentation( const matrix<double>& data,
       int root, edge_id_1;
       tie(root, edge_id_1) = root_and_edge(e, connectivity);
 
-      int x1,y1,z1, x2,y2,z2;
+      Point p1 = make_point(root);
+      Point p2 = delta_point(p1, edge_id_1);
+      
+      neighbors->resize(num_points_per_element);
 
-      tie(x1,y1,z1) = ind2sub(root);
+      #ifdef USE_OPENMP
+      #pragma omp parallel for
+      #endif
 
-      x2 = x1 + connectivity(edge_id_1,0);
-      y2 = y1 + connectivity(edge_id_1,1);
-      z2 = z1 + connectivity(edge_id_1,2);
-
-      if (validind(x2,y2,z2))
+      for (int edge_id_2 = 0; edge_id_2 < num_points_per_element; ++edge_id_2)
       {
-        neighbors->resize(num_points_per_element);
+        Point p3 = delta_point(p2, edge_id_2);
+        int dest;
+        double cost;
 
-        #ifdef USE_OPENMP
-        #pragma omp parallel for
-        #endif
-
-        for (int edge_id_2 = 0; edge_id_2 < num_points_per_element; ++edge_id_2)
+        if (valid_point(p3))
         {
-          int x3 = x2 + connectivity(edge_id_2,0);
-          int y3 = y2 + connectivity(edge_id_2,1);
-          int z3 = z2 + connectivity(edge_id_2,2);
+          dest = point2ind(p2)*num_points_per_element + edge_id_2;
+          cost = data_cost(p2.xyz, p3.xyz);
 
-           // Id of destination, (element_number*num_points_per_element + edge_id)
-          int dest = sub2ind(x2,y2,z2)*num_points_per_element + edge_id_2;
-          double cost;
-
-          if (validind(x3,y3,z3))
+          if (cacheable)
           {
-            // Adjacency id
-            cost = data_cost(x2, y2, z2, x3, y3, z3);
-
-            if (cacheable)
-            {
-              // Lookup id
-              int edge_type =  edge_id_1*num_points_per_element + edge_id_2;
-              cost += regularization_cache[edge_type];
-            } else
-            {
-              cost += curvature_cost(x1,y1,z1,x2,y2,z2,x3,y3,z3);
-              cost += length_cost(x2,y2,z2,x3,y3,z3);
-            }
+            // Lookup id
+            int edge_type =  edge_id_1*num_points_per_element + edge_id_2;
+            cost += regularization_cache[edge_type];
+          } else
+          {
+            cost += triplet_cost(p1.xyz,p2.xyz, p3.xyz);
+            cost += pair_cost   (       p2.xyz, p3.xyz);
           }
-
-          else {
-            cost = std::numeric_limits<double>::infinity();
-          }
-
-          (*neighbors)[edge_id_2] = Neighbor(dest, cost);
         }
+
+        else {
+          cost = std::numeric_limits<double>::infinity();
+          dest = 0;
+        }
+
+        (*neighbors)[edge_id_2] = Neighbor(dest, cost);
       }
     }
   };
 
   ShortestPathOptions heuristic_options;
   heuristic_options.compute_all_distances = true;
+
   // The lower bound function is just the distance
   // without curvature taken into account.
   std::function<double(int)> lower_bound =
     [&heuristic_options, &connectivity]
     (int e) -> double
   {
-    Mesh::Point p = head_of_edge(e, connectivity);
-
-    return heuristic_options.distance[sub2ind(p.x,p.y,p.z)];
+    Point p = head_of_edge(e, connectivity);
+    return heuristic_options.distance[point2ind(p)];
   };
 
   std::function<double(int)>* lower_bound_pointer = nullptr;
@@ -325,7 +319,7 @@ void edge_segmentation( const matrix<double>& data,
     SegmentationOutput heuristic_output
     (output.points, heuristic_runtime, heuristic_evaluations, heuristic_cost, output.visit_time, empty_matrix, empty_double_matrix);
 
-    node_segmentation<Data_cost, Length_cost>
+    node_segmentation<Data_cost, Pair_cost>
                      (data,
                       mesh_map,
                       connectivity,
@@ -336,7 +330,7 @@ void edge_segmentation( const matrix<double>& data,
     lower_bound_pointer = &lower_bound;
   }
 
-  if (verbose)
+  if (settings.verbose)
     mexPrintf("Computing shortest curvature ...");
 
   std::vector<int> path_edges;
@@ -369,7 +363,7 @@ void edge_segmentation( const matrix<double>& data,
   output.points = edgepath_to_points(path_edges, connectivity);
 
   output.evaluations = evaluations;
-  if (verbose)
+  if (settings.verbose)
   {
     mexPrintf("done.\n");
     mexPrintf("Running time:  %g (s), ", output.run_time);
@@ -396,27 +390,27 @@ void edge_segmentation( const matrix<double>& data,
         output.shortest_path_tree(i) = -1;
 
     // Go through each edge stored in visit time
-    std::vector<Mesh::Point> point_vector(2, make_point(0));
+    std::vector<Point> point_vector(2, make_point(0));
     for (int i = 0; i < options.visit_time.size(); i++)
     {
       point_vector[0] = tail_of_edge(i, connectivity);
-      if (!validind(point_vector[0]))
+      if (!valid_point(point_vector[0]))
         continue;
 
       point_vector[1] = head_of_edge(i, connectivity);
-      if (!validind(point_vector[1]))
+      if (!valid_point(point_vector[1]))
         continue;
 
-      int time = output.visit_time(point_vector[1].x,
-                            point_vector[1].y,
-                            point_vector[1].z);
+      int time = output.visit_time( point_vector[1][0],
+                                    point_vector[1][1],
+                                    point_vector[1][2]);
 
       // Is this the edge which was here first?
       if (time == options.visit_time[i])
       {
-        output.shortest_path_tree(point_vector[1].x,
-                           point_vector[1].y,
-                           point_vector[1].z) = sub2ind(point_vector[0]);
+        output.shortest_path_tree(  point_vector[1][0],
+                                    point_vector[1][1],
+                                    point_vector[1][2]) = point2ind(point_vector[0]);
       }
     }
   }

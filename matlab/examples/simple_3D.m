@@ -1,4 +1,3 @@
-close all; clear all;
 % Simple 3D example
 % Showing the effect of the different types of regularization
 % Note the following:
@@ -8,6 +7,8 @@ close all; clear all;
 
 % The blue surface corresponds to the start set 
 % and the green surface to the end set.
+close all; clear all;
+addpath([fileparts(mfilename('fullpath')) filesep '..']);
 
 rng(1)
 n = 10;
@@ -26,11 +27,8 @@ end_set(:,:,end) = true;
 
 
 %% Create Curve object
-data_type = 'linear_interpolation';
-C = Curve_extraction(data_type, data, start_set, end_set, disallowed);
+C = Curve_extraction(data, start_set, end_set, disallowed);
 C.set_connectivity_by_radius(4);
-
-C.num_threads = min(feature('numThreads'),2);
 
 C.store_visit_time = true;
 strength = 1e2;
@@ -61,7 +59,7 @@ m = [0.0384 0.1112 0.2790;
     0.6650 0.1675 0.1675;
     0.3726 0.9210 0.1350];
 	
-for i = 1:3
+for i = 1:length(c)
 	plot3(c{i}(:,1),c{i}(:,2),c{i}(:,3),'color', m(i,:),'linewidth',3);
 end
 

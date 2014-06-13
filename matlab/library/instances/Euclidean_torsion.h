@@ -1,38 +1,32 @@
 #pragma once
+
 class Euclidean_torsion
 {
   public:
     Euclidean_torsion (
       const matrix<double>& data, 
-      const std::vector<double>& voxel_dimensions, 
-      double penalty, 
-      double power)
-      : voxel_dimensions(voxel_dimensions), 
-        penalty(penalty), 
-        power(power),
-        data_depdent(false) {};
+      const InstanceSettings& settings)
+      : dims(settings.voxel_dimensions), 
+        penalty(settings.penalty[2]),
+        power(settings.power[2]),
+        data_dependent(false) {};
 
-  double operator () (double x1, double y1, double z1,
-                      double x2, double y2, double z2,
-                      double x3, double y3, double z3,
-                      double x4, double y4, double z4)
+  template<typename R>      
+  R operator()(const R* const point1,
+               const R* const point2,
+               const R* const point3,
+               const R* const point4) const
   {
-    if (penalty == 0)
-    {
-      return 0;
-    } else
-    {
-      return penalty* compute_torsion<double>(
-          x1*voxel_dimensions[0], y1*voxel_dimensions[1], z1*voxel_dimensions[2],
-          x2*voxel_dimensions[0], y2*voxel_dimensions[1], z2*voxel_dimensions[2],
-          x3*voxel_dimensions[0], y3*voxel_dimensions[1], z3*voxel_dimensions[2],
-          x4*voxel_dimensions[0], y4*voxel_dimensions[1], z4*voxel_dimensions[2],
-          power, true);
-    }
+    return  penalty * compute_torsion<R>(
+            point1[0]*dims[0], point1[1]*dims[1], point1[2]*dims[2],
+            point2[0]*dims[0], point2[1]*dims[1], point2[2]*dims[2],
+            point3[0]*dims[0], point3[1]*dims[1], point3[2]*dims[2],
+            point4[0]*dims[0], point4[1]*dims[1], point4[2]*dims[2],
+            power, false);
   }
 
-  bool data_depdent;     // Can we cache this cost or not?
-  const std::vector<double> voxel_dimensions;
+  const std::vector<double> dims;
   double penalty;
   double power;
+  bool data_dependent;
 };

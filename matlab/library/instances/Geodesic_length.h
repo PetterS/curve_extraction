@@ -1,91 +1,55 @@
 #pragma once
 #include <assert.h>
 #include "Boundary_points.h"
-#include "Depth_corners.h"
 
 class Geodesic_length
 {
   public:
     Geodesic_length (
       const matrix<double>& data,
-      const vector<double>& voxel_dimensions,
-      double penalty)
-      : data(data),
-        vd(voxel_dimensions),
-        penalty(penalty),
-        data_depdent(true),
-        boundary_points(voxel_dimensions, data.M, data.N),
-        euclidean_length(data, voxel_dimensions, penalty),
-        depth_corners(data)
-   {
-   }
+      const InstanceSettings& settings)
+      : penalty(settings.penalty[0]),
+        data_dependent(true),
+        boundary_points_calculator(data, settings.voxel_dimensions)
+   {}
 
-    inline double sqr(double x)
+    template<typename R>
+    inline R sqr(R x) const
     {
       return x*x;
     }
 
-    double operator () (double x0,double y0,double z0, double x1, double y1, double z1)
+    template<typename R>
+    R operator()(const R* const point1, const R* const point2) const
     {
       using std::abs;
 
       // For fixed connectivity relative boundary_points can be cached.
-      std::vector<boundary_point> points = boundary_points(x0,y0,x1,y1);
-      double cost = 0;
+      Boundary_points<R> points = boundary_points_calculator( point1[0],point1[1],
+                                                              point2[0],point2[1]);
+      R cost = 0;
 
-      auto prev = points.begin();
-      auto next = prev;
-      next++;
-
-      double i00,i01,i10,i11;
-      double dx,dy;
-      double d11,d10,d01;
-      double a,b,c,dsqr,f,g;
-      double p1,p2,p3;
-      
-      for (; next != points.end(); prev++,next++)
+      for (int i = 0; i < points.num_pairs(); i++)
       {
-        std::tie(i00,i01,i10,i11) = depth_corners(*prev);
+        R x0,y0, dx,dy;
+        double d11,d10,d01;
+        tie(x0,y0,dx,dy, d11,d10,d01) = points.get_pair(i);
 
-        i00 *= vd[2];
-        i01 *= vd[2];
-        i10 *= vd[2];
-        i11 *= vd[2];
-
-        x0 = prev->first;
-        x1 = next->first;
-
-        y0 = prev->second;
-        y1 = next->second;
-
-        dx = (x0-x1)*vd[0];
-        dy = (y0-y1)*vd[1];
-
-        // Fractional part
-        x0 = (x0-std::floor(x0))*vd[0];
-        y0 = (y0-std::floor(y0))*vd[1];
-
-        // See paper for explanation.
-        d11 = (i00+i11-i10-i01)/(vd[0]*vd[1]);
-        d10 = (y0*(i01-i11) + y1*(i10-i00) )/(vd[0]*vd[1]);
-        d01 = (x0*(i10-i11) + x1*(i01-i11) )/(vd[0]*vd[1]);
-
-        a = 2*d11*dx*dy;
-        b = 2*i00-i10-i01;
-        c = b/(2*d11);
-        dsqr = (sqr(dx)+sqr(dy))/(sqr(a));
-        f = sqr(c)+dsqr;
-        g = 1+2*c+f;
-
-        //
-        if ((dx == 0) || (dy == 0) || (d11 == 0))
+        R tolerance = 1e-8;
+        if ( (abs(dx) < tolerance) || (abs(dy) < tolerance) || (abs(d11) < tolerance) )
         {
           cost += sqrt(sqr(dx)+sqr(dy)+sqr(dx*d10+dy*d01));
         } else
         {
-          p1 = abs(a)/2;
-          p2 = dsqr*(log ( abs( (c+1+sqrt(g))/(c+sqrt(f)) ) ) );
-          p3 = (c+1)*sqrt(g)-c*sqrt(f);
+          R a = 2*d11*dx*dy;
+          R b = (y0*dx+x0*dy)/(2*dx*dy) + (d10*dx+d01*dy)/a;
+          R c = (sqr(dx)+sqr(dy))/(sqr(a));
+          R f = sqr(b)+c;
+          R g = 1+2*b+f;
+
+          R p1 = abs(a)/2;
+          R p2 = c*(log ( abs( (b+1+sqrt(g))/(b+sqrt(f)) ) ) );
+          R p3 = (b+1)*sqrt(g)-b*sqrt(f);
 
           cost += p1*(p2+p3);
         }
@@ -94,14 +58,7 @@ class Geodesic_length
       return penalty*cost;
     }
 
-  // Data
-  bool data_depdent;
-  const matrix<double> data;
-  vector<double> vd;
   double penalty;
-
-  // Functors
-  Boundary_points boundary_points;
-  Euclidean_length euclidean_length;
-  Depth_corners depth_corners;
+  bool data_dependent;
+  Boundary_points_calculator boundary_points_calculator;
 };
