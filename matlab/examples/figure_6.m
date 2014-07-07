@@ -20,7 +20,7 @@ LAB = @(I) double(applycform(uint8(I), makecform('srgb2lab')));
 RGB = @(I) double(applycform(uint8(I),makecform('lab2srgb')));
 
 % Image
-I = imread('../data/irrawaday-delta-sevcik.jpg');
+I = imread('../../data/irrawaday-delta-sevcik.jpg');
 I = I(40:end,:,:);
 I = imresize(I,0.25);
 
