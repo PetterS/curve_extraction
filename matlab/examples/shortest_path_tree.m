@@ -18,8 +18,7 @@ start_set(64,11) = true;
 end_set(64,52) = true;
 
 %% Create Curve object
-data_type = 'linear_interpolation';
-C = Curve_extraction(data_type, data, start_set, end_set);
+C = Curve_extraction(data, start_set, end_set);
 C.set_connectivity_by_radius(4);
 
 
