@@ -11,12 +11,15 @@ furnished to do so, subject to the following conditions:
 
 If you use this code please refer to the following publication:
 
-@article{ulen_strandmark_kahl_2015,
-	  author    = {Ul{\'e}n, Johannes and Strandmark, Petter and Kahl, Fredrik},	
-  	title     = {Shortest Paths with Higher-Order Regularization},
-  	journal   =	{Pattern Analysis and Machine Intelligence, IEEE Transactions on}, 
-  	year      = {2015}
-}
+
+	@article{ulen_strandmark_kahl_2015,
+		author    = {Ul{\'e}n, Johannes and Strandmark, Petter and Kahl, Fredrik},	
+  		title     = {Shortest Paths with Higher-Order Regularization},
+  		journal   =	{Pattern Analysis and Machine Intelligence, IEEE Transactions on}, 
+  		year      = {2015}
+	}
+
+
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
