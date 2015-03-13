@@ -1,4 +1,4 @@
-This is a C++ library for computing shortest paths with higher-order properties like curvature and torsion taken into account. It implements the algorithms of our ICCV 2013 paper [1].
+This is a C++ library for computing shortest paths with higher-order properties like curvature and torsion taken into account. It implements the algorithms of our ICCV 2013 paper [1] and PAMI 2015 paper [2].
 
 [![Build Status](https://travis-ci.org/PetterS/curve_extraction.png)](https://travis-ci.org/PetterS/curve_extraction)
 
@@ -72,3 +72,5 @@ Video
 References
 ====
 1. Petter Strandmark, Johannes Ulén, Fredrik Kahl, Leo Grady. [Shortest Paths with Curvature and Torsion](http://www2.maths.lth.se/vision/publications/publications/view_paper.php?paper_id=582). International Conference on Computer Vision. 2013.
+
+2. Johannes Ulén, Petter Strandmark, Fredrik Kahl [Shortest Paths with Higher-Order Regularization](http://www2.maths.lth.se/vision/publications/publications/view_paper.php?paper_id=623). IEEE Transactions on Pattern Analysis and Machine Intelligence. 2015 
